@@ -903,6 +903,15 @@ typedef BOOL (NTAPI *PF_SymInitialize)(_In_ HANDLE hProcess,
                                        _In_ BOOL fInvadeProcess);
 typedef DWORD (NTAPI *PF_SymSetOptions)(_In_ DWORD SymOptions);
 typedef DWORD (NTAPI *PF_SymGetOptions)(VOID);
+typedef DWORD64(NTAPI *PF_SymLoadModuleEx)(_In_ HANDLE hProcess,
+                                            _In_opt_ HANDLE hFile,
+                                            _In_opt_ PCSTR ImageName,
+                                            _In_opt_ PCSTR ModuleName,
+                                            _In_ DWORD64 BaseOfDll,
+                                            _In_ DWORD DllSize,
+                                            _In_opt_ PMODLOAD_DATA Data,
+                                            _In_opt_ DWORD Flags
+                                            );
 typedef DWORD64 (NTAPI *PF_SymLoadModule64)(_In_ HANDLE hProcess,
                                             _In_opt_ HANDLE hFile,
                                             _In_ LPSTR ImageName,
@@ -924,6 +933,7 @@ typedef struct _DETOUR_SYM_INFO
     PF_SymInitialize        pfSymInitialize;
     PF_SymSetOptions        pfSymSetOptions;
     PF_SymGetOptions        pfSymGetOptions;
+    PF_SymLoadModuleEx      pfSymLoadModuleEx;
     PF_SymLoadModule64      pfSymLoadModule64;
     PF_SymGetModuleInfo64   pfSymGetModuleInfo64;
     PF_SymFromName          pfSymFromName;

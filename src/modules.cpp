@@ -106,6 +106,8 @@ PDETOUR_SYM_INFO DetourLoadImageHlp(VOID)
         = (PF_SymSetOptions)GetProcAddress(symInfo.hDbgHelp, "SymSetOptions");
     symInfo.pfSymGetOptions
         = (PF_SymGetOptions)GetProcAddress(symInfo.hDbgHelp, "SymGetOptions");
+    symInfo.pfSymLoadModuleEx
+        = (PF_SymLoadModuleEx)GetProcAddress(symInfo.hDbgHelp, "SymLoadModuleEx");        
     symInfo.pfSymLoadModule64
         = (PF_SymLoadModule64)GetProcAddress(symInfo.hDbgHelp, "SymLoadModule64");
     symInfo.pfSymGetModuleInfo64
@@ -121,6 +123,7 @@ PDETOUR_SYM_INFO DetourLoadImageHlp(VOID)
         symInfo.pfSymInitialize == NULL ||
         symInfo.pfSymLoadModule64 == NULL ||
         symInfo.pfSymGetModuleInfo64 == NULL ||
+        symInfo.pfSymLoadModuleEx == NULL ||
         symInfo.pfSymFromName == NULL) {
         goto abort;
     }
@@ -156,6 +159,7 @@ PDETOUR_SYM_INFO DetourLoadImageHlp(VOID)
 #if defined(SYMOPT_INCLUDE_32BIT_MODULES)
                SYMOPT_INCLUDE_32BIT_MODULES |
 #endif
+			   SYMOPT_UNDNAME |
                0);
         symInfo.pfSymSetOptions(dw);
     }
@@ -190,9 +194,10 @@ PVOID WINAPI DetourFindFunction(_In_ PCSTR pszModule,
         return NULL;
     }
 
-    if (pSymInfo->pfSymLoadModule64(pSymInfo->hProcess, NULL,
+    if (pSymInfo->pfSymLoadModuleEx(pSymInfo->hProcess, NULL,
                                     (PCHAR)pszModule, NULL,
-                                    (DWORD64)hModule, 0) == 0) {
+                                    (DWORD64)hModule, 0,
+                                    NULL, 0) == 0) {
         if (ERROR_SUCCESS != GetLastError()) {
             DETOUR_TRACE(("SymLoadModule64(%p) failed: %d\n",
                           pSymInfo->hProcess, GetLastError()));
@@ -202,9 +207,11 @@ PVOID WINAPI DetourFindFunction(_In_ PCSTR pszModule,
 
     HRESULT hrRet;
     CHAR szFullName[512];
+	
     IMAGEHLP_MODULE64 modinfo;
     ZeroMemory(&modinfo, sizeof(modinfo));
     modinfo.SizeOfStruct = sizeof(modinfo);
+	
     if (!pSymInfo->pfSymGetModuleInfo64(pSymInfo->hProcess, (DWORD64)hModule, &modinfo)) {
         DETOUR_TRACE(("SymGetModuleInfo64(%p, %p) failed: %d\n",
                       pSymInfo->hProcess, hModule, GetLastError()));
@@ -212,6 +219,7 @@ PVOID WINAPI DetourFindFunction(_In_ PCSTR pszModule,
     }
 
     hrRet = StringCchCopyA(szFullName, sizeof(szFullName)/sizeof(CHAR), modinfo.ModuleName);
+
     if (FAILED(hrRet)) {
         DETOUR_TRACE(("StringCchCopyA failed: %08x\n", hrRet));
         return NULL;
