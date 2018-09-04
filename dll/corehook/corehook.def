@@ -1,0 +1,34 @@
+LIBRARY   COREHOOK  
+EXPORTS  
+   DetourFinishHelperProcess @1 NONAME
+   DetourAttach
+   DetourTransactionBegin
+   DetourTransactionAbort
+   DetourCreateProcessWithDllsW
+   DetourCreateProcessWithDllsA
+   DetourCreateProcessWithDllExW
+   DetourCreateProcessWithDllExA
+   DetourCopyPayloadToProcess
+   DetourUpdateThread
+   DetourTransactionCommit
+   DetourGetLastHandle
+   DetourGetHookHandleForFunction
+   DetourSetCallbackForLocalHook
+   DetourDetach
+   DetourEnumerateExports
+   DetourEnumerateModules
+   DetourEnumerateImports
+   DetourFindFunction
+   DetourIsHelperProcess
+   DetourRestoreAfterWith
+   DetourGetEntryPoint
+   LhCriticalInitialize
+   LhInstallHook
+   LhUninstallHook
+   LhBarrierGetCallback
+   LhSetExclusiveACL
+   LhSetInclusiveACL
+   LhSetGlobalExclusiveACL
+   LhSetGlobalInclusiveACL
+   LhIsThreadIntercepted
+   LhBarrierProcessAttach

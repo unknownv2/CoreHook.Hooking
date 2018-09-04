@@ -1720,7 +1720,7 @@ UINT WINAPI BarrierIntro(DETOUR_TRAMPOLINE* InHandle, void* InRetAddr, void** In
 
 		return FALSE;
 	}
-	ASSERT2(InHandle->HLSIndex < MAX_HOOK_COUNT,L"detours.cpp - InHandle->HLSIndex < MAX_HOOK_COUNT");
+	DETOUR_ASSERT(InHandle->HLSIndex < MAX_HOOK_COUNT,L"detours.cpp - InHandle->HLSIndex < MAX_HOOK_COUNT");
 
 	if(!Exists)
 	{        
@@ -1810,9 +1810,9 @@ Description:
 		//InHandle -= 1;
 #endif
 
-	ASSERT2(AcquireSelfProtection(),L"detours.cpp - AcquireSelfProtection()");
+	DETOUR_ASSERT(AcquireSelfProtection(),L"detours.cpp - AcquireSelfProtection()");
 
-	ASSERT2(TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL),L"detours.cpp - TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL)");
+	DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL),L"detours.cpp - TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL)");
 
 	Runtime = &Info->Entries[InHandle->HLSIndex];
 
@@ -1820,13 +1820,13 @@ Description:
 	Info->Current = NULL;
 	Info->Callback = NULL;
 
-	ASSERT2(Runtime != NULL,L"detours.cpp - Runtime != NULL");
+	DETOUR_ASSERT(Runtime != NULL,L"detours.cpp - Runtime != NULL");
 
-	ASSERT2(Runtime->IsExecuting,L"detours.cpp - Runtime->IsExecuting");
+	DETOUR_ASSERT(Runtime->IsExecuting,L"detours.cpp - Runtime->IsExecuting");
 
 	Runtime->IsExecuting = FALSE;
 
-	ASSERT2(*InAddrOfRetAddr == NULL,L"detours.cpp - *InAddrOfRetAddr == NULL");
+	DETOUR_ASSERT(*InAddrOfRetAddr == NULL,L"detours.cpp - *InAddrOfRetAddr == NULL");
 
 	*InAddrOfRetAddr = Runtime->RetAddress;
 

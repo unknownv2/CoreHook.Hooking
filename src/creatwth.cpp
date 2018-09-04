@@ -942,58 +942,61 @@ BOOL WINAPI DetourCopyPayloadToProcess(_In_ HANDLE hProcess,
 static BOOL s_fSearchedForHelper = FALSE;
 static PDETOUR_EXE_HELPER s_pHelper = NULL;
 
+
 VOID CALLBACK DetourFinishHelperProcess(_In_ HWND,
-                                        _In_ HINSTANCE,
-                                        _In_ LPSTR,
-                                        _In_ INT)
+	_In_ HINSTANCE,
+	_In_ LPSTR,
+	_In_ INT)
 {
-    LPCSTR * rlpDlls = NULL;
-    DWORD Result = 9900;
+	LPCSTR * rlpDlls = NULL;
+	DWORD Result = 9900;
+	DWORD cOffset = 0;
+	DWORD cSize = 0;
+	HANDLE hProcess = NULL;
 
-    if (s_pHelper == NULL) {
-        DETOUR_TRACE(("DetourFinishHelperProcess called with s_pHelper = NULL.\n"));
-        Result = 9905;
-        goto Cleanup;
-    }
+	if (s_pHelper == NULL) {
+		DETOUR_TRACE(("DetourFinishHelperProcess called with s_pHelper = NULL.\n"));
+		Result = 9905;
+		goto Cleanup;
+	}
 
-    HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, s_pHelper->pid);
-    if (hProcess == NULL) {
-        DETOUR_TRACE(("OpenProcess(pid=%d) failed: %d\n",
-                      s_pHelper->pid, GetLastError()));
-        Result = 9901;
-        goto Cleanup;
-    }
+	hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, s_pHelper->pid);
+	if (hProcess == NULL) {
+		DETOUR_TRACE(("OpenProcess(pid=%d) failed: %d\n",
+			s_pHelper->pid, GetLastError()));
+		Result = 9901;
+		goto Cleanup;
+	}
 
-    rlpDlls = new NOTHROW LPCSTR [s_pHelper->nDlls];
-    DWORD cSize = s_pHelper->cb - sizeof(DETOUR_EXE_HELPER);
-    DWORD cOffset = 0;
-    for (DWORD n = 0; n < s_pHelper->nDlls; n++) {
-        size_t cchDest = 0;
-        HRESULT hr = StringCchLengthA(&s_pHelper->rDlls[cOffset], cSize - cOffset, &cchDest);
-        if (!SUCCEEDED(hr)) {
-            Result = 9902;
-            goto Cleanup;
-        }
+	rlpDlls = new NOTHROW LPCSTR[s_pHelper->nDlls];
+	cSize = s_pHelper->cb - sizeof(DETOUR_EXE_HELPER);
+	for (DWORD n = 0; n < s_pHelper->nDlls; n++) {
+		size_t cchDest = 0;
+		HRESULT hr = StringCchLengthA(&s_pHelper->rDlls[cOffset], cSize - cOffset, &cchDest);
+		if (!SUCCEEDED(hr)) {
+			Result = 9902;
+			goto Cleanup;
+		}
 
-        rlpDlls[n] = &s_pHelper->rDlls[cOffset];
-        cOffset += (DWORD)cchDest + 1;
-    }
+		rlpDlls[n] = &s_pHelper->rDlls[cOffset];
+		cOffset += (DWORD)cchDest + 1;
+	}
 
-    if (!DetourUpdateProcessWithDll(hProcess, rlpDlls, s_pHelper->nDlls)) {
-        DETOUR_TRACE(("DetourUpdateProcessWithDll(pid=%d) failed: %d\n",
-                      s_pHelper->pid, GetLastError()));
-        Result = 9903;
-        goto Cleanup;
-    }
-    Result = 0;
+	if (!DetourUpdateProcessWithDll(hProcess, rlpDlls, s_pHelper->nDlls)) {
+		DETOUR_TRACE(("DetourUpdateProcessWithDll(pid=%d) failed: %d\n",
+			s_pHelper->pid, GetLastError()));
+		Result = 9903;
+		goto Cleanup;
+	}
+	Result = 0;
 
-  Cleanup:
-    if (rlpDlls != NULL) {
-        delete[] rlpDlls;
-        rlpDlls = NULL;
-    }
+Cleanup:
+	if (rlpDlls != NULL) {
+		delete[] rlpDlls;
+		rlpDlls = NULL;
+	}
 
-    ExitProcess(Result);
+	ExitProcess(Result);
 }
 
 BOOL WINAPI DetourIsHelperProcess(VOID)
@@ -1023,106 +1026,106 @@ BOOL WINAPI DetourIsHelperProcess(VOID)
 
 static
 BOOL WINAPI AllocExeHelper(_Out_ PDETOUR_EXE_HELPER *pHelper,
-                           _In_ DWORD dwTargetPid,
-                           _In_ DWORD nDlls,
-                           _In_reads_(nDlls) LPCSTR *rlpDlls)
+	_In_ DWORD dwTargetPid,
+	_In_ DWORD nDlls,
+	_In_reads_(nDlls) LPCSTR *rlpDlls)
 {
-    PDETOUR_EXE_HELPER Helper = NULL;
-    BOOL Result = FALSE;
+	PDETOUR_EXE_HELPER Helper = NULL;
+	BOOL Result = FALSE;
+	_Field_range_(0, cSize - 4) DWORD cOffset = 0;
+	DWORD cSize = 4;
 
-    if (pHelper == NULL) {
-        goto Cleanup;
-    }
-    *pHelper = NULL;
+	if (pHelper == NULL) {
+		goto Cleanup;
+	}
+	*pHelper = NULL;
 
-    if (nDlls < 1 || nDlls > 4096) {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        goto Cleanup;
-    }
+	if (nDlls < 1 || nDlls > 4096) {
+		SetLastError(ERROR_INVALID_PARAMETER);
+		goto Cleanup;
+	}
 
-    DWORD cSize = 4;
-    for (DWORD n = 0; n < nDlls; n++) {
-        HRESULT hr;
-        size_t cchDest = 0;
+	for (DWORD n = 0; n < nDlls; n++) {
+		HRESULT hr;
+		size_t cchDest = 0;
 
-        hr = StringCchLengthA(rlpDlls[n], 4096, &cchDest);
-        if (!SUCCEEDED(hr)) {
-            goto Cleanup;
-        }
+		hr = StringCchLengthA(rlpDlls[n], 4096, &cchDest);
+		if (!SUCCEEDED(hr)) {
+			goto Cleanup;
+		}
 
-        cSize += (DWORD)cchDest + 1;
-    }
+		cSize += (DWORD)cchDest + 1;
+	}
 
-    Helper = (PDETOUR_EXE_HELPER) new NOTHROW BYTE[sizeof(DETOUR_EXE_HELPER) + cSize];
-    if (Helper == NULL) {
-        goto Cleanup;
-    }
+	Helper = (PDETOUR_EXE_HELPER) new NOTHROW BYTE[sizeof(DETOUR_EXE_HELPER) + cSize];
+	if (Helper == NULL) {
+		goto Cleanup;
+	}
 
-    Helper->cb = sizeof(DETOUR_EXE_HELPER) + cSize;
-    Helper->pid = dwTargetPid;
-    Helper->nDlls = nDlls;
+	Helper->cb = sizeof(DETOUR_EXE_HELPER) + cSize;
+	Helper->pid = dwTargetPid;
+	Helper->nDlls = nDlls;
 
-    _Field_range_(0, cSize - 4) DWORD cOffset = 0;
-    for (DWORD n = 0; n < nDlls; n++) {
-        HRESULT hr;
-        size_t cchDest = 0;
+	for (DWORD n = 0; n < nDlls; n++) {
+		HRESULT hr;
+		size_t cchDest = 0;
 
-        if (cOffset > 0x10000 || cSize > 0x10000 || cOffset + 2 >= cSize) {
-            goto Cleanup;
-        }
+		if (cOffset > 0x10000 || cSize > 0x10000 || cOffset + 2 >= cSize) {
+			goto Cleanup;
+		}
 
-        if (cOffset + 2 >= cSize || cOffset + 65536 < cSize) {
-            goto Cleanup;
-        }
+		if (cOffset + 2 >= cSize || cOffset + 65536 < cSize) {
+			goto Cleanup;
+		}
 
-        _Analysis_assume_(cOffset + 1 < cSize);
-        _Analysis_assume_(cOffset < 0x10000);
-        _Analysis_assume_(cSize < 0x10000);
+		_Analysis_assume_(cOffset + 1 < cSize);
+		_Analysis_assume_(cOffset < 0x10000);
+		_Analysis_assume_(cSize < 0x10000);
 
-        PCHAR psz = &Helper->rDlls[cOffset];
+		PCHAR psz = &Helper->rDlls[cOffset];
 
-        hr = StringCchCopyA(psz, cSize - cOffset, rlpDlls[n]);
-        if (!SUCCEEDED(hr)) {
-            goto Cleanup;
-        }
+		hr = StringCchCopyA(psz, cSize - cOffset, rlpDlls[n]);
+		if (!SUCCEEDED(hr)) {
+			goto Cleanup;
+		}
 
-// REVIEW 28020 The expression '1<=_Param_(2)& &_Param_(2)<=2147483647' is not true at this call.
-// REVIEW 28313 Analysis will not proceed past this point because of annotation evaluation. The annotation expression *_Param_(3)<_Param_(2)&&*_Param_(3)<=stringLength$(_Param_(1)) cannot be true under any assumptions at this point in the program.
+		// REVIEW 28020 The expression '1<=_Param_(2)& &_Param_(2)<=2147483647' is not true at this call.
+		// REVIEW 28313 Analysis will not proceed past this point because of annotation evaluation. The annotation expression *_Param_(3)<_Param_(2)&&*_Param_(3)<=stringLength$(_Param_(1)) cannot be true under any assumptions at this point in the program.
 #pragma warning(suppress:28020 28313)
-        hr = StringCchLengthA(psz, cSize - cOffset, &cchDest);
-        if (!SUCCEEDED(hr)) {
-            goto Cleanup;
-        }
+		hr = StringCchLengthA(psz, cSize - cOffset, &cchDest);
+		if (!SUCCEEDED(hr)) {
+			goto Cleanup;
+		}
 
-        // Replace "32." with "64." or "64." with "32."
+		// Replace "32." with "64." or "64." with "32."
 
-        for (DWORD c = (DWORD)cchDest + 1; c > 3; c--) {
+		for (DWORD c = (DWORD)cchDest + 1; c > 3; c--) {
 #if DETOURS_32BIT
-            if (psz[c - 3] == '3' && psz[c - 2] == '2' && psz[c - 1] == '.') {
-                psz[c - 3] = '6'; psz[c - 2] = '4';
-                break;
-            }
+			if (psz[c - 3] == '3' && psz[c - 2] == '2' && psz[c - 1] == '.') {
+				psz[c - 3] = '6'; psz[c - 2] = '4';
+				break;
+			}
 #else
-            if (psz[c - 3] == '6' && psz[c - 2] == '4' && psz[c - 1] == '.') {
-                psz[c - 3] = '3'; psz[c - 2] = '2';
-                break;
-            }
+			if (psz[c - 3] == '6' && psz[c - 2] == '4' && psz[c - 1] == '.') {
+				psz[c - 3] = '3'; psz[c - 2] = '2';
+				break;
+			}
 #endif
-        }
+		}
 
-        cOffset += (DWORD)cchDest + 1;
-    }
+		cOffset += (DWORD)cchDest + 1;
+	}
 
-    *pHelper = Helper;
-    Helper = NULL;
-    Result = TRUE;
+	*pHelper = Helper;
+	Helper = NULL;
+	Result = TRUE;
 
-  Cleanup:
-    if (Helper != NULL) {
-        delete[] (PBYTE)Helper;
-        Helper = NULL;
-    }
-    return Result;
+Cleanup:
+	if (Helper != NULL) {
+		delete[](PBYTE)Helper;
+		Helper = NULL;
+	}
+	return Result;
 }
 
 static
@@ -1135,442 +1138,442 @@ VOID WINAPI FreeExeHelper(PDETOUR_EXE_HELPER *pHelper)
 }
 
 BOOL WINAPI DetourProcessViaHelperA(_In_ DWORD dwTargetPid,
-                                    _In_ LPCSTR lpDllName,
-                                    _In_ PDETOUR_CREATE_PROCESS_ROUTINEA pfCreateProcessA)
+	_In_ LPCSTR lpDllName,
+	_In_ PDETOUR_CREATE_PROCESS_ROUTINEA pfCreateProcessA)
 {
-    return DetourProcessViaHelperDllsA(dwTargetPid, 1, &lpDllName, pfCreateProcessA);
+	return DetourProcessViaHelperDllsA(dwTargetPid, 1, &lpDllName, pfCreateProcessA);
 }
 
 
 BOOL WINAPI DetourProcessViaHelperDllsA(_In_ DWORD dwTargetPid,
-                                        _In_ DWORD nDlls,
-                                        _In_reads_(nDlls) LPCSTR *rlpDlls,
-                                        _In_ PDETOUR_CREATE_PROCESS_ROUTINEA pfCreateProcessA)
+	_In_ DWORD nDlls,
+	_In_reads_(nDlls) LPCSTR *rlpDlls,
+	_In_ PDETOUR_CREATE_PROCESS_ROUTINEA pfCreateProcessA)
 {
-    BOOL Result = FALSE;
-    PROCESS_INFORMATION pi;
-    STARTUPINFOA si;
-    CHAR szExe[MAX_PATH];
-    CHAR szCommand[MAX_PATH];
-    PDETOUR_EXE_HELPER helper = NULL;
-    HRESULT hr;
+	BOOL Result = FALSE;
+	PROCESS_INFORMATION pi;
+	STARTUPINFOA si;
+	CHAR szExe[MAX_PATH];
+	CHAR szCommand[MAX_PATH];
+	PDETOUR_EXE_HELPER helper = NULL;
+	HRESULT hr;
+	DWORD nLen = GetEnvironmentVariableA("WINDIR", szExe, ARRAYSIZE(szExe));
 
-    DETOUR_TRACE(("DetourProcessViaHelperDlls(pid=%d,dlls=%d)\n", dwTargetPid, nDlls));
-    if (nDlls < 1 || nDlls > 4096) {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        goto Cleanup;
-    }
-    if (!AllocExeHelper(&helper, dwTargetPid, nDlls, rlpDlls)) {
-        goto Cleanup;
-    }
+	DETOUR_TRACE(("DetourProcessViaHelperDlls(pid=%d,dlls=%d)\n", dwTargetPid, nDlls));
+	if (nDlls < 1 || nDlls > 4096) {
+		SetLastError(ERROR_INVALID_PARAMETER);
+		goto Cleanup;
+	}
+	if (!AllocExeHelper(&helper, dwTargetPid, nDlls, rlpDlls)) {
+		goto Cleanup;
+	}
 
-    DWORD nLen = GetEnvironmentVariableA("WINDIR", szExe, ARRAYSIZE(szExe));
-    if (nLen == 0 || nLen >= ARRAYSIZE(szExe)) {
-        goto Cleanup;
-    }
+	if (nLen == 0 || nLen >= ARRAYSIZE(szExe)) {
+		goto Cleanup;
+	}
 
 #if DETOURS_OPTION_BITS
 #if DETOURS_32BIT
-    hr = StringCchCatA(szExe, ARRAYSIZE(szExe), "\\sysnative\\rundll32.exe");
+	hr = StringCchCatA(szExe, ARRAYSIZE(szExe), "\\sysnative\\rundll32.exe");
 #else // !DETOURS_32BIT
-    hr = StringCchCatA(szExe, ARRAYSIZE(szExe), "\\syswow64\\rundll32.exe");
+	hr = StringCchCatA(szExe, ARRAYSIZE(szExe), "\\syswow64\\rundll32.exe");
 #endif // !DETOURS_32BIT
 #else // DETOURS_OPTIONS_BITS
-    hr = StringCchCatA(szExe, ARRAYSIZE(szExe), "\\system32\\rundll32.exe");
+	hr = StringCchCatA(szExe, ARRAYSIZE(szExe), "\\system32\\rundll32.exe");
 #endif // DETOURS_OPTIONS_BITS
-    if (!SUCCEEDED(hr)) {
-        goto Cleanup;
-    }
+	if (!SUCCEEDED(hr)) {
+		goto Cleanup;
+	}
 
-    hr = StringCchPrintfA(szCommand, ARRAYSIZE(szCommand),
-                          "rundll32.exe \"%hs\",#1", &helper->rDlls[0]);
-    if (!SUCCEEDED(hr)) {
-        goto Cleanup;
-    }
+	hr = StringCchPrintfA(szCommand, ARRAYSIZE(szCommand),
+		"rundll32.exe \"%hs\",#1", &helper->rDlls[0]);
+	if (!SUCCEEDED(hr)) {
+		goto Cleanup;
+	}
 
-    ZeroMemory(&pi, sizeof(pi));
-    ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);
+	ZeroMemory(&pi, sizeof(pi));
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
 
-    DETOUR_TRACE(("DetourProcessViaHelperDlls(\"%hs\", \"%hs\")\n", szExe, szCommand));
-    if (pfCreateProcessA(szExe, szCommand, NULL, NULL, FALSE, CREATE_SUSPENDED,
-                         NULL, NULL, &si, &pi)) {
+	DETOUR_TRACE(("DetourProcessViaHelperDlls(\"%hs\", \"%hs\")\n", szExe, szCommand));
+	if (pfCreateProcessA(szExe, szCommand, NULL, NULL, FALSE, CREATE_SUSPENDED,
+		NULL, NULL, &si, &pi)) {
 
-        if (!DetourCopyPayloadToProcess(pi.hProcess,
-                                        DETOUR_EXE_HELPER_GUID,
-                                        helper, helper->cb)) {
-            DETOUR_TRACE(("DetourCopyPayloadToProcess failed: %d\n", GetLastError()));
-            TerminateProcess(pi.hProcess, ~0u);
-            CloseHandle(pi.hProcess);
-            CloseHandle(pi.hThread);
-            goto Cleanup;
-        }
+		if (!DetourCopyPayloadToProcess(pi.hProcess,
+			DETOUR_EXE_HELPER_GUID,
+			helper, helper->cb)) {
+			DETOUR_TRACE(("DetourCopyPayloadToProcess failed: %d\n", GetLastError()));
+			TerminateProcess(pi.hProcess, ~0u);
+			CloseHandle(pi.hProcess);
+			CloseHandle(pi.hThread);
+			goto Cleanup;
+		}
 
-        ResumeThread(pi.hThread);
-        WaitForSingleObject(pi.hProcess, INFINITE);
+		ResumeThread(pi.hThread);
+		WaitForSingleObject(pi.hProcess, INFINITE);
 
-        DWORD dwResult = 500;
-        GetExitCodeProcess(pi.hProcess, &dwResult);
+		DWORD dwResult = 500;
+		GetExitCodeProcess(pi.hProcess, &dwResult);
 
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
 
-        if (dwResult != 0) {
-            DETOUR_TRACE(("Rundll32.exe failed: result=%d\n", dwResult));
-            goto Cleanup;
-        }
-        Result = TRUE;
-    }
-    else {
-        DETOUR_TRACE(("CreateProcess failed: %d\n", GetLastError()));
-        goto Cleanup;
-    }
+		if (dwResult != 0) {
+			DETOUR_TRACE(("Rundll32.exe failed: result=%d\n", dwResult));
+			goto Cleanup;
+		}
+		Result = TRUE;
+	}
+	else {
+		DETOUR_TRACE(("CreateProcess failed: %d\n", GetLastError()));
+		goto Cleanup;
+	}
 
-  Cleanup:
-    FreeExeHelper(&helper);
-    return Result;
+Cleanup:
+	FreeExeHelper(&helper);
+	return Result;
 }
 
 BOOL WINAPI DetourProcessViaHelperW(_In_ DWORD dwTargetPid,
-                                    _In_ LPCSTR lpDllName,
-                                    _In_ PDETOUR_CREATE_PROCESS_ROUTINEW pfCreateProcessW)
+	_In_ LPCSTR lpDllName,
+	_In_ PDETOUR_CREATE_PROCESS_ROUTINEW pfCreateProcessW)
 {
-    return DetourProcessViaHelperDllsW(dwTargetPid, 1, &lpDllName, pfCreateProcessW);
+	return DetourProcessViaHelperDllsW(dwTargetPid, 1, &lpDllName, pfCreateProcessW);
 }
 
 BOOL WINAPI DetourProcessViaHelperDllsW(_In_ DWORD dwTargetPid,
-                                        _In_ DWORD nDlls,
-                                        _In_reads_(nDlls) LPCSTR *rlpDlls,
-                                        _In_ PDETOUR_CREATE_PROCESS_ROUTINEW pfCreateProcessW)
+	_In_ DWORD nDlls,
+	_In_reads_(nDlls) LPCSTR *rlpDlls,
+	_In_ PDETOUR_CREATE_PROCESS_ROUTINEW pfCreateProcessW)
 {
-    BOOL Result = FALSE;
-    PROCESS_INFORMATION pi;
-    STARTUPINFOW si;
-    WCHAR szExe[MAX_PATH];
-    WCHAR szCommand[MAX_PATH];
-    PDETOUR_EXE_HELPER helper = NULL;
-    HRESULT hr;
+	BOOL Result = FALSE;
+	PROCESS_INFORMATION pi;
+	STARTUPINFOW si;
+	WCHAR szExe[MAX_PATH];
+	WCHAR szCommand[MAX_PATH];
+	PDETOUR_EXE_HELPER helper = NULL;
+	HRESULT hr;
+	DWORD nLen = GetEnvironmentVariableW(L"WINDIR", szExe, ARRAYSIZE(szExe));
 
-    DETOUR_TRACE(("DetourProcessViaHelperDlls(pid=%d,dlls=%d)\n", dwTargetPid, nDlls));
-    if (nDlls < 1 || nDlls > 4096) {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        goto Cleanup;
-    }
-    if (!AllocExeHelper(&helper, dwTargetPid, nDlls, rlpDlls)) {
-        goto Cleanup;
-    }
+	DETOUR_TRACE(("DetourProcessViaHelperDlls(pid=%d,dlls=%d)\n", dwTargetPid, nDlls));
+	if (nDlls < 1 || nDlls > 4096) {
+		SetLastError(ERROR_INVALID_PARAMETER);
+		goto Cleanup;
+	}
+	if (!AllocExeHelper(&helper, dwTargetPid, nDlls, rlpDlls)) {
+		goto Cleanup;
+	}
 
-    DWORD nLen = GetEnvironmentVariableW(L"WINDIR", szExe, ARRAYSIZE(szExe));
-    if (nLen == 0 || nLen >= ARRAYSIZE(szExe)) {
-        goto Cleanup;
-    }
+	if (nLen == 0 || nLen >= ARRAYSIZE(szExe)) {
+		goto Cleanup;
+	}
 
 #if DETOURS_OPTION_BITS
 #if DETOURS_32BIT
-    hr = StringCchCatW(szExe, ARRAYSIZE(szExe), L"\\sysnative\\rundll32.exe");
+	hr = StringCchCatW(szExe, ARRAYSIZE(szExe), L"\\sysnative\\rundll32.exe");
 #else // !DETOURS_32BIT
-    hr = StringCchCatW(szExe, ARRAYSIZE(szExe), L"\\syswow64\\rundll32.exe");
+	hr = StringCchCatW(szExe, ARRAYSIZE(szExe), L"\\syswow64\\rundll32.exe");
 #endif // !DETOURS_32BIT
 #else // DETOURS_OPTIONS_BITS
-    hr = StringCchCatW(szExe, ARRAYSIZE(szExe), L"\\system32\\rundll32.exe");
+	hr = StringCchCatW(szExe, ARRAYSIZE(szExe), L"\\system32\\rundll32.exe");
 #endif // DETOURS_OPTIONS_BITS
-    if (!SUCCEEDED(hr)) {
-        goto Cleanup;
-    }
+	if (!SUCCEEDED(hr)) {
+		goto Cleanup;
+	}
 
-    hr = StringCchPrintfW(szCommand, ARRAYSIZE(szCommand),
-                          L"rundll32.exe \"%hs\",#1", &helper->rDlls[0]);
-    if (!SUCCEEDED(hr)) {
-        goto Cleanup;
-    }
+	hr = StringCchPrintfW(szCommand, ARRAYSIZE(szCommand),
+		L"rundll32.exe \"%hs\",#1", &helper->rDlls[0]);
+	if (!SUCCEEDED(hr)) {
+		goto Cleanup;
+	}
 
-    ZeroMemory(&pi, sizeof(pi));
-    ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);
+	ZeroMemory(&pi, sizeof(pi));
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
 
-    DETOUR_TRACE(("DetourProcessViaHelperDlls(\"%ls\", \"%ls\")\n", szExe, szCommand));
-    if (pfCreateProcessW(szExe, szCommand, NULL, NULL, FALSE, CREATE_SUSPENDED,
-                         NULL, NULL, &si, &pi)) {
+	DETOUR_TRACE(("DetourProcessViaHelperDlls(\"%ls\", \"%ls\")\n", szExe, szCommand));
+	if (pfCreateProcessW(szExe, szCommand, NULL, NULL, FALSE, CREATE_SUSPENDED,
+		NULL, NULL, &si, &pi)) {
 
-        if (!DetourCopyPayloadToProcess(pi.hProcess,
-                                        DETOUR_EXE_HELPER_GUID,
-                                        helper, helper->cb)) {
-            DETOUR_TRACE(("DetourCopyPayloadToProcess failed: %d\n", GetLastError()));
-            TerminateProcess(pi.hProcess, ~0u);
-            CloseHandle(pi.hProcess);
-            CloseHandle(pi.hThread);
-            goto Cleanup;
-        }
+		if (!DetourCopyPayloadToProcess(pi.hProcess,
+			DETOUR_EXE_HELPER_GUID,
+			helper, helper->cb)) {
+			DETOUR_TRACE(("DetourCopyPayloadToProcess failed: %d\n", GetLastError()));
+			TerminateProcess(pi.hProcess, ~0u);
+			CloseHandle(pi.hProcess);
+			CloseHandle(pi.hThread);
+			goto Cleanup;
+		}
 
-        ResumeThread(pi.hThread);
+		ResumeThread(pi.hThread);
 
-        ResumeThread(pi.hThread);
-        WaitForSingleObject(pi.hProcess, INFINITE);
+		ResumeThread(pi.hThread);
+		WaitForSingleObject(pi.hProcess, INFINITE);
 
-        DWORD dwResult = 500;
-        GetExitCodeProcess(pi.hProcess, &dwResult);
+		DWORD dwResult = 500;
+		GetExitCodeProcess(pi.hProcess, &dwResult);
 
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
 
-        if (dwResult != 0) {
-            DETOUR_TRACE(("Rundll32.exe failed: result=%d\n", dwResult));
-            goto Cleanup;
-        }
-        Result = TRUE;
-    }
-    else {
-        DETOUR_TRACE(("CreateProcess failed: %d\n", GetLastError()));
-        goto Cleanup;
-    }
+		if (dwResult != 0) {
+			DETOUR_TRACE(("Rundll32.exe failed: result=%d\n", dwResult));
+			goto Cleanup;
+		}
+		Result = TRUE;
+	}
+	else {
+		DETOUR_TRACE(("CreateProcess failed: %d\n", GetLastError()));
+		goto Cleanup;
+	}
 
-  Cleanup:
-    FreeExeHelper(&helper);
-    return Result;
+Cleanup:
+	FreeExeHelper(&helper);
+	return Result;
 }
 
 BOOL WINAPI DetourCreateProcessWithDllExA(_In_opt_ LPCSTR lpApplicationName,
-                                          _Inout_opt_ LPSTR lpCommandLine,
-                                          _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                                          _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                                          _In_ BOOL bInheritHandles,
-                                          _In_ DWORD dwCreationFlags,
-                                          _In_opt_ LPVOID lpEnvironment,
-                                          _In_opt_ LPCSTR lpCurrentDirectory,
-                                          _In_ LPSTARTUPINFOA lpStartupInfo,
-                                          _Out_ LPPROCESS_INFORMATION lpProcessInformation,
-                                          _In_ LPCSTR lpDllName,
-                                          _In_opt_ PDETOUR_CREATE_PROCESS_ROUTINEA pfCreateProcessA)
+	_Inout_opt_ LPSTR lpCommandLine,
+	_In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
+	_In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
+	_In_ BOOL bInheritHandles,
+	_In_ DWORD dwCreationFlags,
+	_In_opt_ LPVOID lpEnvironment,
+	_In_opt_ LPCSTR lpCurrentDirectory,
+	_In_ LPSTARTUPINFOA lpStartupInfo,
+	_Out_ LPPROCESS_INFORMATION lpProcessInformation,
+	_In_ LPCSTR lpDllName,
+	_In_opt_ PDETOUR_CREATE_PROCESS_ROUTINEA pfCreateProcessA)
 {
-    if (pfCreateProcessA == NULL) {
-        pfCreateProcessA = CreateProcessA;
-    }
+	if (pfCreateProcessA == NULL) {
+		pfCreateProcessA = CreateProcessA;
+	}
 
-    PROCESS_INFORMATION backup;
-    if (lpProcessInformation == NULL) {
-        lpProcessInformation = &backup;
-        ZeroMemory(&backup, sizeof(backup));
-    }
+	PROCESS_INFORMATION backup;
+	if (lpProcessInformation == NULL) {
+		lpProcessInformation = &backup;
+		ZeroMemory(&backup, sizeof(backup));
+	}
 
-    if (!pfCreateProcessA(lpApplicationName,
-                          lpCommandLine,
-                          lpProcessAttributes,
-                          lpThreadAttributes,
-                          bInheritHandles,
-                          dwCreationFlags | CREATE_SUSPENDED,
-                          lpEnvironment,
-                          lpCurrentDirectory,
-                          lpStartupInfo,
-                          lpProcessInformation)) {
-        return FALSE;
-    }
+	if (!pfCreateProcessA(lpApplicationName,
+		lpCommandLine,
+		lpProcessAttributes,
+		lpThreadAttributes,
+		bInheritHandles,
+		dwCreationFlags | CREATE_SUSPENDED,
+		lpEnvironment,
+		lpCurrentDirectory,
+		lpStartupInfo,
+		lpProcessInformation)) {
+		return FALSE;
+	}
 
-    LPCSTR szDll = lpDllName;
+	LPCSTR szDll = lpDllName;
 
-    if (!DetourUpdateProcessWithDll(lpProcessInformation->hProcess, &szDll, 1) &&
-        !DetourProcessViaHelperA(lpProcessInformation->dwProcessId,
-                                 lpDllName,
-                                 pfCreateProcessA)) {
+	if (!DetourUpdateProcessWithDll(lpProcessInformation->hProcess, &szDll, 1) &&
+		!DetourProcessViaHelperA(lpProcessInformation->dwProcessId,
+			lpDllName,
+			pfCreateProcessA)) {
 
-        TerminateProcess(lpProcessInformation->hProcess, ~0u);
-        CloseHandle(lpProcessInformation->hProcess);
-        CloseHandle(lpProcessInformation->hThread);
-        return FALSE;
-    }
+		TerminateProcess(lpProcessInformation->hProcess, ~0u);
+		CloseHandle(lpProcessInformation->hProcess);
+		CloseHandle(lpProcessInformation->hThread);
+		return FALSE;
+	}
 
-    if (!(dwCreationFlags & CREATE_SUSPENDED)) {
-        ResumeThread(lpProcessInformation->hThread);
-    }
+	if (!(dwCreationFlags & CREATE_SUSPENDED)) {
+		ResumeThread(lpProcessInformation->hThread);
+	}
 
-    if (lpProcessInformation == &backup) {
-        CloseHandle(lpProcessInformation->hProcess);
-        CloseHandle(lpProcessInformation->hThread);
-    }
+	if (lpProcessInformation == &backup) {
+		CloseHandle(lpProcessInformation->hProcess);
+		CloseHandle(lpProcessInformation->hThread);
+	}
 
-    return TRUE;
+	return TRUE;
 }
 
 BOOL WINAPI DetourCreateProcessWithDllExW(_In_opt_ LPCWSTR lpApplicationName,
-                                          _Inout_opt_  LPWSTR lpCommandLine,
-                                          _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                                          _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                                          _In_ BOOL bInheritHandles,
-                                          _In_ DWORD dwCreationFlags,
-                                          _In_opt_ LPVOID lpEnvironment,
-                                          _In_opt_ LPCWSTR lpCurrentDirectory,
-                                          _In_ LPSTARTUPINFOW lpStartupInfo,
-                                          _Out_ LPPROCESS_INFORMATION lpProcessInformation,
-                                          _In_ LPCSTR lpDllName,
-                                          _In_opt_ PDETOUR_CREATE_PROCESS_ROUTINEW pfCreateProcessW)
+	_Inout_opt_  LPWSTR lpCommandLine,
+	_In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
+	_In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
+	_In_ BOOL bInheritHandles,
+	_In_ DWORD dwCreationFlags,
+	_In_opt_ LPVOID lpEnvironment,
+	_In_opt_ LPCWSTR lpCurrentDirectory,
+	_In_ LPSTARTUPINFOW lpStartupInfo,
+	_Out_ LPPROCESS_INFORMATION lpProcessInformation,
+	_In_ LPCSTR lpDllName,
+	_In_opt_ PDETOUR_CREATE_PROCESS_ROUTINEW pfCreateProcessW)
 {
-    if (pfCreateProcessW == NULL) {
-        pfCreateProcessW = CreateProcessW;
-    }
+	if (pfCreateProcessW == NULL) {
+		pfCreateProcessW = CreateProcessW;
+	}
 
-    PROCESS_INFORMATION backup;
-    if (lpProcessInformation == NULL) {
-        lpProcessInformation = &backup;
-        ZeroMemory(&backup, sizeof(backup));
-    }
+	PROCESS_INFORMATION backup;
+	if (lpProcessInformation == NULL) {
+		lpProcessInformation = &backup;
+		ZeroMemory(&backup, sizeof(backup));
+	}
 
-    if (!pfCreateProcessW(lpApplicationName,
-                          lpCommandLine,
-                          lpProcessAttributes,
-                          lpThreadAttributes,
-                          bInheritHandles,
-                          dwCreationFlags | CREATE_SUSPENDED,
-                          lpEnvironment,
-                          lpCurrentDirectory,
-                          lpStartupInfo,
-                          lpProcessInformation)) {
-        return FALSE;
-    }
+	if (!pfCreateProcessW(lpApplicationName,
+		lpCommandLine,
+		lpProcessAttributes,
+		lpThreadAttributes,
+		bInheritHandles,
+		dwCreationFlags | CREATE_SUSPENDED,
+		lpEnvironment,
+		lpCurrentDirectory,
+		lpStartupInfo,
+		lpProcessInformation)) {
+		return FALSE;
+	}
 
 
-    LPCSTR sz = lpDllName;
+	LPCSTR sz = lpDllName;
 
-    if (!DetourUpdateProcessWithDll(lpProcessInformation->hProcess, &sz, 1) &&
-        !DetourProcessViaHelperW(lpProcessInformation->dwProcessId,
-                                 lpDllName,
-                                 pfCreateProcessW)) {
+	if (!DetourUpdateProcessWithDll(lpProcessInformation->hProcess, &sz, 1) &&
+		!DetourProcessViaHelperW(lpProcessInformation->dwProcessId,
+			lpDllName,
+			pfCreateProcessW)) {
 
-        TerminateProcess(lpProcessInformation->hProcess, ~0u);
-        CloseHandle(lpProcessInformation->hProcess);
-        CloseHandle(lpProcessInformation->hThread);
-        return FALSE;
-    }
+		TerminateProcess(lpProcessInformation->hProcess, ~0u);
+		CloseHandle(lpProcessInformation->hProcess);
+		CloseHandle(lpProcessInformation->hThread);
+		return FALSE;
+	}
 
-    if (!(dwCreationFlags & CREATE_SUSPENDED)) {
-        ResumeThread(lpProcessInformation->hThread);
-    }
+	if (!(dwCreationFlags & CREATE_SUSPENDED)) {
+		ResumeThread(lpProcessInformation->hThread);
+	}
 
-    if (lpProcessInformation == &backup) {
-        CloseHandle(lpProcessInformation->hProcess);
-        CloseHandle(lpProcessInformation->hThread);
-    }
-    return TRUE;
+	if (lpProcessInformation == &backup) {
+		CloseHandle(lpProcessInformation->hProcess);
+		CloseHandle(lpProcessInformation->hThread);
+	}
+	return TRUE;
 }
 
 BOOL WINAPI DetourCreateProcessWithDllsA(_In_opt_ LPCSTR lpApplicationName,
-                                         _Inout_opt_ LPSTR lpCommandLine,
-                                         _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                                         _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                                         _In_ BOOL bInheritHandles,
-                                         _In_ DWORD dwCreationFlags,
-                                         _In_opt_ LPVOID lpEnvironment,
-                                         _In_opt_ LPCSTR lpCurrentDirectory,
-                                         _In_ LPSTARTUPINFOA lpStartupInfo,
-                                         _Out_ LPPROCESS_INFORMATION lpProcessInformation,
-                                         _In_ DWORD nDlls,
-                                         _In_reads_(nDlls) LPCSTR *rlpDlls,
-                                         _In_opt_ PDETOUR_CREATE_PROCESS_ROUTINEA pfCreateProcessA)
+	_Inout_opt_ LPSTR lpCommandLine,
+	_In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
+	_In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
+	_In_ BOOL bInheritHandles,
+	_In_ DWORD dwCreationFlags,
+	_In_opt_ LPVOID lpEnvironment,
+	_In_opt_ LPCSTR lpCurrentDirectory,
+	_In_ LPSTARTUPINFOA lpStartupInfo,
+	_Out_ LPPROCESS_INFORMATION lpProcessInformation,
+	_In_ DWORD nDlls,
+	_In_reads_(nDlls) LPCSTR *rlpDlls,
+	_In_opt_ PDETOUR_CREATE_PROCESS_ROUTINEA pfCreateProcessA)
 {
-    if (pfCreateProcessA == NULL) {
-        pfCreateProcessA = CreateProcessA;
-    }
+	if (pfCreateProcessA == NULL) {
+		pfCreateProcessA = CreateProcessA;
+	}
 
-    PROCESS_INFORMATION backup;
-    if (lpProcessInformation == NULL) {
-        lpProcessInformation = &backup;
-        ZeroMemory(&backup, sizeof(backup));
-    }
+	PROCESS_INFORMATION backup;
+	if (lpProcessInformation == NULL) {
+		lpProcessInformation = &backup;
+		ZeroMemory(&backup, sizeof(backup));
+	}
 
-    if (!pfCreateProcessA(lpApplicationName,
-                          lpCommandLine,
-                          lpProcessAttributes,
-                          lpThreadAttributes,
-                          bInheritHandles,
-                          dwCreationFlags | CREATE_SUSPENDED,
-                          lpEnvironment,
-                          lpCurrentDirectory,
-                          lpStartupInfo,
-                          lpProcessInformation)) {
-        return FALSE;
-    }
+	if (!pfCreateProcessA(lpApplicationName,
+		lpCommandLine,
+		lpProcessAttributes,
+		lpThreadAttributes,
+		bInheritHandles,
+		dwCreationFlags | CREATE_SUSPENDED,
+		lpEnvironment,
+		lpCurrentDirectory,
+		lpStartupInfo,
+		lpProcessInformation)) {
+		return FALSE;
+	}
 
-    if (!DetourUpdateProcessWithDll(lpProcessInformation->hProcess, rlpDlls, nDlls) &&
-        !DetourProcessViaHelperDllsA(lpProcessInformation->dwProcessId,
-                                     nDlls,
-                                     rlpDlls,
-                                     pfCreateProcessA)) {
+	if (!DetourUpdateProcessWithDll(lpProcessInformation->hProcess, rlpDlls, nDlls) &&
+		!DetourProcessViaHelperDllsA(lpProcessInformation->dwProcessId,
+			nDlls,
+			rlpDlls,
+			pfCreateProcessA)) {
 
-        TerminateProcess(lpProcessInformation->hProcess, ~0u);
-        CloseHandle(lpProcessInformation->hProcess);
-        CloseHandle(lpProcessInformation->hThread);
-        return FALSE;
-    }
+		TerminateProcess(lpProcessInformation->hProcess, ~0u);
+		CloseHandle(lpProcessInformation->hProcess);
+		CloseHandle(lpProcessInformation->hThread);
+		return FALSE;
+	}
 
-    if (!(dwCreationFlags & CREATE_SUSPENDED)) {
-        ResumeThread(lpProcessInformation->hThread);
-    }
+	if (!(dwCreationFlags & CREATE_SUSPENDED)) {
+		ResumeThread(lpProcessInformation->hThread);
+	}
 
-    if (lpProcessInformation == &backup) {
-        CloseHandle(lpProcessInformation->hProcess);
-        CloseHandle(lpProcessInformation->hThread);
-    }
+	if (lpProcessInformation == &backup) {
+		CloseHandle(lpProcessInformation->hProcess);
+		CloseHandle(lpProcessInformation->hThread);
+	}
 
-    return TRUE;
+	return TRUE;
 }
 
 BOOL WINAPI DetourCreateProcessWithDllsW(_In_opt_ LPCWSTR lpApplicationName,
-                                         _Inout_opt_ LPWSTR lpCommandLine,
-                                         _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                                         _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                                         _In_ BOOL bInheritHandles,
-                                         _In_ DWORD dwCreationFlags,
-                                         _In_opt_ LPVOID lpEnvironment,
-                                         _In_opt_ LPCWSTR lpCurrentDirectory,
-                                         _In_ LPSTARTUPINFOW lpStartupInfo,
-                                         _Out_ LPPROCESS_INFORMATION lpProcessInformation,
-                                         _In_ DWORD nDlls,
-                                         _In_reads_(nDlls) LPCSTR *rlpDlls,
-                                         _In_opt_ PDETOUR_CREATE_PROCESS_ROUTINEW pfCreateProcessW)
+	_Inout_opt_ LPWSTR lpCommandLine,
+	_In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
+	_In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
+	_In_ BOOL bInheritHandles,
+	_In_ DWORD dwCreationFlags,
+	_In_opt_ LPVOID lpEnvironment,
+	_In_opt_ LPCWSTR lpCurrentDirectory,
+	_In_ LPSTARTUPINFOW lpStartupInfo,
+	_Out_ LPPROCESS_INFORMATION lpProcessInformation,
+	_In_ DWORD nDlls,
+	_In_reads_(nDlls) LPCSTR *rlpDlls,
+	_In_opt_ PDETOUR_CREATE_PROCESS_ROUTINEW pfCreateProcessW)
 {
-    if (pfCreateProcessW == NULL) {
-        pfCreateProcessW = CreateProcessW;
-    }
+	if (pfCreateProcessW == NULL) {
+		pfCreateProcessW = CreateProcessW;
+	}
 
-    PROCESS_INFORMATION backup;
-    if (lpProcessInformation == NULL) {
-        lpProcessInformation = &backup;
-        ZeroMemory(&backup, sizeof(backup));
-    }
+	PROCESS_INFORMATION backup;
+	if (lpProcessInformation == NULL) {
+		lpProcessInformation = &backup;
+		ZeroMemory(&backup, sizeof(backup));
+	}
 
-    if (!pfCreateProcessW(lpApplicationName,
-                          lpCommandLine,
-                          lpProcessAttributes,
-                          lpThreadAttributes,
-                          bInheritHandles,
-                          dwCreationFlags | CREATE_SUSPENDED,
-                          lpEnvironment,
-                          lpCurrentDirectory,
-                          lpStartupInfo,
-                          lpProcessInformation)) {
-        return FALSE;
-    }
+	if (!pfCreateProcessW(lpApplicationName,
+		lpCommandLine,
+		lpProcessAttributes,
+		lpThreadAttributes,
+		bInheritHandles,
+		dwCreationFlags | CREATE_SUSPENDED,
+		lpEnvironment,
+		lpCurrentDirectory,
+		lpStartupInfo,
+		lpProcessInformation)) {
+		return FALSE;
+	}
 
 
-    if (!DetourUpdateProcessWithDll(lpProcessInformation->hProcess, rlpDlls, nDlls) &&
-        !DetourProcessViaHelperDllsW(lpProcessInformation->dwProcessId,
-                                     nDlls,
-                                     rlpDlls,
-                                     pfCreateProcessW)) {
+	if (!DetourUpdateProcessWithDll(lpProcessInformation->hProcess, rlpDlls, nDlls) &&
+		!DetourProcessViaHelperDllsW(lpProcessInformation->dwProcessId,
+			nDlls,
+			rlpDlls,
+			pfCreateProcessW)) {
 
-        TerminateProcess(lpProcessInformation->hProcess, ~0u);
-        CloseHandle(lpProcessInformation->hProcess);
-        CloseHandle(lpProcessInformation->hThread);
-        return FALSE;
-    }
+		TerminateProcess(lpProcessInformation->hProcess, ~0u);
+		CloseHandle(lpProcessInformation->hProcess);
+		CloseHandle(lpProcessInformation->hThread);
+		return FALSE;
+	}
 
-    if (!(dwCreationFlags & CREATE_SUSPENDED)) {
-        ResumeThread(lpProcessInformation->hThread);
-    }
+	if (!(dwCreationFlags & CREATE_SUSPENDED)) {
+		ResumeThread(lpProcessInformation->hThread);
+	}
 
-    if (lpProcessInformation == &backup) {
-        CloseHandle(lpProcessInformation->hProcess);
-        CloseHandle(lpProcessInformation->hThread);
-    }
-    return TRUE;
+	if (lpProcessInformation == &backup) {
+		CloseHandle(lpProcessInformation->hProcess);
+		CloseHandle(lpProcessInformation->hThread);
+	}
+	return TRUE;
 }
 
 //

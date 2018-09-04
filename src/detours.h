@@ -485,13 +485,13 @@ void* WINAPI DetourGetLastHandle(VOID);
 #define MAX_THREAD_COUNT            128
 #define MAX_PASSTHRU_SIZE           1024 * 64
 
-#define ASSERT2(expr, Msg)          RtlAssert((BOOL)(expr),(LPCWSTR) Msg);
+#define DETOUR_ASSERT(expr, Msg)    RtlAssert((BOOL)(expr),(LPCWSTR) Msg);
 #define THROW(code, Msg)            { NtStatus = (code); RtlSetLastError(GetLastError(), NtStatus, Msg); goto THROW_OUTRO; }
 
 #define RTL_SUCCESS(ntstatus)       SUCCEEDED(ntstatus)
 
 #define STATUS_SUCCESS              0
-#define RETURN                      { RtlSetLastError(STATUS_SUCCESS, STATUS_SUCCESS, (PWCHAR)L""); NtStatus = STATUS_SUCCESS; goto FINALLY_OUTRO; }
+#define RETURN                      { RtlSetLastError(STATUS_SUCCESS, STATUS_SUCCESS, L""); NtStatus = STATUS_SUCCESS; goto FINALLY_OUTRO; }
 #define FORCE(expr)                 { if(!RTL_SUCCESS(NtStatus = (expr))) goto THROW_OUTRO; }
 #define IsValidPointer				RtlIsValidPointer
 
@@ -1177,7 +1177,7 @@ BOOL IsLoaderLock();
 BOOL AcquireSelfProtection();
 
 void RtlAssert(BOOL InAssert,LPCWSTR lpMessageText);
-void RtlSetLastError(LONG InCode, LONG InNtStatus, WCHAR* InMessage);
+void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage);
 
 typedef struct _RTL_SPIN_LOCK_
 {
