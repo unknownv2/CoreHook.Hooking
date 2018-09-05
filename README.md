@@ -8,7 +8,13 @@ For [CoreHook](https://github.com/unknownv2/CoreHook), the [Microsoft Detours](h
 
 ## Building
 
-Building the DLL requires Visual Studio and nmake (it has been tested with `Visual Studio 2017` only). You can find the build environments for your Visual Studio installation normally at `C:\Program Files (x86)\Microsoft Visual Studio\2017\[ProductType]\VC\Auxiliary\Build`, where `[ProductType]` is your version of Visual Studio: **(Community, Professional, or Enterprise)**.
+Building the DLL requires Visual Studio and there are two options: 
+
+You can build the DLL by using the [Visual Studio solution in the vs folder](/vs) or nmake (it has been tested with `Visual Studio 2017` only). 
+
+### Building with Nmake 
+
+You can find the build environments for your Visual Studio installation normally at `C:\Program Files (x86)\Microsoft Visual Studio\2017\[ProductType]\VC\Auxiliary\Build`, where `[ProductType]` is your version of Visual Studio: **(Community, Professional, or Enterprise)**.
 
 ### X86
 * Start the `vcvars32.bat`. Then `cd` to the `CoreHook.Hooking` directory, and run:
@@ -36,7 +42,7 @@ Building the DLL requires Visual Studio and nmake (it has been tested with `Visu
  nmake DETOURS_TARGET_PROCESSOR=ARM64
  ```
 
-## Installing
+## Usage
 
 * For X86, the output directory is `bin.X86` and the output file is `corehook32.dll`.
 * For X64, the output directory is `bin.X64` and the output file is `corehook64.dll`.
