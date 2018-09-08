@@ -810,7 +810,7 @@ LONG LhBarrierGetReturnAddress(PVOID* OutValue)
 		The calling module determination is based on this method.
 
 	*/
-	NTSTATUS            NtStatus;
+	LONG						NtStatus;
 	LPTHREAD_RUNTIME_INFO       Runtime;
 
 	if (!IsValidPointer(OutValue, sizeof(PVOID)))
@@ -832,6 +832,44 @@ LONG LhBarrierGetReturnAddress(PVOID* OutValue)
 		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
 	}
 
+	RETURN;
+
+THROW_OUTRO:
+FINALLY_OUTRO:
+	return NtStatus;
+}
+
+
+LONG LhBarrierGetAddressOfReturnAddress(PVOID** OutValue)
+{
+	/*
+	Description:
+
+		Is expected to be called inside a hook handler. Otherwise it
+		will fail with STATUS_NOT_SUPPORTED. The method retrieves
+		the address of the return address of the hook handler.
+	*/
+	LPTHREAD_RUNTIME_INFO       Runtime;
+	LONG	                    NtStatus;
+
+	if (OutValue == NULL)
+	{
+		THROW(STATUS_INVALID_PARAMETER, L"Invalid storage specified.");
+	}
+
+	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))
+	{
+		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+	}
+
+	if (Runtime->Current != NULL)
+	{
+		*OutValue = Runtime->Current->AddrOfRetAddr;
+	}
+	else
+	{
+		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+	}
 	RETURN;
 
 THROW_OUTRO:
