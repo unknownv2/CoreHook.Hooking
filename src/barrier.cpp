@@ -890,7 +890,7 @@ LONG LhBarrierBeginStackTrace(PVOID* OutBackup)
 		LhBarrierEndStackTrace() BEFORE leaving the handler, otherwise
 		the application will be left in an unstable state!
 	*/
-	NTSTATUS                    NtStatus;
+	LONG	                    NtStatus;
 	LPTHREAD_RUNTIME_INFO       Runtime;
 
 	if (OutBackup == NULL)
@@ -923,7 +923,7 @@ LONG LhBarrierEndStackTrace(PVOID InBackup)
 		You have to pass the backup pointer obtained with
 		LhBarrierBeginStackTrace().
 	*/
-	NTSTATUS            NtStatus;
+	LONG	            NtStatus;
 	PVOID*              AddrOfRetAddr;
 
 	if (!IsValidPointer(InBackup, 1))
@@ -972,7 +972,7 @@ LONG LhBarrierCallStackTrace(
 
 			Only supported since Windows XP.
 	*/
-	NTSTATUS				NtStatus;
+	LONG					NtStatus;
 	PVOID					Backup = NULL;
 
 	if (InMaxMethodCount > 64) {
