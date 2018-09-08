@@ -61,8 +61,8 @@ try_dec_lock
         bne     try_dec_lock
         dmb     ish
 
-        ldr   r5, OldProc
-        b     TRAMPOLINE_EXIT
+        ldr     r5, OldProc
+        b       TRAMPOLINE_EXIT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; call hook handler or original method...
 CALL_NET_ENTRY
 
