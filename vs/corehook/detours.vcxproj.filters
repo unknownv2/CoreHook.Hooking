@@ -62,9 +62,6 @@
     <ClInclude Include="..\..\src\detver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ntstatus.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\src\trampolinearm.asm">
