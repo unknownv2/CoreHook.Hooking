@@ -1165,9 +1165,15 @@ BOOL WINAPI DetourVirtualProtectSameExecute(_In_  PVOID pAddress,
 //////////////////////////////////////////////////////////////////////////////
 
 
-//LONG LhBarrierBeginStackTrace(PVOID* OutBackup);
+// Stack tracing functions
+LONG LhBarrierBeginStackTrace(PVOID* OutBackup);
 
-//LONG LhBarrierEndStackTrace(PVOID InBackup);
+LONG LhBarrierEndStackTrace(PVOID InBackup);
+
+LONG LhBarrierCallStackTrace(
+	PVOID* OutMethodArray,
+	ULONG InMaxMethodCount,
+	ULONG* OutMethodCount);
 
 BOOL LhIsValidHandle(
             TRACED_HOOK_HANDLE InTracedHandle,
