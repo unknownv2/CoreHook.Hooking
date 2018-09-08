@@ -163,6 +163,10 @@ trampoline_exit
         mov     sp, x29
         ldp     x29, x30, [sp], #16
         br      x10
-
+; outro signature, to automatically determine code size        
+        DCB     0x78
+        DCB     0x56
+        DCB     0x34
+        DCB     0x12  
         ENDFUNC
         END                     
