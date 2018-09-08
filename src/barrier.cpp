@@ -23,6 +23,7 @@
 // #define DETOUR_DEBUG 1
 #define DETOURS_INTERNAL
 #include "detours.h"
+#include "ntstatus.h"
 
 #if DETOURS_VERSION != 0x4c0c1 // 0xMAJORcMINORcPATCH
 #error detours.h version mismatch
@@ -135,14 +136,14 @@ LONG RtlProtectMemory(void *InPointer, ULONG InSize, ULONG InNewProtection)
 
     if (!VirtualProtect(InPointer, InSize, InNewProtection, &OldProtect))
     {
-        THROW(STATUS_INVALID_PARAMETER, (WCHAR *)L"Unable to make memory executable.")
+        THROW(STATUS_INVALID_PARAMETER, L"Unable to make memory executable.")
     }
     else
     {
         return 0;
     }
 THROW_OUTRO:
-    //FINALLY_OUTRO:
+FINALLY_OUTRO:
     return NtStatus;
 }
 
@@ -151,7 +152,7 @@ void RtlFreeMemory(void *InPointer)
     DETOUR_ASSERT(InPointer != NULL, L"barrier.cpp - InPointer != NULL");
 
 #ifdef _DEBUG
-    //free(InPointer);
+    free(InPointer);
 #else
     HeapFree(hCoreHookHeap, 0, InPointer);
 #endif
@@ -172,22 +173,91 @@ BOOL RtlIsValidPointer(PVOID InPtr, ULONG InSize)
     return TRUE;
 }
 
+// Error Handling
+// Print status for exceptions
+//
 static LPCWSTR LastError = L"";
 static ULONG LastErrorCode = 0;
+
+#if _DEBUG
+#define DEBUGMSG(...) do { WCHAR debugMsg[1024] = { 0 }; _snwprintf_s(debugMsg, 1024, _TRUNCATE, __VA_ARGS__); OutputDebugStringW(debugMsg); } while(0)
+#else
+#define DEBUGMSG(__VA_ARGS__) do { } while(0)
+#endif
+
+LPCWSTR RtlErrorCodeToString(LONG InCode)
+{
+	switch (InCode)
+	{
+	case STATUS_SUCCESS: return L"STATUS_SUCCESS";
+	case STATUS_NOT_SUPPORTED: return L"STATUS_NOT_SUPPORTED";
+	case STATUS_INTERNAL_ERROR: return L"STATUS_INTERNAL_ERROR";
+	case STATUS_PROCEDURE_NOT_FOUND: return L"STATUS_PROCEDURE_NOT_FOUND";
+	case STATUS_NOINTERFACE: return L"STATUS_NOINTERFACE";
+	case STATUS_INFO_LENGTH_MISMATCH: return L"STATUS_INFO_LENGTH_MISMATCH";
+	case STATUS_BUFFER_TOO_SMALL: return L"STATUS_BUFFER_TOO_SMALL";
+	case STATUS_INVALID_PARAMETER: return L"STATUS_INVALID_PARAMETER";
+	case STATUS_INSUFFICIENT_RESOURCES: return L"STATUS_INSUFFICIENT_RESOURCES";
+	case STATUS_UNHANDLED_EXCEPTION: return L"STATUS_UNHANDLED_EXCEPTION";
+	case STATUS_NOT_FOUND: return L"STATUS_NOT_FOUND";
+	case STATUS_NOT_IMPLEMENTED: return L"STATUS_NOT_IMPLEMENTED";
+	case STATUS_ACCESS_DENIED: return L"STATUS_ACCESS_DENIED";
+	case STATUS_ALREADY_REGISTERED: return L"STATUS_ALREADY_REGISTERED";
+	case STATUS_WOW_ASSERTION: return L"STATUS_WOW_ASSERTION";
+	case STATUS_BUFFER_OVERFLOW: return L"STATUS_BUFFER_OVERFLOW";
+	case STATUS_DLL_INIT_FAILED: return L"STATUS_DLL_INIT_FAILED";
+	case STATUS_INVALID_PARAMETER_1: return L"STATUS_INVALID_PARAMETER_1";
+	case STATUS_INVALID_PARAMETER_2: return L"STATUS_INVALID_PARAMETER_2";
+	case STATUS_INVALID_PARAMETER_3: return L"STATUS_INVALID_PARAMETER_3";
+	case STATUS_INVALID_PARAMETER_4: return L"STATUS_INVALID_PARAMETER_4";
+	case STATUS_INVALID_PARAMETER_5: return L"STATUS_INVALID_PARAMETER_5";
+	case STATUS_INVALID_PARAMETER_6: return L"STATUS_INVALID_PARAMETER_6";
+	case STATUS_INVALID_PARAMETER_7: return L"STATUS_INVALID_PARAMETER_7";
+	case STATUS_INVALID_PARAMETER_8: return L"STATUS_INVALID_PARAMETER_8";
+	default: return L"UNKNOWN";
+	}
+}
 
 void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage)
 {
     LastErrorCode = InCode;
 
-    if (InMessage == NULL)
-        LastError = L"";
-    else
-    {
-        if (InNtStatus == 0)
-        {
-        }
+	if (InMessage == NULL)
+	{
+		LastError = L"";
+	}
+	else
+	{
 #if _DEBUG
-        LastErrorCode = InNtStatus;
+		if (lstrlenW(InMessage) > 0)
+		{
+		WCHAR msg[1024] = { 0 };
+		LPVOID lpMsgBuf = NULL;
+
+		if (InNtStatus == STATUS_SUCCESS)
+		{
+			FormatMessage(
+				FORMAT_MESSAGE_ALLOCATE_BUFFER |
+				FORMAT_MESSAGE_FROM_SYSTEM |
+				FORMAT_MESSAGE_IGNORE_INSERTS,
+				NULL,
+				InCode,
+				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+				(LPTSTR)&lpMsgBuf,
+				0, NULL);
+			_snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", InMessage, lpMsgBuf);
+		}
+		else
+		{
+			_snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", InMessage, RtlErrorCodeToString(InNtStatus));
+		}
+		DEBUGMSG(msg);
+
+		if (lpMsgBuf != NULL)
+		{
+			LocalFree(lpMsgBuf);
+		}
+	}
 #endif
         LastError = InMessage;
     }
@@ -703,16 +773,22 @@ Description:
     LONG NtStatus;
     LPTHREAD_RUNTIME_INFO Runtime;
 
-    if (!IsValidPointer(OutValue, sizeof(PVOID)))
-        THROW(STATUS_INVALID_PARAMETER, (PWCHAR)L"Invalid result storage specified.");
-
-    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))
-        THROW(-1, (PWCHAR)L"The caller is not inside a hook handler.");
-
-    if (Runtime->Current != NULL)
-        *OutValue = Runtime->Callback;
-    else
-        THROW(-1, (PWCHAR)L"The caller is not inside a hook handler.");
+	if (!IsValidPointer(OutValue, sizeof(PVOID)))
+	{
+		THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
+	}
+	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))
+	{
+		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+	}
+	if (Runtime->Current != NULL)
+	{
+		*OutValue = Runtime->Callback;
+	}
+	else
+	{
+		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+	}
 
     RETURN;
 
@@ -721,3 +797,44 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
+LONG LhBarrierGetReturnAddress(PVOID* OutValue)
+{
+	/*
+	Description:
+
+		Is expected to be called inside a hook handler. Otherwise it
+		will fail with STATUS_NOT_SUPPORTED. The method retrieves
+		the return address of the hook handler. This is usually the
+		instruction behind the "CALL" which invoked the hook.
+
+		The calling module determination is based on this method.
+
+	*/
+	NTSTATUS            NtStatus;
+	LPTHREAD_RUNTIME_INFO       Runtime;
+
+	if (!IsValidPointer(OutValue, sizeof(PVOID)))
+	{
+		THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
+	}
+
+	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))
+	{
+		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+	}
+
+	if (Runtime->Current != NULL)
+	{
+		*OutValue = Runtime->Current->RetAddress;
+	}
+	else
+	{
+		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+	}
+
+	RETURN;
+
+THROW_OUTRO:
+FINALLY_OUTRO:
+	return NtStatus;
+}
