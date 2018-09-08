@@ -23,7 +23,7 @@
 // #define DETOUR_DEBUG 1
 #define DETOURS_INTERNAL
 #include "detours.h"
-#include "ntstatus.h"
+
 
 #if DETOURS_VERSION != 0x4c0c1 // 0xMAJORcMINORcPATCH
 #error detours.h version mismatch
@@ -143,7 +143,7 @@ LONG RtlProtectMemory(void *InPointer, ULONG InSize, ULONG InNewProtection)
         return 0;
     }
 THROW_OUTRO:
-FINALLY_OUTRO:
+
     return NtStatus;
 }
 
@@ -182,7 +182,7 @@ static ULONG LastErrorCode = 0;
 #if _DEBUG
 #define DEBUGMSG(...) do { WCHAR debugMsg[1024] = { 0 }; _snwprintf_s(debugMsg, 1024, _TRUNCATE, __VA_ARGS__); OutputDebugStringW(debugMsg); } while(0)
 #else
-#define DEBUGMSG(__VA_ARGS__) do { } while(0)
+#define DEBUGMSG
 #endif
 
 LPCWSTR RtlErrorCodeToString(LONG InCode)
@@ -232,7 +232,7 @@ void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage)
 		if (lstrlenW(InMessage) > 0)
 		{
 		WCHAR msg[1024] = { 0 };
-		LPVOID lpMsgBuf = NULL;
+		WCHAR* lpMsgBuf = NULL;
 
 		if (InNtStatus == STATUS_SUCCESS)
 		{
@@ -243,7 +243,7 @@ void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage)
 				NULL,
 				InCode,
 				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-				(LPTSTR)&lpMsgBuf,
+				lpMsgBuf,
 				0, NULL);
 			_snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", InMessage, lpMsgBuf);
 		}
