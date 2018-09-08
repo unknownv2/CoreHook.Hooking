@@ -13,7 +13,7 @@ For [CoreHook](https://github.com/unknownv2/CoreHook), the [Microsoft Detours](h
 
 Building the DLL requires Visual Studio and there are two options: 
 
-You can build the DLL by using the [Visual Studio solution in the vs folder](/vs) or nmake (it has been tested with `Visual Studio 2017` only). 
+You can build the DLL by using the [Visual Studio solution in the msvc folder](/msvc) or nmake (it has been tested with `Visual Studio 2017` only). 
 
 ### Building with Nmake 
 
