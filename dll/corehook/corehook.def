@@ -35,3 +35,6 @@ EXPORTS
    LhGetHookBypassAddress
    LhBarrierGetReturnAddress
    LhBarrierGetAddressOfReturnAddress
+   LhBarrierBeginStackTrace
+   LhBarrierEndStackTrace
+   LhBarrierCallStackTrace

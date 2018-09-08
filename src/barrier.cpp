@@ -876,3 +876,135 @@ THROW_OUTRO:
 FINALLY_OUTRO:
 	return NtStatus;
 }
+
+LONG LhBarrierBeginStackTrace(PVOID* OutBackup)
+{
+	/*
+	Description:
+
+		Is expected to be called inside a hook handler. Otherwise it
+		will fail with STATUS_NOT_SUPPORTED.
+		Temporarily restores the call stack to allow stack traces.
+
+		You have to pass the stored backup pointer to
+		LhBarrierEndStackTrace() BEFORE leaving the handler, otherwise
+		the application will be left in an unstable state!
+	*/
+	NTSTATUS                    NtStatus;
+	LPTHREAD_RUNTIME_INFO       Runtime;
+
+	if (OutBackup == NULL)
+		THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given backup storage is invalid.");
+
+	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))
+		THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
+
+	if (Runtime->Current == NULL)
+		THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
+
+	*OutBackup = *Runtime->Current->AddrOfRetAddr;
+	*Runtime->Current->AddrOfRetAddr = Runtime->Current->RetAddress;
+
+	RETURN;
+
+THROW_OUTRO:
+FINALLY_OUTRO:
+	return NtStatus;
+}
+
+LONG LhBarrierEndStackTrace(PVOID InBackup)
+{
+	/*
+	Description:
+
+		Is expected to be called inside a hook handler. Otherwise it
+		will fail with STATUS_NOT_SUPPORTED.
+
+		You have to pass the backup pointer obtained with
+		LhBarrierBeginStackTrace().
+	*/
+	NTSTATUS            NtStatus;
+	PVOID*              AddrOfRetAddr;
+
+	if (!IsValidPointer(InBackup, 1))
+		THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given stack backup pointer is invalid.");
+
+	FORCE(LhBarrierGetAddressOfReturnAddress(&AddrOfRetAddr));
+
+	*AddrOfRetAddr = InBackup;
+
+	RETURN;
+
+THROW_OUTRO:
+FINALLY_OUTRO:
+	return NtStatus;
+}
+
+LONG LhBarrierCallStackTrace(
+	PVOID* OutMethodArray,
+	ULONG InMaxMethodCount,
+	ULONG* OutMethodCount)
+{
+	/*
+	Description:
+
+		Creates a call stack trace and translates all method entries
+		back into their owning modules.
+
+	Parameters:
+
+		- OutMethodArray
+
+			An array receiving the methods on the call stack.
+
+		- InMaxMethodCount
+
+			The length of the method array.
+
+		- OutMethodCount
+
+			The actual count of methods on the call stack. This will never
+			be greater than 64.
+
+	Returns:
+
+		STATUS_NOT_IMPLEMENTED
+
+			Only supported since Windows XP.
+	*/
+	NTSTATUS				NtStatus;
+	PVOID					Backup = NULL;
+
+	if (InMaxMethodCount > 64) {
+		THROW(STATUS_INVALID_PARAMETER_2, L"barrier.cpp - At maximum 64 modules are supported.");
+	}
+	if (!IsValidPointer(OutMethodArray, InMaxMethodCount * sizeof(PVOID))) {
+		THROW(STATUS_INVALID_PARAMETER_1, L"barrier.cpp - The given module buffer is invalid.");
+	}
+
+	if (!IsValidPointer(OutMethodCount, sizeof(ULONG))) {
+		THROW(STATUS_INVALID_PARAMETER_3, L"barrier.cpp - Invalid module count storage.");
+	}
+
+	FORCE(LhBarrierBeginStackTrace(&Backup));
+
+#ifndef DRIVER
+
+	if (RtlCaptureStackBackTrace == NULL) {
+		THROW(STATUS_NOT_IMPLEMENTED, L"barrier.cpp - This method requires Windows XP or later.");
+	}
+#endif
+
+	*OutMethodCount = RtlCaptureStackBackTrace(1, 32, OutMethodArray, NULL);
+
+	RETURN;
+
+THROW_OUTRO:
+FINALLY_OUTRO:
+	{
+		if (Backup != NULL)
+			LhBarrierEndStackTrace(Backup);
+
+		return NtStatus;
+	}
+}
