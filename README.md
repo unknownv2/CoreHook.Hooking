@@ -1,5 +1,8 @@
 # CoreHook Windows Hooking Module
 
+[![Build status](https://ci.appveyor.com/api/projects/status/laoiffynydunh4vp/branch/master?svg=true)](https://ci.appveyor.com/project/unknownv2/corehook-hooking/branch/master)
+
+
 For [CoreHook](https://github.com/unknownv2/CoreHook), the [Microsoft Detours](https://github.com/Microsoft/Detours) package serves as a good binary hooking module since it supports x86, x86_64, ARM, and ARM64, while [EasyHook](https://github.com/EasyHook/EasyHook) only supports x86 and x86_64. Since .NET Core supports the two ARM architectures, we can implement the necessary changes to support those architectures for CoreHook.
 
 ## Supported Platforms
@@ -10,7 +13,7 @@ For [CoreHook](https://github.com/unknownv2/CoreHook), the [Microsoft Detours](h
 
 Building the DLL requires Visual Studio and there are two options: 
 
-You can build the DLL by using the [Visual Studio solution in the vs folder](/vs) or nmake (it has been tested with `Visual Studio 2017` only). 
+You can build the DLL by using the [Visual Studio solution in the msvc folder](/msvc) or nmake (it has been tested with `Visual Studio 2017` only). 
 
 ### Building with Nmake 
 
