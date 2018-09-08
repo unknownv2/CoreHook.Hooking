@@ -60,6 +60,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\src\detours.h" />
     <ClInclude Include="..\..\src\detver.h" />
+    <ClInclude Include="ntstatus.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\src\trampolinearm.asm" />
