@@ -1,4 +1,4 @@
-LIBRARY   COREHOOK  
+
 EXPORTS  
    DetourFinishHelperProcess @1 NONAME
    DetourAttach
@@ -33,3 +33,5 @@ EXPORTS
    LhIsThreadIntercepted
    LhBarrierProcessAttach
    LhGetHookBypassAddress
+   LhBarrierGetReturnAddress
+   LhBarrierGetAddressOfReturnAddress
