@@ -950,7 +950,7 @@ struct _DETOUR_TRAMPOLINE
     ULONG               HLSIdent;
     TRACED_HOOK_HANDLE  OutHandle; // handle returned to user  
     void*               Trampoline;
-    INT	                IsExecuted;
+    INT                 IsExecuted;
     void*               HookIntro; // . NET Intro function  
     UCHAR*              OldProc;  // old target function      
     void*               HookProc; // function we detour to
