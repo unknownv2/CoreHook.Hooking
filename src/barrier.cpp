@@ -770,23 +770,19 @@ Description:
     call.
 
 */
-    LONG NtStatus;
-    LPTHREAD_RUNTIME_INFO Runtime;
+    LONG					NtStatus;
+    LPTHREAD_RUNTIME_INFO	Runtime;
 
-	if (!IsValidPointer(OutValue, sizeof(PVOID)))
-	{
+	if (!IsValidPointer(OutValue, sizeof(PVOID)))	{
 		THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
 	}
-	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))
-	{
+	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))	{
 		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
 	}
-	if (Runtime->Current != NULL)
-	{
+	if (Runtime->Current != NULL)	{
 		*OutValue = Runtime->Callback;
 	}
-	else
-	{
+	else	{
 		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
 	}
 
@@ -813,22 +809,18 @@ LONG LhBarrierGetReturnAddress(PVOID* OutValue)
 	LONG						NtStatus;
 	LPTHREAD_RUNTIME_INFO       Runtime;
 
-	if (!IsValidPointer(OutValue, sizeof(PVOID)))
-	{
+	if (!IsValidPointer(OutValue, sizeof(PVOID)))	{
 		THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
 	}
 
-	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))
-	{
+	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))	{
 		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
 	}
 
-	if (Runtime->Current != NULL)
-	{
+	if (Runtime->Current != NULL)	{
 		*OutValue = Runtime->Current->RetAddress;
 	}
-	else
-	{
+	else	{
 		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
 	}
 
@@ -852,22 +844,18 @@ LONG LhBarrierGetAddressOfReturnAddress(PVOID** OutValue)
 	LPTHREAD_RUNTIME_INFO       Runtime;
 	LONG	                    NtStatus;
 
-	if (OutValue == NULL)
-	{
+	if (OutValue == NULL)	{
 		THROW(STATUS_INVALID_PARAMETER, L"Invalid storage specified.");
 	}
 
-	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))
-	{
+	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))	{
 		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
 	}
 
-	if (Runtime->Current != NULL)
-	{
+	if (Runtime->Current != NULL)	{
 		*OutValue = Runtime->Current->AddrOfRetAddr;
 	}
-	else
-	{
+	else	{
 		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
 	}
 	RETURN;
@@ -893,14 +881,17 @@ LONG LhBarrierBeginStackTrace(PVOID* OutBackup)
 	LONG	                    NtStatus;
 	LPTHREAD_RUNTIME_INFO       Runtime;
 
-	if (OutBackup == NULL)
+	if (OutBackup == NULL) {
 		THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given backup storage is invalid.");
+	}
 
-	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))
+	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
 		THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
+	}
 
-	if (Runtime->Current == NULL)
+	if (Runtime->Current == NULL) {
 		THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
+	}
 
 	*OutBackup = *Runtime->Current->AddrOfRetAddr;
 	*Runtime->Current->AddrOfRetAddr = Runtime->Current->RetAddress;
@@ -926,8 +917,9 @@ LONG LhBarrierEndStackTrace(PVOID InBackup)
 	LONG	            NtStatus;
 	PVOID*              AddrOfRetAddr;
 
-	if (!IsValidPointer(InBackup, 1))
+	if (!IsValidPointer(InBackup, 1)) {
 		THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given stack backup pointer is invalid.");
+	}
 
 	FORCE(LhBarrierGetAddressOfReturnAddress(&AddrOfRetAddr));
 
@@ -972,6 +964,7 @@ LONG LhBarrierCallStackTrace(
 
 			Only supported since Windows XP.
 	*/
+	
 	LONG					NtStatus;
 	PVOID					Backup = NULL;
 
@@ -986,25 +979,23 @@ LONG LhBarrierCallStackTrace(
 		THROW(STATUS_INVALID_PARAMETER_3, L"barrier.cpp - Invalid module count storage.");
 	}
 
+	
 	FORCE(LhBarrierBeginStackTrace(&Backup));
-
-#ifndef DRIVER
-
+	
 	if (RtlCaptureStackBackTrace == NULL) {
 		THROW(STATUS_NOT_IMPLEMENTED, L"barrier.cpp - This method requires Windows XP or later.");
 	}
-#endif
 
 	*OutMethodCount = RtlCaptureStackBackTrace(1, 32, OutMethodArray, NULL);
 
 	RETURN;
-
+	
 THROW_OUTRO:
 FINALLY_OUTRO:
 	{
-		if (Backup != NULL)
+		if (Backup != NULL) {
 			LhBarrierEndStackTrace(Backup);
-
+		}
 		return NtStatus;
 	}
 }
