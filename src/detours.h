@@ -1190,6 +1190,7 @@ typedef struct _RTL_SPIN_LOCK_
     CRITICAL_SECTION        Lock;
     BOOL                 IsOwned;
 }RTL_SPIN_LOCK;
+
 void RtlInitializeLock(RTL_SPIN_LOCK* InLock);
 
 void RtlAcquireLock(RTL_SPIN_LOCK* InLock);
@@ -1199,10 +1200,6 @@ void RtlReleaseLock(RTL_SPIN_LOCK* InLock);
 void RtlDeleteLock(RTL_SPIN_LOCK* InLock);
 
 void RtlSleep(ULONG InTimeout);
-
-
-
-
 
 typedef struct _RUNTIME_INFO_
 {
