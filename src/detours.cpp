@@ -1667,12 +1667,13 @@ ULONG GetTrampolinePtr()
 
 UINT WINAPI BarrierIntro(DETOUR_TRAMPOLINE* InHandle, void* InRetAddr, void** InAddrOfRetAddr)
 {
-    /*
-    Description:
+/*
+Description:
 
-        Will be called from assembler code and enters the 
-        thread deadlock barrier.
-    */
+    Will be called from assembler code and enters the 
+    thread deadlock barrier.
+*/
+
     LPTHREAD_RUNTIME_INFO		Info;
     RUNTIME_INFO*		        Runtime;
 	BOOL						Exists;
@@ -1802,6 +1803,7 @@ Description:
 	The hook handle is just passed through, because the assembler code has no chance to
 	save it in any efficient manner at this point of execution...
 */
+
     RUNTIME_INFO*			Runtime;
     LPTHREAD_RUNTIME_INFO	Info;
 
@@ -1874,7 +1876,8 @@ VOID InsertTraceHandle(PDETOUR_TRAMPOLINE pTrampoline)
 LONG AddTrampolineToGlobalList(PDETOUR_TRAMPOLINE pTrampoline)
 {
     ULONG   Index;
-    BOOL    Exists;                   
+    BOOL    Exists;
+
     // register in global HLS list
     RtlAcquireLock(&GlobalHookLock);
     {
@@ -1908,15 +1911,15 @@ LONG LhInstallHook(
 	void *InCallback,
 	TRACED_HOOK_HANDLE OutHandle)
 {
-	/*
-	Description:
+/*
+Description:
 
 	Installs a hook at the given entry point, redirecting all
 	calls to the given hooking method. The returned handle will
 	either be released on library unloading or explicitly through
 	LhUninstallHook() or LhUninstallAllHooks().
 
-	Parameters:
+Parameters:
 
 	- InEntryPoint
 
@@ -1941,7 +1944,7 @@ LONG LhInstallHook(
 	must stay valid for hook-life time. Only if you explicitly call one of
 	the hook uninstallation APIs, you can safely release the handle memory.
 
-	Returns:
+Returns:
 
 	STATUS_NO_MEMORY
 
@@ -1955,7 +1958,7 @@ LONG LhInstallHook(
 
 	The limit of MAX_HOOK_COUNT simultaneous hooks was reached.
 
-	*/
+*/
 
 	LONG                NtStatus = -1;
 	LONG                error = -1;
@@ -2000,21 +2003,22 @@ THROW_OUTRO:
 
 LONG WINAPI LhUninstallHook(TRACED_HOOK_HANDLE InHandle)
 {
-	/*
-	Description:
+/*
+Description:
 
-	Removes the given hook. To also release associated resources,
-	you will have to call LhWaitForPendingRemovals(). In any case
-	your hook handler will never be executed again, after calling this
-	method.
+Removes the given hook. To also release associated resources,
+you will have to call LhWaitForPendingRemovals(). In any case
+your hook handler will never be executed again, after calling this
+method.
 
-	Parameters:
+Parameters:
 
-	- InHandle
+- InHandle
 
-	A traced hook handle. If the hook is already removed, this method
-	will still return STATUS_SUCCESS.
-	*/
+A traced hook handle. If the hook is already removed, this method
+will still return STATUS_SUCCESS.
+*/
+
 	LONG error = -1;
 
 	PDETOUR_TRAMPOLINE      Hook = NULL;
@@ -2062,15 +2066,16 @@ LONG LhIsThreadIntercepted(
 	ULONG InThreadID,
 	BOOL* OutResult)
 {
-	/*
-	Description:
+/*
+Description:
 
-	This method will negotiate whether a given thread passes
-	the ACLs and would invoke the related hook handler. Refer
-	to the source code of Is[Thread/Process]Intercepted() for more information
-	about the implementation.
+This method will negotiate whether a given thread passes
+the ACLs and would invoke the related hook handler. Refer
+to the source code of Is[Thread/Process]Intercepted() for more information
+about the implementation.
 
-	*/
+*/
+
 	LONG                NtStatus;
 	PLOCAL_HOOK_INFO    Handle;
 
@@ -2094,15 +2099,15 @@ LONG LhSetInclusiveACL(
 	ULONG InThreadCount,
 	TRACED_HOOK_HANDLE InHandle)
 {
-	/*
-	Description:
+/*
+Description:
 
 	Sets an inclusive hook local ACL based on the given thread ID list.
 	Only threads in this list will be intercepted by the hook. If the
 	global ACL also is inclusive, then all threads stated there are
 	intercepted too.
 
-	Parameters:
+Parameters:
 	- InThreadIdList
 	An array of thread IDs. If you specific zero for an entry in this array,
 	it will be automatically replaced with the calling thread ID.
@@ -2113,7 +2118,8 @@ LONG LhSetInclusiveACL(
 
 	- InHandle
 	The hook handle whose local ACL is going to be set.
-	*/
+*/
+
 	PLOCAL_HOOK_INFO        Handle;
 
 	if (!LhIsValidHandle(InHandle, &Handle))
@@ -2125,8 +2131,8 @@ LONG LhGetHookBypassAddress(
 	TRACED_HOOK_HANDLE InHook,
 	PVOID** OutAddress)
 {
-	/*
-	Description:
+/*
+Description:
 
 	Retrieves the address to bypass the hook. Using the returned value to call the original
 	function bypasses all thread safety measures and must be used with care.
@@ -2138,7 +2144,7 @@ LONG LhGetHookBypassAddress(
 	attempting to use the address will result in unexpected behaviour, most likely crashing
 	the process.
 
-	Parameters:
+Parameters:
 
 	- InHook
 
@@ -2151,13 +2157,14 @@ LONG LhGetHookBypassAddress(
 	can be used to call the original function from outside of a hook
 	while still bypassing the hook.
 
-	Returns:
+Returns:
 
 	STATUS_SUCCESS             - OutAddress will contain the result
 	STATUS_INVALID_PARAMETER_1 - the hook is invalid
 	STATUS_INVALID_PARAMETER_3 - the target pointer is invalid
 
-	*/
+*/
+
 	LONG    			NtStatus;
 	PLOCAL_HOOK_INFO    Handle;
 
@@ -2198,6 +2205,7 @@ Parameters:
     - InHandle
         The hook handle whose local ACL is going to be set.
 */
+
     PLOCAL_HOOK_INFO        Handle;
 
     if(!LhIsValidHandle(InHandle, &Handle))
