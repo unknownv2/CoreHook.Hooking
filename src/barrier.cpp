@@ -102,8 +102,9 @@ void *RtlAllocateMemory(BOOL InZeroMemory, ULONG InSize)
         HeapAlloc(hCoreHookHeap, 0, InSize);
 #endif
 
-    if (InZeroMemory && (Result != NULL))
-        RtlZeroMemory(Result, InSize);
+	if (InZeroMemory && (Result != NULL)) {
+		RtlZeroMemory(Result, InSize);
+	}
 
     return Result;
 }
@@ -231,33 +232,33 @@ void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage)
 #if _DEBUG
 		if (lstrlenW(InMessage) > 0)
 		{
-		WCHAR msg[1024] = { 0 };
-		WCHAR* lpMsgBuf = NULL;
+			WCHAR msg[1024] = { 0 };
+			WCHAR* lpMsgBuf = NULL;
 
-		if (InNtStatus == STATUS_SUCCESS)
-		{
-			FormatMessage(
-				FORMAT_MESSAGE_ALLOCATE_BUFFER |
-				FORMAT_MESSAGE_FROM_SYSTEM |
-				FORMAT_MESSAGE_IGNORE_INSERTS,
-				NULL,
-				InCode,
-				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-				lpMsgBuf,
-				0, NULL);
-			_snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", InMessage, lpMsgBuf);
-		}
-		else
-		{
-			_snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", InMessage, RtlErrorCodeToString(InNtStatus));
-		}
-		DEBUGMSG(msg);
+			if (InNtStatus == STATUS_SUCCESS)
+			{
+				FormatMessage(
+					FORMAT_MESSAGE_ALLOCATE_BUFFER |
+					FORMAT_MESSAGE_FROM_SYSTEM |
+					FORMAT_MESSAGE_IGNORE_INSERTS,
+					NULL,
+					InCode,
+					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+					lpMsgBuf,
+					0, NULL);
+				_snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", InMessage, lpMsgBuf);
+			}
+			else
+			{
+				_snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", InMessage, RtlErrorCodeToString(InNtStatus));
+			}
+			DEBUGMSG(msg);
 
-		if (lpMsgBuf != NULL)
-		{
-			LocalFree(lpMsgBuf);
+			if (lpMsgBuf != NULL)
+			{
+				LocalFree(lpMsgBuf);
+			}
 		}
-	}
 #endif
         LastError = InMessage;
     }
@@ -277,7 +278,7 @@ LONG LhSetGlobalInclusiveACL(
     ULONG *InThreadIdList,
     ULONG InThreadCount)
 {
-    /*
+/*
 Description:
 
     Sets an inclusive global ACL based on the given thread ID list.
@@ -291,6 +292,7 @@ Parameters:
         The count of entries listed in the thread ID list. This value must not exceed
         MAX_ACE_COUNT! 
 */
+
     return LhSetACL(LhBarrierGetAcl(), FALSE, InThreadIdList, InThreadCount);
 }
 
@@ -298,7 +300,7 @@ LONG LhSetGlobalExclusiveACL(
     ULONG *InThreadIdList,
     ULONG InThreadCount)
 {
-    /*
+/*
 Description:
 
     Sets an exclusive global ACL based on the given thread ID list.
@@ -312,6 +314,7 @@ Parameters:
         The count of entries listed in the thread ID list. This value must not exceed
         MAX_ACE_COUNT! 
 */
+
     return LhSetACL(LhBarrierGetAcl(), TRUE, InThreadIdList, InThreadCount);
 }
 
@@ -319,7 +322,8 @@ BOOL LhIsValidHandle(
     TRACED_HOOK_HANDLE InTracedHandle,
     PLOCAL_HOOK_INFO *OutHandle)
 {
-    /*
+
+/*
 Description:
 
     A handle is considered to be valid, if the whole structure
@@ -327,6 +331,7 @@ Description:
     hook is installed!
 
 */
+
     if (!IsValidPointer(InTracedHandle, sizeof(HOOK_TRACE_INFO)))
         return FALSE;
 
@@ -341,7 +346,7 @@ LONG LhSetACL(
     ULONG *InThreadIdList,
     ULONG InThreadCount)
 {
-    /*
+/*
 Description:
 
     This method is used internally to provide a generic interface to
@@ -407,11 +412,12 @@ HOOK_ACL *LhBarrierGetAcl()
 
 LONG LhBarrierProcessAttach()
 {
-    /*
+/*
 Description:
 
     Will be called on DLL load and initializes all barrier structures.
 */
+
     RtlZeroMemory(&Unit, sizeof(Unit));
 
     // globally accept all threads...
@@ -431,7 +437,7 @@ BOOL TlsGetCurrentValue(
     THREAD_LOCAL_STORAGE *InTls,
     THREAD_RUNTIME_INFO **OutValue)
 {
-    /*
+/*
 Description:
 
     Queries the THREAD_RUNTIME_INFO for the calling thread.
@@ -452,7 +458,8 @@ Returns:
 
     FALSE if the caller was not registered in the storage, TRUE otherwise.
 */
-    ULONG CurrentId = (ULONG)GetCurrentThreadId();
+
+    DWORD CurrentId = GetCurrentThreadId();
 
     LONG Index;
 
@@ -470,7 +477,7 @@ Returns:
 }
 BOOL TlsAddCurrentThread(THREAD_LOCAL_STORAGE *InTls)
 {
-    /*
+/*
 Description:
 
     Tries to reserve a THREAD_RUNTIME_INFO entry for the calling thread.
@@ -494,7 +501,8 @@ Returns:
 
     TRUE on success, FALSE otherwise.
 */
-    ULONG CurrentId = (ULONG)GetCurrentThreadId();
+
+    ULONG CurrentId = GetCurrentThreadId();
 
     LONG Index = -1;
     LONG i;
@@ -527,7 +535,7 @@ Returns:
 
 void TlsRemoveCurrentThread(THREAD_LOCAL_STORAGE *InTls)
 {
-    /*
+/*
 Description:
 
     Removes the caller from the local storage. If the caller
@@ -539,7 +547,8 @@ Parameters:
 
         The storage from which the caller should be removed.
 */
-    ULONG CurrentId = (ULONG)GetCurrentThreadId();
+
+    DWORD CurrentId = GetCurrentThreadId();
     ULONG Index;
 
     RtlAcquireLock(&InTls->ThreadSafe);
@@ -559,11 +568,12 @@ Parameters:
 
 void LhBarrierProcessDetach()
 {
-    /*
+/*
 Description:
 
     Will be called on DLL unload.
 */
+
     ULONG Index;
 
     RtlDeleteLock(&Unit.TLS.ThreadSafe);
@@ -582,11 +592,12 @@ Description:
 
 void LhBarrierThreadDetach()
 {
-    /*
+/*
 Description:
 
     Will be called on thread termination and cleans up the TLS.
 */
+
     LPTHREAD_RUNTIME_INFO Info;
 
     if (TlsGetCurrentValue(&Unit.TLS, &Info))
@@ -604,7 +615,7 @@ RTL_SPIN_LOCK GlobalHookLock;
 
 void LhCriticalInitialize()
 {
-    /*
+/*
 Description:
     
     Fail safe initialization of global hooking structures...
@@ -615,18 +626,19 @@ Description:
 
 void LhCriticalFinalize()
 {
-    /*
+/*
 Description:
 
     Will be called in the DLL_PROCESS_DETACH event and just uninstalls
     all hooks. If it is possible also their memory is released. 
 */
+
     RtlDeleteLock(&GlobalHookLock);
 }
 
 BOOL IsLoaderLock()
 {
-    /*
+/*
 Returns:
 
     TRUE if the current thread hols the OS loader lock, or the library was not initialized
@@ -635,6 +647,7 @@ Returns:
     FALSE if it is safe to execute the hook handler.
 
 */
+
     BOOL IsLoaderLock = FALSE;
 
     return (!AuxUlibIsDLLSynchronizationHeld(&IsLoaderLock) || IsLoaderLock || !Unit.IsInitialized);
@@ -642,7 +655,7 @@ Returns:
 
 BOOL AcquireSelfProtection()
 {
-    /*
+/*
 Description:
 
     To provide more convenience for writing the TDB, this self protection
@@ -659,6 +672,7 @@ Returns:
     this case!
 
 */
+
     LPTHREAD_RUNTIME_INFO Runtime = NULL;
 
     if (!TlsGetCurrentValue(&Unit.TLS, &Runtime) || Runtime->IsProtected)
@@ -671,7 +685,7 @@ Returns:
 
 void ReleaseSelfProtection()
 {
-    /*
+/*
 Description:
 
     Exists the TDB self protection. Refer to AcquireSelfProtection() for more
@@ -679,6 +693,7 @@ Description:
 
     An assertion is raised if the caller has not owned the self protection.
 */
+
     LPTHREAD_RUNTIME_INFO Runtime = NULL;
 
     DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &Runtime) && Runtime->IsProtected, L"barrier.cpp - TlsGetCurrentValue(&Unit.TLS, &Runtime) && Runtime->IsProtected");
@@ -690,11 +705,12 @@ BOOL ACLContains(
     HOOK_ACL *InACL,
     ULONG InCheckID)
 {
-    /*
+/*
 Returns:
 
     TRUE if the given ACL contains the given ID, FALSE otherwise.
 */
+
     ULONG Index;
 
     for (Index = 0; Index < InACL->Count; Index++)
@@ -710,7 +726,7 @@ BOOL IsThreadIntercepted(
     HOOK_ACL *LocalACL,
     ULONG InThreadID)
 {
-    /*
+/*
 Description:
 
     Please refer to LhIsThreadIntercepted() for more information.
@@ -720,12 +736,15 @@ Returns:
     TRUE if the given thread is intercepted by the global AND local ACL,
     FALSE otherwise.
 */
+
     ULONG CheckID;
 
-    if (InThreadID == 0)
-        CheckID = GetCurrentThreadId();
-    else
-        CheckID = InThreadID;
+	if (InThreadID == 0) {
+		CheckID = GetCurrentThreadId();
+	}
+	else {
+		CheckID = InThreadID;
+	}
 
     if (ACLContains(&Unit.GlobalACL, CheckID))
     {
@@ -761,32 +780,29 @@ Returns:
 
 LONG LhBarrierGetCallback(PVOID *OutValue)
 {
-    /*
+/*
 Description:
 
-    Is expected to be called inside a hook handler. Otherwise it
-    will fail with STATUS_NOT_SUPPORTED. The method retrieves
-    the callback initially passed to the related LhInstallHook()
-    call.
+	Is expected to be called inside a hook handler. Otherwise it
+	will fail with STATUS_NOT_SUPPORTED. The method retrieves
+	the callback initially passed to the related LhInstallHook()
+	call.
 
 */
-    LONG NtStatus;
-    LPTHREAD_RUNTIME_INFO Runtime;
 
-	if (!IsValidPointer(OutValue, sizeof(PVOID)))
-	{
+    LONG                    NtStatus;
+    LPTHREAD_RUNTIME_INFO   Runtime;
+
+	if (!IsValidPointer(OutValue, sizeof(PVOID))) {
 		THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
 	}
-	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))
-	{
+	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
 		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
 	}
-	if (Runtime->Current != NULL)
-	{
+	if (Runtime->Current != NULL) {
 		*OutValue = Runtime->Callback;
 	}
-	else
-	{
+	else	{
 		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
 	}
 
@@ -799,36 +815,33 @@ FINALLY_OUTRO:
 
 LONG LhBarrierGetReturnAddress(PVOID* OutValue)
 {
-	/*
-	Description:
+/*
+Description:
 
-		Is expected to be called inside a hook handler. Otherwise it
-		will fail with STATUS_NOT_SUPPORTED. The method retrieves
-		the return address of the hook handler. This is usually the
-		instruction behind the "CALL" which invoked the hook.
+	Is expected to be called inside a hook handler. Otherwise it
+	will fail with STATUS_NOT_SUPPORTED. The method retrieves
+	the return address of the hook handler. This is usually the
+	instruction behind the "CALL" which invoked the hook.
 
-		The calling module determination is based on this method.
+	The calling module determination is based on this method.
 
-	*/
-	LONG						NtStatus;
+*/
+
+	LONG                        NtStatus;
 	LPTHREAD_RUNTIME_INFO       Runtime;
 
-	if (!IsValidPointer(OutValue, sizeof(PVOID)))
-	{
+	if (!IsValidPointer(OutValue, sizeof(PVOID))) {
 		THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
 	}
 
-	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))
-	{
+	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
 		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
 	}
 
-	if (Runtime->Current != NULL)
-	{
+	if (Runtime->Current != NULL) {
 		*OutValue = Runtime->Current->RetAddress;
 	}
-	else
-	{
+	else {
 		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
 	}
 
@@ -842,32 +855,29 @@ FINALLY_OUTRO:
 
 LONG LhBarrierGetAddressOfReturnAddress(PVOID** OutValue)
 {
-	/*
-	Description:
+/*
+Description:
 
-		Is expected to be called inside a hook handler. Otherwise it
-		will fail with STATUS_NOT_SUPPORTED. The method retrieves
-		the address of the return address of the hook handler.
-	*/
+	Is expected to be called inside a hook handler. Otherwise it
+	will fail with STATUS_NOT_SUPPORTED. The method retrieves
+	the address of the return address of the hook handler.
+*/
+
 	LPTHREAD_RUNTIME_INFO       Runtime;
 	LONG	                    NtStatus;
 
-	if (OutValue == NULL)
-	{
+	if (OutValue == NULL) {
 		THROW(STATUS_INVALID_PARAMETER, L"Invalid storage specified.");
 	}
 
-	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime))
-	{
+	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
 		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
 	}
 
-	if (Runtime->Current != NULL)
-	{
+	if (Runtime->Current != NULL) {
 		*OutValue = Runtime->Current->AddrOfRetAddr;
 	}
-	else
-	{
+	else {
 		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
 	}
 	RETURN;
@@ -875,4 +885,141 @@ LONG LhBarrierGetAddressOfReturnAddress(PVOID** OutValue)
 THROW_OUTRO:
 FINALLY_OUTRO:
 	return NtStatus;
+}
+
+LONG LhBarrierBeginStackTrace(PVOID* OutBackup)
+{
+/*
+Description:
+
+	Is expected to be called inside a hook handler. Otherwise it
+	will fail with STATUS_NOT_SUPPORTED.
+	Temporarily restores the call stack to allow stack traces.
+
+	You have to pass the stored backup pointer to
+	LhBarrierEndStackTrace() BEFORE leaving the handler, otherwise
+	the application will be left in an unstable state!
+*/
+
+	LONG                        NtStatus;
+	LPTHREAD_RUNTIME_INFO       Runtime;
+
+	if (OutBackup == NULL) {
+		THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given backup storage is invalid.");
+	}
+
+	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
+		THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
+	}
+
+	if (Runtime->Current == NULL) {
+		THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
+	}
+
+	*OutBackup = *Runtime->Current->AddrOfRetAddr;
+	*Runtime->Current->AddrOfRetAddr = Runtime->Current->RetAddress;
+
+	RETURN;
+
+THROW_OUTRO:
+FINALLY_OUTRO:
+	return NtStatus;
+}
+
+LONG LhBarrierEndStackTrace(PVOID InBackup)
+{
+/*
+Description:
+
+	Is expected to be called inside a hook handler. Otherwise it
+	will fail with STATUS_NOT_SUPPORTED.
+
+	You have to pass the backup pointer obtained with
+	LhBarrierBeginStackTrace().
+*/
+
+	LONG	            NtStatus;
+	PVOID*              AddrOfRetAddr;
+
+	if (!IsValidPointer(InBackup, 1)) {
+		THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given stack backup pointer is invalid.");
+	}
+
+	FORCE(LhBarrierGetAddressOfReturnAddress(&AddrOfRetAddr));
+
+	*AddrOfRetAddr = InBackup;
+
+	RETURN;
+
+THROW_OUTRO:
+FINALLY_OUTRO:
+	return NtStatus;
+}
+
+LONG LhBarrierCallStackTrace(
+	PVOID* OutMethodArray,
+	ULONG InMaxMethodCount,
+	ULONG* OutMethodCount)
+{
+/*
+Description:
+
+	Creates a call stack trace and translates all method entries
+	back into their owning modules.
+
+Parameters:
+
+	- OutMethodArray
+
+		An array receiving the methods on the call stack.
+
+	- InMaxMethodCount
+
+		The length of the method array.
+
+	- OutMethodCount
+
+		The actual count of methods on the call stack. This will never
+		be greater than 64.
+
+Returns:
+
+	STATUS_NOT_IMPLEMENTED
+
+		Only supported since Windows XP.
+*/
+	
+	LONG					NtStatus;
+	PVOID					Backup = NULL;
+
+	if (InMaxMethodCount > 64) {
+		THROW(STATUS_INVALID_PARAMETER_2, L"barrier.cpp - At maximum 64 modules are supported.");
+	}
+	if (!IsValidPointer(OutMethodArray, InMaxMethodCount * sizeof(PVOID))) {
+		THROW(STATUS_INVALID_PARAMETER_1, L"barrier.cpp - The given module buffer is invalid.");
+	}
+
+	if (!IsValidPointer(OutMethodCount, sizeof(ULONG))) {
+		THROW(STATUS_INVALID_PARAMETER_3, L"barrier.cpp - Invalid module count storage.");
+	}
+
+	
+	FORCE(LhBarrierBeginStackTrace(&Backup));
+	
+	if (RtlCaptureStackBackTrace == NULL) {
+		THROW(STATUS_NOT_IMPLEMENTED, L"barrier.cpp - This method requires Windows XP or later.");
+	}
+
+	*OutMethodCount = RtlCaptureStackBackTrace(1, 32, OutMethodArray, NULL);
+
+	RETURN;
+	
+THROW_OUTRO:
+FINALLY_OUTRO:
+	{
+		if (Backup != NULL) {
+			LhBarrierEndStackTrace(Backup);
+		}
+		return NtStatus;
+	}
 }
