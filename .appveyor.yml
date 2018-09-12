@@ -15,3 +15,6 @@ configuration:
 build:
   project: msvc\corehook.sln
   verbosity: detailed
+skip_commits:
+  files:
+    - '**/*.md'  
