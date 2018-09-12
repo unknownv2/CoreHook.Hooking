@@ -2380,7 +2380,7 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 #endif // DETOURS_ARM
 
 #ifdef DETOURS_ARM64
-			PBYTE trampoline = DetourGetTrampolinePtr();
+            PBYTE trampoline = DetourGetTrampolinePtr();
 			const ULONG TrampolineSize = GetTrampolineSize();
 
 			PBYTE endOfTramp = (PBYTE)&o->pTrampoline->rbTrampolineCode;
@@ -2396,9 +2396,9 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 
 			PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, (PBYTE)o->pTrampoline->Trampoline);
 			//PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, o->pTrampoline->pbDetour);
-            pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
-            *o->ppbPointer = o->pTrampoline->rbCode;
-            UNREFERENCED_PARAMETER(pbCode);
+			pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
+			*o->ppbPointer = o->pTrampoline->rbCode;
+			UNREFERENCED_PARAMETER(pbCode);
 #endif // DETOURS_ARM64
 
             DETOUR_TRACE(("detours: pbTarget=%p: "
