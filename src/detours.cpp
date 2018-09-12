@@ -2381,24 +2381,24 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 
 #ifdef DETOURS_ARM64
             PBYTE trampoline = DetourGetTrampolinePtr();
-			const ULONG TrampolineSize = GetTrampolineSize();
+            const ULONG TrampolineSize = GetTrampolineSize();
 
-			PBYTE endOfTramp = (PBYTE)&o->pTrampoline->rbTrampolineCode;
-			memcpy(endOfTramp, trampoline, TrampolineSize);
-			o->pTrampoline->HookIntro = BarrierIntro;
-			o->pTrampoline->HookOutro = BarrierOutro;
-			o->pTrampoline->Trampoline = endOfTramp;
-			o->pTrampoline->OldProc = o->pTrampoline->rbCode;
-			o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
-			o->pTrampoline->IsExecutedPtr = new int();
+            PBYTE endOfTramp = (PBYTE)&o->pTrampoline->rbTrampolineCode;
+            memcpy(endOfTramp, trampoline, TrampolineSize);
+            o->pTrampoline->HookIntro = BarrierIntro;
+            o->pTrampoline->HookOutro = BarrierOutro;
+            o->pTrampoline->Trampoline = endOfTramp;
+            o->pTrampoline->OldProc = o->pTrampoline->rbCode;
+            o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
+            o->pTrampoline->IsExecutedPtr = new int();
 
-			AddTrampolineToGlobalList(o->pTrampoline);
+            AddTrampolineToGlobalList(o->pTrampoline);
 
-			PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, (PBYTE)o->pTrampoline->Trampoline);
-			//PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, o->pTrampoline->pbDetour);
-			pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
-			*o->ppbPointer = o->pTrampoline->rbCode;
-			UNREFERENCED_PARAMETER(pbCode);
+            PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, (PBYTE)o->pTrampoline->Trampoline);
+            //PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, o->pTrampoline->pbDetour);
+            pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
+            *o->ppbPointer = o->pTrampoline->rbCode;
+            UNREFERENCED_PARAMETER(pbCode);
 #endif // DETOURS_ARM64
 
             DETOUR_TRACE(("detours: pbTarget=%p: "
