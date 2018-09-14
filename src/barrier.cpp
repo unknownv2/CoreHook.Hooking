@@ -217,6 +217,7 @@ void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage)
 	if (InMessage == NULL)
 	{
 		LastError = L"";
+		(void)InNtStatus;
 	}
 	else
 	{
@@ -572,8 +573,10 @@ Description:
     // release thread specific resources
     for (Index = 0; Index < MAX_THREAD_COUNT; Index++)
     {
-        if (Unit.TLS.Entries[Index].Entries != NULL)
-            RtlFreeMemory(Unit.TLS.Entries[Index].Entries);
+		if (Unit.TLS.Entries[Index].Entries != NULL)
+		{
+			RtlFreeMemory(Unit.TLS.Entries[Index].Entries);
+		}
     }
 
     RtlZeroMemory(&Unit, sizeof(Unit));
@@ -593,8 +596,10 @@ Description:
 
     if (TlsGetCurrentValue(&Unit.TLS, &Info))
     {
-        if (Info->Entries != NULL)
-            RtlFreeMemory(Info->Entries);
+		if (Info->Entries != NULL)
+		{
+			RtlFreeMemory(Info->Entries);
+		}
 
         Info->Entries = NULL;
     }
@@ -997,11 +1002,11 @@ Returns:
 	
 	FORCE(LhBarrierBeginStackTrace(&Backup));
 	
-	if (RtlCaptureStackBackTrace == NULL) {
+	if (CaptureStackBackTrace == NULL) {
 		THROW(STATUS_NOT_IMPLEMENTED, L"barrier.cpp - This method requires Windows XP or later.");
 	}
 
-	*OutMethodCount = RtlCaptureStackBackTrace(1, 32, OutMethodArray, NULL);
+	*OutMethodCount = CaptureStackBackTrace(1, 32, OutMethodArray, NULL);
 
 	RETURN;
 	

@@ -547,18 +547,35 @@ typedef struct _HOOK_TRACE_INFO_
                 ULONG* InThreadIdList,
                 ULONG InThreadCount);
 
-    HOOK_ACL* LhBarrierGetAcl();                
+    HOOK_ACL* LhBarrierGetAcl();
 /*
     The following barrier methods are meant to be used in hook handlers only!
 
     They will all fail with STATUS_NOT_SUPPORTED if called outside a
     valid hook handler...
 */
-LONG LhBarrierGetCallback(PVOID* OutValue);
+LONG LhBarrierGetCallback(
+	PVOID* OutValue);
 
-LONG LhBarrierGetReturnAddress(PVOID* OutValue);
+LONG LhBarrierGetReturnAddress(
+	PVOID* OutValue);
 
-LONG LhBarrierGetAddressOfReturnAddress(PVOID** OutValue);
+LONG LhBarrierGetAddressOfReturnAddress(
+	PVOID** OutValue);
+
+LONG LhGetHookBypassAddress(
+	TRACED_HOOK_HANDLE InHook,
+	PVOID** OutAddress);
+
+// Stack tracing functions
+LONG LhBarrierBeginStackTrace(PVOID* OutBackup);
+
+LONG LhBarrierEndStackTrace(PVOID InBackup);
+
+LONG LhBarrierCallStackTrace(
+	PVOID* OutMethodArray,
+	ULONG InMaxMethodCount,
+	ULONG* OutMethodCount);
 
 LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer);
 
@@ -1164,16 +1181,6 @@ BOOL WINAPI DetourVirtualProtectSameExecute(_In_  PVOID pAddress,
 
 //////////////////////////////////////////////////////////////////////////////
 
-
-// Stack tracing functions
-LONG LhBarrierBeginStackTrace(PVOID* OutBackup);
-
-LONG LhBarrierEndStackTrace(PVOID InBackup);
-
-LONG LhBarrierCallStackTrace(
-	PVOID* OutMethodArray,
-	ULONG InMaxMethodCount,
-	ULONG* OutMethodCount);
 
 BOOL LhIsValidHandle(
             TRACED_HOOK_HANDLE InTracedHandle,
