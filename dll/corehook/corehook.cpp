@@ -17,6 +17,9 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved)
 
         LhCriticalInitialize();
     }
+	else if (dwReason == DLL_THREAD_ATTACH) {
+		LhBarrierThreadDetach();
+	}
     else if (dwReason == DLL_PROCESS_DETACH) {
         LhCriticalFinalize();
         

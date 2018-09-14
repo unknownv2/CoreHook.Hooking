@@ -95,12 +95,7 @@ void RtlCopyMemory(
 
 void *RtlAllocateMemory(BOOL InZeroMemory, ULONG InSize)
 {
-    void *Result =
-#ifdef _DEBUG
-        HeapAlloc(hCoreHookHeap, 0, InSize);
-#else
-        HeapAlloc(hCoreHookHeap, 0, InSize);
-#endif
+    void *Result = HeapAlloc(hCoreHookHeap, 0, InSize);
 
 	if (InZeroMemory && (Result != NULL)) {
 		RtlZeroMemory(Result, InSize);
@@ -152,11 +147,7 @@ void RtlFreeMemory(void *InPointer)
 {
     DETOUR_ASSERT(InPointer != NULL, L"barrier.cpp - InPointer != NULL");
 
-#ifdef _DEBUG
-    free(InPointer);
-#else
-    HeapFree(hCoreHookHeap, 0, InPointer);
-#endif
+	HeapFree(hCoreHookHeap, 0, InPointer);
 }
 
 LONG RtlInterlockedIncrement(LONG *RefValue)
