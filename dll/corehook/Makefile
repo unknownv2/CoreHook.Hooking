@@ -63,6 +63,11 @@ $(BIND)\corehook$(DETOURS_BITS).dll $(BIND)\corehook$(DETOURS_BITS).lib: \
         /export:LhIsThreadIntercepted \
         /export:LhBarrierProcessAttach \
         /export:LhGetHookBypassAddress \
+        /export:LhBarrierGetReturnAddress \
+        /export:LhBarrierGetAddressOfReturnAddress \
+        /export:LhBarrierBeginStackTrace \
+        /export:LhBarrierEndStackTrace \
+        /export:LhBarrierCallStackTrace \
         $(LIBS)
 
 $(OBJD)\corehook$(DETOURS_BITS).bsc : $(OBJD)\corehook.obj
