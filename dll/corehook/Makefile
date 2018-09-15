@@ -41,7 +41,6 @@ $(BIND)\corehook$(DETOURS_BITS).dll $(BIND)\corehook$(DETOURS_BITS).lib: \
         /export:DetourCopyPayloadToProcess \
         /export:DetourUpdateThread \
         /export:DetourTransactionCommit \
-        /export:DetourGetLastHandle \
         /export:DetourGetHookHandleForFunction \
         /export:DetourSetCallbackForLocalHook \
         /export:DetourDetach \
