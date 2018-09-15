@@ -1649,7 +1649,7 @@ Description:
 
     LPTHREAD_RUNTIME_INFO		Info;
     RUNTIME_INFO*		        Runtime;
-	BOOL						Exists;
+    BOOL                        Exists;
 
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
@@ -1830,7 +1830,8 @@ LONG WINAPI DetourSetCallbackForLocalHook(PDETOUR_TRAMPOLINE pTrampoline, PVOID 
 
 VOID InsertTraceHandle(PDETOUR_TRAMPOLINE pTrampoline)
 {
-	if (pTrampoline != NULL && pTrampoline->OutHandle != NULL) {
+	if (pTrampoline != NULL && pTrampoline->OutHandle != NULL)
+	{
 		memset(&pTrampoline->LocalACL, 0, sizeof(HOOK_ACL));
 
 		TRACED_HOOK_HANDLE OutHandle = new HOOK_TRACE_INFO();
@@ -1987,7 +1988,7 @@ A traced hook handle. If the hook is already removed, this method
 will still return STATUS_SUCCESS.
 */
 
-	LONG error = -1;
+	LONG                    error = -1;
 
 	PDETOUR_TRAMPOLINE      Hook = NULL;
 	LONG                    NtStatus = -1;
@@ -2133,7 +2134,7 @@ Returns:
 
 */
 
-	LONG    			NtStatus;
+	LONG                NtStatus;
 	PLOCAL_HOOK_INFO    Handle;
 
 	if (!LhIsValidHandle(InHook, &Handle))
