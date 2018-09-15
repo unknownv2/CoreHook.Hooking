@@ -6,7 +6,7 @@ Trampoline_ASM_ARM FUNCTION
         export  Trampoline_ASM_ARM_DATA
         export  Trampoline_ASM_ARM_CODE
 
-NETIntro        ; .NET Barrier Intro Function
+NETIntro       ; .NET Barrier Intro Function
         dcb 0
         dcb 0
         dcb 0
@@ -62,9 +62,7 @@ try_dec_lock
         ldr     r5, OldProc
         b       trampoline_exit
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; call hook handler or original method...
-call_net_entry
-
-; call NET intro
+call_net_entry  ; call NET intro
 
         adr     r0, start ; Hook handle (only a position hint)
         add     r2, sp, #0x6C ; original sp (address of return address)
@@ -90,13 +88,11 @@ try_dec_lock2
         b       trampoline_exit
 
 call_hook_handler
-
-; call hook handler
         ldr     r5, NewProc
         adr     r4, call_net_outro ; adjust return address
         orr     r4, r4, 1 ; set PC bit 0 (Thumb state flag) for thumb mode address
-        str     r4, [sp, #0x6C] ; store outro return to stack after hook handler is called         
-        B       trampoline_exit
+        str     r4, [sp, #0x6C] ; store outro return to stack after hook handler is called
+        b       trampoline_exit
  ; this is where the handler returns...
 call_net_outro
         mov     r5, #0
@@ -118,8 +114,8 @@ try_dec_lock3
         dmb     ish
 
         pop     {r0, r1, r2, r3, r4, lr} ; restore return value of user handler...
-; finally return to saved return address - the caller of this trampoline...        
-        BX      lr
+; finally return to saved return address - the caller of this trampoline...
+        bx      lr
 
 trampoline_exit
         mov     r12, r5
