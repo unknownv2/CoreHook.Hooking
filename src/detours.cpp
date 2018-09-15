@@ -1589,7 +1589,6 @@ UCHAR* DetourGetTrampolinePtr()
 
 #ifdef DETOURS_ARM
 	UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM_CODE;
-    //Ptr += 5 * 4;
 #endif
 
 #ifdef DETOURS_ARM64
@@ -1638,34 +1637,6 @@ ULONG GetTrampolineSize()
     return 0;
 #endif
 }
-#ifdef DETOURS_ARM
-ULONG GetTrampolinePtr()
-{
-    UCHAR*		Ptr = DetourGetTrampolinePtr();
-	UCHAR*		BasePtr = Ptr;
-    ULONG       Signature;
-    ULONG       Index;
-
-	if(___TrampolineSize != 0)
-		return ___TrampolineSize;
-	
-	// search for signature
-	for(Index = 0; Index < 2000 /* some always large enough value*/; Index++)
-	{
-		Signature = *((ULONG*)Ptr);
-
-		if(Signature == 0x12345678)	
-		{
-			___TrampolineSize = (ULONG)(Ptr - BasePtr);
-			return ___TrampolineSize + 1;      
-		}
-
-		Ptr++;
-	}
-
-    return 0;
-}
-#endif
 
 UINT WINAPI BarrierIntro(DETOUR_TRAMPOLINE* InHandle, void* InRetAddr, void** InAddrOfRetAddr)
 {
