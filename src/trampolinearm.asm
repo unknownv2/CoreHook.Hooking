@@ -4,7 +4,7 @@ Trampoline_ASM_ARM FUNCTION
 
         EXPORT  Trampoline_ASM_ARM 
         EXPORT  Trampoline_ASM_ARM_DATA
-	    EXPORT  Trampoline_ASM_ARM_CODE
+        EXPORT  Trampoline_ASM_ARM_CODE
        
 NETIntro        ; .NET Barrier Intro Function
         DCB 0
