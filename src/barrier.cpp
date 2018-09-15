@@ -157,8 +157,9 @@ LONG RtlInterlockedIncrement(LONG *RefValue)
 
 BOOL RtlIsValidPointer(PVOID InPtr, ULONG InSize)
 {
-    if ((InPtr == NULL) || (InPtr == (PVOID)~0))
+    if ((InPtr == NULL) || (InPtr == (PVOID)~0)) {
         return FALSE;
+    }
 
     DETOUR_ASSERT(!IsBadReadPtr(InPtr, InSize), L"barrier.cpp - !IsBadReadPtr(InPtr, InSize)");
 
@@ -257,8 +258,9 @@ void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage)
 }
 void RtlAssert(BOOL InAssert, LPCWSTR lpMessageText)
 {
-    if (InAssert)
+    if (InAssert) {
         return;
+    }
 
 #ifdef _DEBUG
     DebugBreak();
@@ -499,7 +501,6 @@ Returns:
 */
 
     ULONG CurrentId = GetCurrentThreadId();
-
     LONG Index = -1;
     LONG i;
 
@@ -676,8 +677,9 @@ Returns:
 
     LPTHREAD_RUNTIME_INFO Runtime = NULL;
 
-    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime) || Runtime->IsProtected)
+    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime) || Runtime->IsProtected) {
         return FALSE;
+    }
 
     Runtime->IsProtected = TRUE;
 
@@ -751,13 +753,15 @@ Returns:
     {
         if (ACLContains(LocalACL, CheckID))
         {
-            if (LocalACL->IsExclusive)
+            if (LocalACL->IsExclusive) {
                 return FALSE;
+            }
         }
         else
         {
-            if (!LocalACL->IsExclusive)
+            if (!LocalACL->IsExclusive) {
                 return FALSE;
+            }
         }
 
         return !Unit.GlobalACL.IsExclusive;
@@ -766,13 +770,15 @@ Returns:
     {
         if (ACLContains(LocalACL, CheckID))
         {
-            if (LocalACL->IsExclusive)
+            if (LocalACL->IsExclusive) {
                 return FALSE;
+            }
         }
         else
         {
-            if (!LocalACL->IsExclusive)
+            if (!LocalACL->IsExclusive) {
                 return FALSE;
+            }
         }
 
         return Unit.GlobalACL.IsExclusive;
