@@ -755,7 +755,7 @@ inline ULONG detour_is_code_filler(PBYTE pbCode)
 
 #ifdef DETOURS_ARM
 
-const ULONG DETOUR_TRAMPOLINE_CODE_SIZE = 0xD0;
+const ULONG DETOUR_TRAMPOLINE_CODE_SIZE = 0xD4;
 
 struct _DETOUR_TRAMPOLINE
 {
@@ -784,7 +784,7 @@ struct _DETOUR_TRAMPOLINE
     BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];
 };
 
-C_ASSERT(sizeof(_DETOUR_TRAMPOLINE) == 876);
+C_ASSERT(sizeof(_DETOUR_TRAMPOLINE) == 880);
 
 enum {
     SIZE_OF_JMP = 8
@@ -1567,6 +1567,8 @@ static ULONG ___TrampolineSize = 0;
 
 #ifdef DETOURS_ARM
 	extern "C" void __stdcall Trampoline_ASM_ARM();
+	extern "C" void __stdcall Trampoline_ASM_ARM_DATA();
+	extern "C" void __stdcall Trampoline_ASM_ARM_CODE();
 #endif
 
 #ifdef DETOURS_ARM64
@@ -1586,8 +1588,8 @@ UCHAR* DetourGetTrampolinePtr()
 #endif
 
 #ifdef DETOURS_ARM
-	UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM;
-    Ptr += 6 * 4;
+	UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM_CODE;
+    //Ptr += 5 * 4;
 #endif
 
 #ifdef DETOURS_ARM64
@@ -1606,14 +1608,20 @@ UCHAR* DetourGetTrampolinePtr()
 
 ULONG GetTrampolineSize()
 {
+	if (___TrampolineSize != 0)
+		return ___TrampolineSize;
+#ifdef DETOURS_ARM            
+	___TrampolineSize = (ULONG)
+		((UCHAR*)Trampoline_ASM_ARM_DATA - (UCHAR*)Trampoline_ASM_ARM_CODE);
+
+	return ___TrampolineSize;
+
+#else
     UCHAR*		Ptr = DetourGetTrampolinePtr();
 	UCHAR*		BasePtr = Ptr;
     ULONG       Signature;
     ULONG       Index;
 
-	if(___TrampolineSize != 0)
-		return ___TrampolineSize;
-	
 	// search for signature
 	for(Index = 0; Index < 2000 /* some always large enough value*/; Index++)
 	{
@@ -1621,20 +1629,14 @@ ULONG GetTrampolineSize()
 
 		if(Signature == 0x12345678)	
 		{
-#ifdef DETOURS_ARM            
-			___TrampolineSize = (ULONG)(align4(Ptr + 7) - BasePtr);
-			return ___TrampolineSize + 1;
-#endif
-#if defined(DETOURS_X64) || defined(DETOURS_X86) || defined(DETOURS_ARM64)
 			___TrampolineSize = (ULONG)(Ptr - BasePtr);
-			return ___TrampolineSize;
-#endif            
+			return ___TrampolineSize;          
 		}
 
 		Ptr++;
 	}
-
     return 0;
+#endif
 }
 #ifdef DETOURS_ARM
 ULONG GetTrampolinePtr()
@@ -2350,9 +2352,9 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             PBYTE endOfTramp = (PBYTE)&o->pTrampoline->rbTrampolineCode;
             PBYTE trampolineStart = align4(trampoline);
             memcpy(endOfTramp, trampolineStart, TrampolineSize);
-            o->pTrampoline->HookIntro = BarrierIntro;
-			o->pTrampoline->HookOutro = BarrierOutro;
-			o->pTrampoline->Trampoline = endOfTramp;
+            o->pTrampoline->HookIntro = DETOURS_PBYTE_TO_PFUNC(BarrierIntro);
+			o->pTrampoline->HookOutro = DETOURS_PBYTE_TO_PFUNC(BarrierOutro);
+			o->pTrampoline->Trampoline = DETOURS_PBYTE_TO_PFUNC(endOfTramp);
 			o->pTrampoline->OldProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->rbCode);
 			o->pTrampoline->HookProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->pbDetour);            
             DETOUR_TRACE(("detours: oldProc=%p: "

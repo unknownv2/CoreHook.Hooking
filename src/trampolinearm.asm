@@ -3,11 +3,8 @@
 Trampoline_ASM_ARM FUNCTION
 
         EXPORT  Trampoline_ASM_ARM 
-
-        DCB 0   ; help with alignment
-        DCB 0
-        DCB 0
-    
+        EXPORT  Trampoline_ASM_ARM_DATA
+	    EXPORT  Trampoline_ASM_ARM_CODE
        
 NETIntro        ; .NET Barrier Intro Function
         DCB 0
@@ -34,7 +31,8 @@ IsExecutedPtr  ; Count of times trampoline was executed
         DCB 0
         DCB 0
         DCB 0
-      
+
+Trampoline_ASM_ARM_CODE      
 start     
         push    {r0, r1, r2, r3, r4, lr}
         push    {r5-r10}
@@ -96,6 +94,7 @@ CALL_HOOK_HANDLER
 ; call hook handler        
         ldr     r5, NewProc
         adr     r4, CALL_NET_OUTRO ; adjust return address
+		orr		r4, r4, 1
         str     r4, [sp, #0x6C] ; store outro return to stack after hook handler is called         
         B       TRAMPOLINE_EXIT
  ; this is where the handler returns...
@@ -130,7 +129,8 @@ TRAMPOLINE_EXIT
         
         bx      r12 ; mov     pc, r12
 
-; outro signature, to automatically determine code size        
+; outro signature, to automatically determine code size    
+Trampoline_ASM_ARM_DATA
         DCB     0x78
         DCB     0x56
         DCB     0x34
