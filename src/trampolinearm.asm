@@ -1,10 +1,10 @@
-        AREA     .text, CODE, THUMB, READONLY
+        area     .text, code, thumb, readonly
 
 Trampoline_ASM_ARM FUNCTION
 
-        EXPORT  Trampoline_ASM_ARM 
-        EXPORT  Trampoline_ASM_ARM_DATA
-        EXPORT  Trampoline_ASM_ARM_CODE
+        export  Trampoline_ASM_ARM 
+        export  Trampoline_ASM_ARM_DATA
+        export  Trampoline_ASM_ARM_CODE
 
 NETIntro        ; .NET Barrier Intro Function
         dcb 0
@@ -48,7 +48,7 @@ try_inc_lock
         dmb     ish
         ldr     r2, NewProc
         cmp     r2, #0
-        bne     CALL_NET_ENTRY
+        bne     call_net_entry
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; call original method
         dmb     ish
 try_dec_lock
@@ -60,9 +60,9 @@ try_dec_lock
         dmb     ish
 
         ldr     r5, OldProc
-        b       TRAMPOLINE_EXIT
+        b       trampoline_exit
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; call hook handler or original method...
-CALL_NET_ENTRY
+call_net_entry
 
 ; call NET intro
 
@@ -73,7 +73,7 @@ CALL_NET_ENTRY
         blx     r4 ; Hook->NETIntro(Hook, RetAddr, InitialSP);
 ; should call original method?
         cmp     r0, #0
-        bne     CALL_HOOK_HANDLER
+        bne     call_hook_handler
 
 ; call original method
         ldr     r5, IsExecutedPtr
@@ -87,18 +87,18 @@ try_dec_lock2
         dmb     ish
 
         ldr     r5, OldProc
-        b       TRAMPOLINE_EXIT
+        b       trampoline_exit
 
-CALL_HOOK_HANDLER
+call_hook_handler
 
 ; call hook handler
         ldr     r5, NewProc
-        adr     r4, CALL_NET_OUTRO ; adjust return address
+        adr     r4, call_net_outro ; adjust return address
         orr     r4, r4, 1 ; set PC bit 0 (Thumb state flag) for thumb mode address
         str     r4, [sp, #0x6C] ; store outro return to stack after hook handler is called         
-        B       TRAMPOLINE_EXIT
+        B       trampoline_exit
  ; this is where the handler returns...
-CALL_NET_OUTRO
+call_net_outro
         mov     r5, #0
         push    {r0, r1, r2, r3, r4, r5} ; save return handler
         add     r1, sp, #5*4
@@ -121,7 +121,7 @@ try_dec_lock3
 ; finally return to saved return address - the caller of this trampoline...        
         BX      lr
 
-TRAMPOLINE_EXIT
+trampoline_exit
         mov     r12, r5
         vpop    {d0-d7}
         pop     {r5-r10}
@@ -136,6 +136,6 @@ Trampoline_ASM_ARM_DATA
         dcb     0x34
         dcb     0x12
       
-        ENDFUNC
+        endfunc
 
-        END
+        end
