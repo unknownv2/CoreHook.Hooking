@@ -97,9 +97,9 @@ void *RtlAllocateMemory(BOOL InZeroMemory, ULONG InSize)
 {
     void *Result = HeapAlloc(hCoreHookHeap, 0, InSize);
 
-	if (InZeroMemory && (Result != NULL)) {
-		RtlZeroMemory(Result, InSize);
-	}
+    if (InZeroMemory && (Result != NULL)) {
+        RtlZeroMemory(Result, InSize);
+    }
 
     return Result;
 }
@@ -147,7 +147,7 @@ void RtlFreeMemory(void *InPointer)
 {
     DETOUR_ASSERT(InPointer != NULL, L"barrier.cpp - InPointer != NULL");
 
-	HeapFree(hCoreHookHeap, 0, InPointer);
+    HeapFree(hCoreHookHeap, 0, InPointer);
 }
 
 LONG RtlInterlockedIncrement(LONG *RefValue)
@@ -179,78 +179,78 @@ static ULONG LastErrorCode = 0;
 
 LPCWSTR RtlErrorCodeToString(LONG InCode)
 {
-	switch (InCode)
-	{
-	case STATUS_SUCCESS: return L"STATUS_SUCCESS";
-	case STATUS_NOT_SUPPORTED: return L"STATUS_NOT_SUPPORTED";
-	case STATUS_INTERNAL_ERROR: return L"STATUS_INTERNAL_ERROR";
-	case STATUS_PROCEDURE_NOT_FOUND: return L"STATUS_PROCEDURE_NOT_FOUND";
-	case STATUS_NOINTERFACE: return L"STATUS_NOINTERFACE";
-	case STATUS_INFO_LENGTH_MISMATCH: return L"STATUS_INFO_LENGTH_MISMATCH";
-	case STATUS_BUFFER_TOO_SMALL: return L"STATUS_BUFFER_TOO_SMALL";
-	case STATUS_INVALID_PARAMETER: return L"STATUS_INVALID_PARAMETER";
-	case STATUS_INSUFFICIENT_RESOURCES: return L"STATUS_INSUFFICIENT_RESOURCES";
-	case STATUS_UNHANDLED_EXCEPTION: return L"STATUS_UNHANDLED_EXCEPTION";
-	case STATUS_NOT_FOUND: return L"STATUS_NOT_FOUND";
-	case STATUS_NOT_IMPLEMENTED: return L"STATUS_NOT_IMPLEMENTED";
-	case STATUS_ACCESS_DENIED: return L"STATUS_ACCESS_DENIED";
-	case STATUS_ALREADY_REGISTERED: return L"STATUS_ALREADY_REGISTERED";
-	case STATUS_WOW_ASSERTION: return L"STATUS_WOW_ASSERTION";
-	case STATUS_BUFFER_OVERFLOW: return L"STATUS_BUFFER_OVERFLOW";
-	case STATUS_DLL_INIT_FAILED: return L"STATUS_DLL_INIT_FAILED";
-	case STATUS_INVALID_PARAMETER_1: return L"STATUS_INVALID_PARAMETER_1";
-	case STATUS_INVALID_PARAMETER_2: return L"STATUS_INVALID_PARAMETER_2";
-	case STATUS_INVALID_PARAMETER_3: return L"STATUS_INVALID_PARAMETER_3";
-	case STATUS_INVALID_PARAMETER_4: return L"STATUS_INVALID_PARAMETER_4";
-	case STATUS_INVALID_PARAMETER_5: return L"STATUS_INVALID_PARAMETER_5";
-	case STATUS_INVALID_PARAMETER_6: return L"STATUS_INVALID_PARAMETER_6";
-	case STATUS_INVALID_PARAMETER_7: return L"STATUS_INVALID_PARAMETER_7";
-	case STATUS_INVALID_PARAMETER_8: return L"STATUS_INVALID_PARAMETER_8";
-	default: return L"UNKNOWN";
-	}
+    switch (InCode)
+    {
+    case STATUS_SUCCESS: return L"STATUS_SUCCESS";
+    case STATUS_NOT_SUPPORTED: return L"STATUS_NOT_SUPPORTED";
+    case STATUS_INTERNAL_ERROR: return L"STATUS_INTERNAL_ERROR";
+    case STATUS_PROCEDURE_NOT_FOUND: return L"STATUS_PROCEDURE_NOT_FOUND";
+    case STATUS_NOINTERFACE: return L"STATUS_NOINTERFACE";
+    case STATUS_INFO_LENGTH_MISMATCH: return L"STATUS_INFO_LENGTH_MISMATCH";
+    case STATUS_BUFFER_TOO_SMALL: return L"STATUS_BUFFER_TOO_SMALL";
+    case STATUS_INVALID_PARAMETER: return L"STATUS_INVALID_PARAMETER";
+    case STATUS_INSUFFICIENT_RESOURCES: return L"STATUS_INSUFFICIENT_RESOURCES";
+    case STATUS_UNHANDLED_EXCEPTION: return L"STATUS_UNHANDLED_EXCEPTION";
+    case STATUS_NOT_FOUND: return L"STATUS_NOT_FOUND";
+    case STATUS_NOT_IMPLEMENTED: return L"STATUS_NOT_IMPLEMENTED";
+    case STATUS_ACCESS_DENIED: return L"STATUS_ACCESS_DENIED";
+    case STATUS_ALREADY_REGISTERED: return L"STATUS_ALREADY_REGISTERED";
+    case STATUS_WOW_ASSERTION: return L"STATUS_WOW_ASSERTION";
+    case STATUS_BUFFER_OVERFLOW: return L"STATUS_BUFFER_OVERFLOW";
+    case STATUS_DLL_INIT_FAILED: return L"STATUS_DLL_INIT_FAILED";
+    case STATUS_INVALID_PARAMETER_1: return L"STATUS_INVALID_PARAMETER_1";
+    case STATUS_INVALID_PARAMETER_2: return L"STATUS_INVALID_PARAMETER_2";
+    case STATUS_INVALID_PARAMETER_3: return L"STATUS_INVALID_PARAMETER_3";
+    case STATUS_INVALID_PARAMETER_4: return L"STATUS_INVALID_PARAMETER_4";
+    case STATUS_INVALID_PARAMETER_5: return L"STATUS_INVALID_PARAMETER_5";
+    case STATUS_INVALID_PARAMETER_6: return L"STATUS_INVALID_PARAMETER_6";
+    case STATUS_INVALID_PARAMETER_7: return L"STATUS_INVALID_PARAMETER_7";
+    case STATUS_INVALID_PARAMETER_8: return L"STATUS_INVALID_PARAMETER_8";
+    default: return L"UNKNOWN";
+    }
 }
 
 void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage)
 {
     LastErrorCode = InCode;
 
-	if (InMessage == NULL)
-	{
-		LastError = L"";
-		(void)InNtStatus;
-	}
-	else
-	{
+    if (InMessage == NULL)
+    {
+        LastError = L"";
+        (void)InNtStatus;
+    }
+    else
+    {
 #if _DEBUG
-		if (lstrlenW(InMessage) > 0)
-		{
-			WCHAR msg[1024] = { 0 };
-			WCHAR* lpMsgBuf = NULL;
+        if (lstrlenW(InMessage) > 0)
+        {
+            WCHAR msg[1024] = { 0 };
+            WCHAR* lpMsgBuf = NULL;
 
-			if (InNtStatus == STATUS_SUCCESS)
-			{
-				FormatMessage(
-					FORMAT_MESSAGE_ALLOCATE_BUFFER |
-					FORMAT_MESSAGE_FROM_SYSTEM |
-					FORMAT_MESSAGE_IGNORE_INSERTS,
-					NULL,
-					InCode,
-					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-					lpMsgBuf,
-					0, NULL);
-				_snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", InMessage, lpMsgBuf);
-			}
-			else
-			{
-				_snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", InMessage, RtlErrorCodeToString(InNtStatus));
-			}
-			DEBUGMSG(msg);
+            if (InNtStatus == STATUS_SUCCESS)
+            {
+                FormatMessage(
+                    FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                    FORMAT_MESSAGE_FROM_SYSTEM |
+                    FORMAT_MESSAGE_IGNORE_INSERTS,
+                    NULL,
+                    InCode,
+                    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                    lpMsgBuf,
+                    0, NULL);
+                _snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", InMessage, lpMsgBuf);
+            }
+            else
+            {
+                _snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", InMessage, RtlErrorCodeToString(InNtStatus));
+            }
+            DEBUGMSG(msg);
 
-			if (lpMsgBuf != NULL)
-			{
-				LocalFree(lpMsgBuf);
-			}
-		}
+            if (lpMsgBuf != NULL)
+            {
+                LocalFree(lpMsgBuf);
+            }
+        }
 #endif
         LastError = InMessage;
     }
@@ -367,7 +367,9 @@ Parameters:
     DETOUR_ASSERT(IsValidPointer(InAcl, sizeof(HOOK_ACL)), L"barrier.cpp - IsValidPointer(InAcl, sizeof(HOOK_ACL))");
 
     if (InThreadCount > MAX_ACE_COUNT)
+    {
         return -2;
+    }
 
     if (!IsValidPointer(InThreadIdList, InThreadCount * sizeof(ULONG)))
         return -1;
@@ -573,10 +575,10 @@ Description:
     // release thread specific resources
     for (Index = 0; Index < MAX_THREAD_COUNT; Index++)
     {
-		if (Unit.TLS.Entries[Index].Entries != NULL)
-		{
-			RtlFreeMemory(Unit.TLS.Entries[Index].Entries);
-		}
+        if (Unit.TLS.Entries[Index].Entries != NULL)
+        {
+            RtlFreeMemory(Unit.TLS.Entries[Index].Entries);
+        }
     }
 
     RtlZeroMemory(&Unit, sizeof(Unit));
@@ -596,10 +598,10 @@ Description:
 
     if (TlsGetCurrentValue(&Unit.TLS, &Info))
     {
-		if (Info->Entries != NULL)
-		{
-			RtlFreeMemory(Info->Entries);
-		}
+        if (Info->Entries != NULL)
+        {
+            RtlFreeMemory(Info->Entries);
+        }
 
         Info->Entries = NULL;
     }
@@ -735,12 +737,14 @@ Returns:
 
     ULONG CheckID;
 
-	if (InThreadID == 0) {
-		CheckID = GetCurrentThreadId();
-	}
-	else {
-		CheckID = InThreadID;
-	}
+    if (InThreadID == 0)
+    {
+        CheckID = GetCurrentThreadId();
+    }
+    else
+    {
+        CheckID = InThreadID;
+    }
 
     if (ACLContains(&Unit.GlobalACL, CheckID))
     {
@@ -779,28 +783,33 @@ LONG LhBarrierGetCallback(PVOID *OutValue)
 /*
 Description:
 
-	Is expected to be called inside a hook handler. Otherwise it
-	will fail with STATUS_NOT_SUPPORTED. The method retrieves
-	the callback initially passed to the related LhInstallHook()
-	call.
+    Is expected to be called inside a hook handler. Otherwise it
+    will fail with STATUS_NOT_SUPPORTED. The method retrieves
+    the callback initially passed to the related LhInstallHook()
+    call.
 
 */
 
     LONG                    NtStatus;
     LPTHREAD_RUNTIME_INFO   Runtime;
 
-	if (!IsValidPointer(OutValue, sizeof(PVOID))) {
-		THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
-	}
-	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
-		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
-	}
-	if (Runtime->Current != NULL) {
-		*OutValue = Runtime->Callback;
-	}
-	else	{
-		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
-	}
+
+    if (!IsValidPointer(OutValue, sizeof(PVOID)))
+    {
+        THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
+    }
+    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) 
+    {
+        THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+    }
+    if (Runtime->Current != NULL) 
+    {
+        *OutValue = Runtime->Callback;
+    }
+    else 
+    { 
+        THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+    }
 
     RETURN;
 
@@ -814,38 +823,38 @@ LONG LhBarrierGetReturnAddress(PVOID* OutValue)
 /*
 Description:
 
-	Is expected to be called inside a hook handler. Otherwise it
-	will fail with STATUS_NOT_SUPPORTED. The method retrieves
-	the return address of the hook handler. This is usually the
-	instruction behind the "CALL" which invoked the hook.
+    Is expected to be called inside a hook handler. Otherwise it
+    will fail with STATUS_NOT_SUPPORTED. The method retrieves
+    the return address of the hook handler. This is usually the
+    instruction behind the "CALL" which invoked the hook.
 
-	The calling module determination is based on this method.
+    The calling module determination is based on this method.
 
 */
 
-	LONG                        NtStatus;
-	LPTHREAD_RUNTIME_INFO       Runtime;
+    LONG                        NtStatus;
+    LPTHREAD_RUNTIME_INFO       Runtime;
 
-	if (!IsValidPointer(OutValue, sizeof(PVOID))) {
-		THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
-	}
+    if (!IsValidPointer(OutValue, sizeof(PVOID))) {
+        THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
+    }
 
-	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
-		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
-	}
+    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
+        THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+    }
 
-	if (Runtime->Current != NULL) {
-		*OutValue = Runtime->Current->RetAddress;
-	}
-	else {
-		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
-	}
+    if (Runtime->Current != NULL) {
+        *OutValue = Runtime->Current->RetAddress;
+    }
+    else {
+        THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+    }
 
-	RETURN;
+    RETURN;
 
 THROW_OUTRO:
 FINALLY_OUTRO:
-	return NtStatus;
+    return NtStatus;
 }
 
 
@@ -854,33 +863,33 @@ LONG LhBarrierGetAddressOfReturnAddress(PVOID** OutValue)
 /*
 Description:
 
-	Is expected to be called inside a hook handler. Otherwise it
-	will fail with STATUS_NOT_SUPPORTED. The method retrieves
-	the address of the return address of the hook handler.
+    Is expected to be called inside a hook handler. Otherwise it
+    will fail with STATUS_NOT_SUPPORTED. The method retrieves
+    the address of the return address of the hook handler.
 */
 
-	LPTHREAD_RUNTIME_INFO       Runtime;
-	LONG	                    NtStatus;
+    LPTHREAD_RUNTIME_INFO       Runtime;
+    LONG                        NtStatus;
 
-	if (OutValue == NULL) {
-		THROW(STATUS_INVALID_PARAMETER, L"Invalid storage specified.");
-	}
+    if (OutValue == NULL) {
+        THROW(STATUS_INVALID_PARAMETER, L"Invalid storage specified.");
+    }
 
-	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
-		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
-	}
+    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
+        THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+    }
 
-	if (Runtime->Current != NULL) {
-		*OutValue = Runtime->Current->AddrOfRetAddr;
-	}
-	else {
-		THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
-	}
-	RETURN;
+    if (Runtime->Current != NULL) {
+        *OutValue = Runtime->Current->AddrOfRetAddr;
+    }
+    else {
+        THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+    }
+    RETURN;
 
 THROW_OUTRO:
 FINALLY_OUTRO:
-	return NtStatus;
+    return NtStatus;
 }
 
 LONG LhBarrierBeginStackTrace(PVOID* OutBackup)
@@ -888,38 +897,38 @@ LONG LhBarrierBeginStackTrace(PVOID* OutBackup)
 /*
 Description:
 
-	Is expected to be called inside a hook handler. Otherwise it
-	will fail with STATUS_NOT_SUPPORTED.
-	Temporarily restores the call stack to allow stack traces.
+    Is expected to be called inside a hook handler. Otherwise it
+    will fail with STATUS_NOT_SUPPORTED.
+    Temporarily restores the call stack to allow stack traces.
 
-	You have to pass the stored backup pointer to
-	LhBarrierEndStackTrace() BEFORE leaving the handler, otherwise
-	the application will be left in an unstable state!
+    You have to pass the stored backup pointer to
+    LhBarrierEndStackTrace() BEFORE leaving the handler, otherwise
+    the application will be left in an unstable state!
 */
 
-	LONG                        NtStatus;
-	LPTHREAD_RUNTIME_INFO       Runtime;
+    LONG                        NtStatus;
+    LPTHREAD_RUNTIME_INFO       Runtime;
 
-	if (OutBackup == NULL) {
-		THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given backup storage is invalid.");
-	}
+    if (OutBackup == NULL) {
+        THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given backup storage is invalid.");
+    }
 
-	if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
-		THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
-	}
+    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
+        THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
+    }
 
-	if (Runtime->Current == NULL) {
-		THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
-	}
+    if (Runtime->Current == NULL) {
+        THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
+    }
 
-	*OutBackup = *Runtime->Current->AddrOfRetAddr;
-	*Runtime->Current->AddrOfRetAddr = Runtime->Current->RetAddress;
+    *OutBackup = *Runtime->Current->AddrOfRetAddr;
+    *Runtime->Current->AddrOfRetAddr = Runtime->Current->RetAddress;
 
-	RETURN;
+    RETURN;
 
 THROW_OUTRO:
 FINALLY_OUTRO:
-	return NtStatus;
+    return NtStatus;
 }
 
 LONG LhBarrierEndStackTrace(PVOID InBackup)
@@ -927,95 +936,95 @@ LONG LhBarrierEndStackTrace(PVOID InBackup)
 /*
 Description:
 
-	Is expected to be called inside a hook handler. Otherwise it
-	will fail with STATUS_NOT_SUPPORTED.
+    Is expected to be called inside a hook handler. Otherwise it
+    will fail with STATUS_NOT_SUPPORTED.
 
-	You have to pass the backup pointer obtained with
-	LhBarrierBeginStackTrace().
+    You have to pass the backup pointer obtained with
+    LhBarrierBeginStackTrace().
 */
 
-	LONG	            NtStatus;
-	PVOID*              AddrOfRetAddr;
+    LONG                NtStatus;
+    PVOID*              AddrOfRetAddr;
 
-	if (!IsValidPointer(InBackup, 1)) {
-		THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given stack backup pointer is invalid.");
-	}
+    if (!IsValidPointer(InBackup, 1)) {
+        THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given stack backup pointer is invalid.");
+    }
 
-	FORCE(LhBarrierGetAddressOfReturnAddress(&AddrOfRetAddr));
+    FORCE(LhBarrierGetAddressOfReturnAddress(&AddrOfRetAddr));
 
-	*AddrOfRetAddr = InBackup;
+    *AddrOfRetAddr = InBackup;
 
-	RETURN;
+    RETURN;
 
 THROW_OUTRO:
 FINALLY_OUTRO:
-	return NtStatus;
+    return NtStatus;
 }
 
 LONG LhBarrierCallStackTrace(
-	PVOID* OutMethodArray,
-	ULONG InMaxMethodCount,
-	ULONG* OutMethodCount)
+    PVOID* OutMethodArray,
+    ULONG InMaxMethodCount,
+    ULONG* OutMethodCount)
 {
 /*
 Description:
 
-	Creates a call stack trace and translates all method entries
-	back into their owning modules.
+    Creates a call stack trace and translates all method entries
+    back into their owning modules.
 
 Parameters:
 
-	- OutMethodArray
+    - OutMethodArray
 
-		An array receiving the methods on the call stack.
+        An array receiving the methods on the call stack.
 
-	- InMaxMethodCount
+    - InMaxMethodCount
 
-		The length of the method array.
+        The length of the method array.
 
-	- OutMethodCount
+    - OutMethodCount
 
-		The actual count of methods on the call stack. This will never
-		be greater than 64.
+        The actual count of methods on the call stack. This will never
+        be greater than 64.
 
 Returns:
 
-	STATUS_NOT_IMPLEMENTED
+    STATUS_NOT_IMPLEMENTED
 
-		Only supported since Windows XP.
+        Only supported since Windows XP.
 */
-	
-	LONG					NtStatus;
-	PVOID					Backup = NULL;
+    
+    LONG                    NtStatus;
+    PVOID                    Backup = NULL;
 
-	if (InMaxMethodCount > 64) {
-		THROW(STATUS_INVALID_PARAMETER_2, L"barrier.cpp - At maximum 64 modules are supported.");
-	}
-	if (!IsValidPointer(OutMethodArray, InMaxMethodCount * sizeof(PVOID))) {
-		THROW(STATUS_INVALID_PARAMETER_1, L"barrier.cpp - The given module buffer is invalid.");
-	}
+    if (InMaxMethodCount > 64) {
+        THROW(STATUS_INVALID_PARAMETER_2, L"barrier.cpp - At maximum 64 modules are supported.");
+    }
+    if (!IsValidPointer(OutMethodArray, InMaxMethodCount * sizeof(PVOID))) {
+        THROW(STATUS_INVALID_PARAMETER_1, L"barrier.cpp - The given module buffer is invalid.");
+    }
 
-	if (!IsValidPointer(OutMethodCount, sizeof(ULONG))) {
-		THROW(STATUS_INVALID_PARAMETER_3, L"barrier.cpp - Invalid module count storage.");
-	}
+    if (!IsValidPointer(OutMethodCount, sizeof(ULONG))) {
+        THROW(STATUS_INVALID_PARAMETER_3, L"barrier.cpp - Invalid module count storage.");
+    }
 
-	
-	FORCE(LhBarrierBeginStackTrace(&Backup));
-	
-	if (CaptureStackBackTrace == NULL) {
-		THROW(STATUS_NOT_IMPLEMENTED, L"barrier.cpp - This method requires Windows XP or later.");
-	}
+    
+    FORCE(LhBarrierBeginStackTrace(&Backup));
+    
+    if (CaptureStackBackTrace == NULL) {
+        THROW(STATUS_NOT_IMPLEMENTED, L"barrier.cpp - This method requires Windows XP or later.");
+    }
 
-	*OutMethodCount = CaptureStackBackTrace(1, 32, OutMethodArray, NULL);
+    *OutMethodCount = CaptureStackBackTrace(1, 32, OutMethodArray, NULL);
 
-	RETURN;
-	
+    RETURN;
+    
 THROW_OUTRO:
 FINALLY_OUTRO:
-	{
-		if (Backup != NULL) {
-			LhBarrierEndStackTrace(Backup);
-		}
-		return NtStatus;
-	}
+    {
+        if (Backup != NULL) {
+            LhBarrierEndStackTrace(Backup);
+        }
+        return NtStatus;
+    }
 }

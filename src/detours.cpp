@@ -130,18 +130,18 @@ struct _DETOUR_TRAMPOLINE
     PBYTE               pbRemain;       // first instruction after moved code. [free list]
     PBYTE               pbDetour;       // first instruction of detour function.
     HOOK_ACL            LocalACL;
-    void*               Callback;    
+    void*               Callback;
     ULONG               HLSIndex;
     ULONG               HLSIdent;
-    TRACED_HOOK_HANDLE  OutHandle; // handle returned to user  
+    TRACED_HOOK_HANDLE  OutHandle; // handle returned to user
     void*               Trampoline;
     INT                 IsExecuted;
-    void*               HookIntro; // . NET Intro function  
-    UCHAR*              OldProc;  // old target function      
+    void*               HookIntro; // . NET Intro function
+    UCHAR*              OldProc;  // old target function
     void*               HookProc; // function we detour to
-    void*               HookOutro;   // .NET Outro function  
+    void*               HookOutro;   // .NET Outro function
     int*                IsExecutedPtr;
-    BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];      
+    BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];
 };
 
 C_ASSERT(sizeof(_DETOUR_TRAMPOLINE) == 764);
@@ -357,7 +357,7 @@ struct _DETOUR_TRAMPOLINE
     PBYTE               pbDetour;       // first instruction of detour function.
     BYTE                rbCodeIn[8];    // jmp [pbDetour]
     HOOK_ACL            LocalACL;
-    void*               Callback;    
+    void*               Callback;
     ULONG               HLSIndex;
     ULONG               HLSIdent;
     TRACED_HOOK_HANDLE  OutHandle; // handle returned to user  
@@ -755,7 +755,7 @@ inline ULONG detour_is_code_filler(PBYTE pbCode)
 
 #ifdef DETOURS_ARM
 
-const ULONG DETOUR_TRAMPOLINE_CODE_SIZE = 0xD0;
+const ULONG DETOUR_TRAMPOLINE_CODE_SIZE = 0xD4;
 
 struct _DETOUR_TRAMPOLINE
 {
@@ -770,7 +770,7 @@ struct _DETOUR_TRAMPOLINE
     PBYTE               pbRemain;       // first instruction after moved code. [free list]
     PBYTE               pbDetour;       // first instruction of detour function.
     HOOK_ACL            LocalACL;
-    void*               Callback;    
+    void*               Callback;
     ULONG               HLSIndex;
     ULONG               HLSIdent;
     TRACED_HOOK_HANDLE  OutHandle; // handle returned to user  
@@ -784,7 +784,7 @@ struct _DETOUR_TRAMPOLINE
     BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];
 };
 
-C_ASSERT(sizeof(_DETOUR_TRAMPOLINE) == 876);
+C_ASSERT(sizeof(_DETOUR_TRAMPOLINE) == 880);
 
 enum {
     SIZE_OF_JMP = 8
@@ -1558,19 +1558,21 @@ static LONG detour_align_from_target(PDETOUR_TRAMPOLINE pTrampoline, LONG obTarg
 static ULONG ___TrampolineSize = 0;
 
 #ifdef DETOURS_X64
-	extern "C" void __stdcall Trampoline_ASM_x64();
+    extern "C" void __stdcall Trampoline_ASM_x64();
 #endif
 
 #ifdef DETOURS_X86
-	extern "C" void __stdcall Trampoline_ASM_x86();
+    extern "C" void __stdcall Trampoline_ASM_x86();
 #endif
 
 #ifdef DETOURS_ARM
-	extern "C" void __stdcall Trampoline_ASM_ARM();
+    extern "C" void __stdcall Trampoline_ASM_ARM();
+    extern "C" void*          Trampoline_ASM_ARM_DATA();
+    extern "C" void __stdcall Trampoline_ASM_ARM_CODE();
 #endif
 
 #ifdef DETOURS_ARM64
-	extern "C" void __stdcall Trampoline_ASM_ARM64();
+    extern "C" void __stdcall Trampoline_ASM_ARM64();
 #endif
 
 #if defined(DETOURS_X64) || defined(DETOURS_X86) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
@@ -1578,92 +1580,63 @@ UCHAR* DetourGetTrampolinePtr()
 {
 // bypass possible Visual Studio debug jump table
 #ifdef DETOURS_X64
-	UCHAR* Ptr = (UCHAR*)Trampoline_ASM_x64;
+    UCHAR* Ptr = (UCHAR*)Trampoline_ASM_x64;
 #endif
 
 #ifdef DETOURS_X86
-	UCHAR* Ptr = (UCHAR*)Trampoline_ASM_x86;
+    UCHAR* Ptr = (UCHAR*)Trampoline_ASM_x86;
 #endif
 
 #ifdef DETOURS_ARM
-	UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM;
-    Ptr += 6 * 4;
+    UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM_CODE;
 #endif
 
 #ifdef DETOURS_ARM64
-	UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM64;
+    UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM64;
 #endif
 
-	if(*Ptr == 0xE9)
-		Ptr += *((int*)(Ptr + 1)) + 5;
+    if(*Ptr == 0xE9)
+        Ptr += *((int*)(Ptr + 1)) + 5;
 
 #ifdef DETOURS_X64
-	return Ptr + 5 * 8;
+    return Ptr + 5 * 8;
 #else
-	return Ptr;
+    return Ptr;
 #endif    
 }
 
 ULONG GetTrampolineSize()
 {
-    UCHAR*		Ptr = DetourGetTrampolinePtr();
-	UCHAR*		BasePtr = Ptr;
-    ULONG       Signature;
-    ULONG       Index;
+    if (___TrampolineSize != 0)
+        return ___TrampolineSize;
 
-	if(___TrampolineSize != 0)
-		return ___TrampolineSize;
-	
-	// search for signature
-	for(Index = 0; Index < 2000 /* some always large enough value*/; Index++)
-	{
-		Signature = *((ULONG*)Ptr);
-
-		if(Signature == 0x12345678)	
-		{
 #ifdef DETOURS_ARM            
-			___TrampolineSize = (ULONG)(align4(Ptr + 7) - BasePtr);
-			return ___TrampolineSize + 1;
-#endif
-#if defined(DETOURS_X64) || defined(DETOURS_X86) || defined(DETOURS_ARM64)
-			___TrampolineSize = (ULONG)(Ptr - BasePtr);
-			return ___TrampolineSize;
-#endif            
-		}
+    ___TrampolineSize = (ULONG)
+        ((UCHAR*)Trampoline_ASM_ARM_DATA - (UCHAR*)Trampoline_ASM_ARM_CODE);
 
-		Ptr++;
-	}
-
-    return 0;
-}
-#ifdef DETOURS_ARM
-ULONG GetTrampolinePtr()
-{
-    UCHAR*		Ptr = DetourGetTrampolinePtr();
-	UCHAR*		BasePtr = Ptr;
+    return ___TrampolineSize;
+#else
+    UCHAR*      Ptr = DetourGetTrampolinePtr();
+    UCHAR*      BasePtr = Ptr;
     ULONG       Signature;
     ULONG       Index;
 
-	if(___TrampolineSize != 0)
-		return ___TrampolineSize;
-	
-	// search for signature
-	for(Index = 0; Index < 2000 /* some always large enough value*/; Index++)
-	{
-		Signature = *((ULONG*)Ptr);
+    // search for signature
+    for(Index = 0; Index < 2000 /* some always large enough value*/; Index++)
+    {
+        Signature = *((ULONG*)Ptr);
 
-		if(Signature == 0x12345678)	
-		{
-			___TrampolineSize = (ULONG)(Ptr - BasePtr);
-			return ___TrampolineSize + 1;      
-		}
+        if(Signature == 0x12345678)    
+        {
+            ___TrampolineSize = (ULONG)(Ptr - BasePtr);
+            return ___TrampolineSize;          
+        }
 
-		Ptr++;
-	}
-
+        Ptr++;
+    }
     return 0;
-}
 #endif
+}
 
 UINT WINAPI BarrierIntro(DETOUR_TRAMPOLINE* InHandle, void* InRetAddr, void** InAddrOfRetAddr)
 {
@@ -1674,167 +1647,167 @@ Description:
     thread deadlock barrier.
 */
 
-    LPTHREAD_RUNTIME_INFO		Info;
-    RUNTIME_INFO*		        Runtime;
-	BOOL						Exists;
+    LPTHREAD_RUNTIME_INFO        Info;
+    RUNTIME_INFO*                Runtime;
+    BOOL                        Exists;
 
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
-	InHandle = (DETOUR_TRAMPOLINE*)((PBYTE)(InHandle) - (sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
+    InHandle = (DETOUR_TRAMPOLINE*)((PBYTE)(InHandle) - (sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
 #endif
-	DETOUR_TRACE(("Barrier Intro InHandle=%p, InRetAddr=%p, InAddrOfRetAddr=%p \n",
+    DETOUR_TRACE(("Barrier Intro InHandle=%p, InRetAddr=%p, InAddrOfRetAddr=%p \n",
         InHandle, InRetAddr, InAddrOfRetAddr) );
-	// are we in OS loader lock?
-	if(IsLoaderLock())
-	{
-		/*
-			Execution of managed code or even any other code within any loader lock
-			may lead into unpredictable application behavior and therefore we just
-			execute without intercepting the call...
-		*/
+    // are we in OS loader lock?
+    if(IsLoaderLock())
+    {
+        /*
+            Execution of managed code or even any other code within any loader lock
+            may lead into unpredictable application behavior and therefore we just
+            execute without intercepting the call...
+        */
 
-		/*  !!Note that the assembler code does not invoke LhBarrierOutro() in this case!! */
+        /*  !!Note that the assembler code does not invoke LhBarrierOutro() in this case!! */
 
-		return FALSE;
-	}
+        return FALSE;
+    }
 
-	// open pointer table
-	Exists = TlsGetCurrentValue(&Unit.TLS, &Info);
+    // open pointer table
+    Exists = TlsGetCurrentValue(&Unit.TLS, &Info);
 
-	if(!Exists)
-	{        
-		if(!TlsAddCurrentThread(&Unit.TLS))
-			return FALSE;
-	}
+    if(!Exists)
+    {        
+        if(!TlsAddCurrentThread(&Unit.TLS))
+            return FALSE;
+    }
 
-	/*
-		To minimize APIs that can't be hooked, we are now entering the self protection.
-		This will allow anybody to hook any APIs except those required to setup
-		self protection.
+    /*
+        To minimize APIs that can't be hooked, we are now entering the self protection.
+        This will allow anybody to hook any APIs except those required to setup
+        self protection.
 
-		Self protection prevents any further hook interception for the current fiber,
-		while setting up the "Thread Deadlock Barrier"...
-	*/
-	if(!AcquireSelfProtection())
-	{
-		/*  !!Note that the assembler code does not invoke LhBarrierOutro() in this case!! */
+        Self protection prevents any further hook interception for the current fiber,
+        while setting up the "Thread Deadlock Barrier"...
+    */
+    if(!AcquireSelfProtection())
+    {
+        /*  !!Note that the assembler code does not invoke LhBarrierOutro() in this case!! */
 
-		return FALSE;
-	}
-	DETOUR_ASSERT(InHandle->HLSIndex < MAX_HOOK_COUNT,L"detours.cpp - InHandle->HLSIndex < MAX_HOOK_COUNT");
+        return FALSE;
+    }
+    DETOUR_ASSERT(InHandle->HLSIndex < MAX_HOOK_COUNT,L"detours.cpp - InHandle->HLSIndex < MAX_HOOK_COUNT");
 
-	if(!Exists)
-	{        
-		TlsGetCurrentValue(&Unit.TLS, &Info);
-		Info->Entries = (RUNTIME_INFO*)RtlAllocateMemory(TRUE, sizeof(RUNTIME_INFO) * MAX_HOOK_COUNT);
+    if(!Exists)
+    {        
+        TlsGetCurrentValue(&Unit.TLS, &Info);
+        Info->Entries = (RUNTIME_INFO*)RtlAllocateMemory(TRUE, sizeof(RUNTIME_INFO) * MAX_HOOK_COUNT);
 
-		if(Info->Entries == NULL)
-			goto DONT_INTERCEPT;
-	}
+        if(Info->Entries == NULL)
+            goto DONT_INTERCEPT;
+    }
 
-	// get hook runtime info...
-	Runtime = &Info->Entries[InHandle->HLSIndex];
+    // get hook runtime info...
+    Runtime = &Info->Entries[InHandle->HLSIndex];
 
-	if(Runtime->HLSIdent != InHandle->HLSIdent)
-	{
-		// just reset execution information
-		Runtime->HLSIdent = InHandle->HLSIdent;
-		Runtime->IsExecuting = FALSE;        
-	}
+    if(Runtime->HLSIdent != InHandle->HLSIdent)
+    {
+        // just reset execution information
+        Runtime->HLSIdent = InHandle->HLSIdent;
+        Runtime->IsExecuting = FALSE;        
+    }
 
-	// detect loops in hook execution hiearchy.
-	if(Runtime->IsExecuting)
-	{
-		/*
-			This implies that actually the handler has invoked itself. Because of
-			the special HookLocalStorage, this is now also signaled if other
-			hooks invoked by the related handler are calling it again.
+    // detect loops in hook execution hiearchy.
+    if(Runtime->IsExecuting)
+    {
+        /*
+            This implies that actually the handler has invoked itself. Because of
+            the special HookLocalStorage, this is now also signaled if other
+            hooks invoked by the related handler are calling it again.
 
-			I call this the "Thread deadlock barrier".
+            I call this the "Thread deadlock barrier".
 
-			!!Note that the assembler code does not invoke LhBarrierOutro() in this case!!
-		*/
+            !!Note that the assembler code does not invoke LhBarrierOutro() in this case!!
+        */
 
-		goto DONT_INTERCEPT;
-	}
+        goto DONT_INTERCEPT;
+    }
 
-	Info->Callback = InHandle->Callback;
-	Info->Current = Runtime;
+    Info->Callback = InHandle->Callback;
+    Info->Current = Runtime;
 
-	/*
-		Now we will negotiate thread/process access based on global and local ACL...
-	*/
-	Runtime->IsExecuting = IsThreadIntercepted(&InHandle->LocalACL, GetCurrentThreadId());
+    /*
+        Now we will negotiate thread/process access based on global and local ACL...
+    */
+    Runtime->IsExecuting = IsThreadIntercepted(&InHandle->LocalACL, GetCurrentThreadId());
 
-	if(!Runtime->IsExecuting)
-		goto DONT_INTERCEPT;
+    if(!Runtime->IsExecuting)
+        goto DONT_INTERCEPT;
 
-	// save some context specific information
-	Runtime->RetAddress = InRetAddr;
-	Runtime->AddrOfRetAddr = InAddrOfRetAddr;
+    // save some context specific information
+    Runtime->RetAddress = InRetAddr;
+    Runtime->AddrOfRetAddr = InAddrOfRetAddr;
 
-	ReleaseSelfProtection();	
-	return TRUE;
+    ReleaseSelfProtection();    
+    return TRUE;
 
 DONT_INTERCEPT:
-	/*  !!Note that the assembler code does not invoke UnmanagedHookOutro() in this case!! */
+    /*  !!Note that the assembler code does not invoke UnmanagedHookOutro() in this case!! */
 
-	if(Info != NULL)
-	{
-		Info->Current = NULL;
-		Info->Callback = NULL;
+    if(Info != NULL)
+    {
+        Info->Current = NULL;
+        Info->Callback = NULL;
 
-		ReleaseSelfProtection();
-	}
+        ReleaseSelfProtection();
+    }
 
-	return FALSE;
+    return FALSE;
 }
 void* WINAPI BarrierOutro(DETOUR_TRAMPOLINE* InHandle, void** InAddrOfRetAddr)
 {
-	DETOUR_TRACE(("Barrier Outro InHandle=%p, InAddrOfRetAddr=%p \n",
+    DETOUR_TRACE(("Barrier Outro InHandle=%p, InAddrOfRetAddr=%p \n",
         InHandle, InAddrOfRetAddr));
 
 /*
 Description:
     
     Will just reset the "thread deadlock barrier" for the current hook handler and provides
-	some important integrity checks. 
+    some important integrity checks. 
 
-	The hook handle is just passed through, because the assembler code has no chance to
-	save it in any efficient manner at this point of execution...
+    The hook handle is just passed through, because the assembler code has no chance to
+    save it in any efficient manner at this point of execution...
 */
 
-    RUNTIME_INFO*			Runtime;
-    LPTHREAD_RUNTIME_INFO	Info;
+    RUNTIME_INFO*            Runtime;
+    LPTHREAD_RUNTIME_INFO    Info;
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
-		InHandle = (DETOUR_TRAMPOLINE*)((PBYTE)(InHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
-		//InHandle -= 1;
+        InHandle = (DETOUR_TRAMPOLINE*)((PBYTE)(InHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
+        //InHandle -= 1;
 #endif
 
-	DETOUR_ASSERT(AcquireSelfProtection(),L"detours.cpp - AcquireSelfProtection()");
+    DETOUR_ASSERT(AcquireSelfProtection(),L"detours.cpp - AcquireSelfProtection()");
 
-	DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL),L"detours.cpp - TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL)");
+    DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL),L"detours.cpp - TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL)");
 
-	Runtime = &Info->Entries[InHandle->HLSIndex];
+    Runtime = &Info->Entries[InHandle->HLSIndex];
 
-	// leave handler context
-	Info->Current = NULL;
-	Info->Callback = NULL;
+    // leave handler context
+    Info->Current = NULL;
+    Info->Callback = NULL;
 
-	DETOUR_ASSERT(Runtime != NULL,L"detours.cpp - Runtime != NULL");
+    DETOUR_ASSERT(Runtime != NULL,L"detours.cpp - Runtime != NULL");
 
-	DETOUR_ASSERT(Runtime->IsExecuting,L"detours.cpp - Runtime->IsExecuting");
+    DETOUR_ASSERT(Runtime->IsExecuting,L"detours.cpp - Runtime->IsExecuting");
 
-	Runtime->IsExecuting = FALSE;
+    Runtime->IsExecuting = FALSE;
 
-	DETOUR_ASSERT(*InAddrOfRetAddr == NULL,L"detours.cpp - *InAddrOfRetAddr == NULL");
+    DETOUR_ASSERT(*InAddrOfRetAddr == NULL,L"detours.cpp - *InAddrOfRetAddr == NULL");
 
-	*InAddrOfRetAddr = Runtime->RetAddress;
+    *InAddrOfRetAddr = Runtime->RetAddress;
 
-	ReleaseSelfProtection();
+    ReleaseSelfProtection();
 
-	return InHandle;
+    return InHandle;
 }
 
 TRACED_HOOK_HANDLE WINAPI DetourGetHookHandleForFunction(PDETOUR_TRAMPOLINE pTrampoline)
@@ -1857,15 +1830,16 @@ LONG WINAPI DetourSetCallbackForLocalHook(PDETOUR_TRAMPOLINE pTrampoline, PVOID 
 
 VOID InsertTraceHandle(PDETOUR_TRAMPOLINE pTrampoline)
 {
-	if (pTrampoline != NULL && pTrampoline->OutHandle != NULL) {
-		memset(&pTrampoline->LocalACL, 0, sizeof(HOOK_ACL));
+    if (pTrampoline != NULL && pTrampoline->OutHandle != NULL)
+    {
+        memset(&pTrampoline->LocalACL, 0, sizeof(HOOK_ACL));
 
-		TRACED_HOOK_HANDLE OutHandle = new HOOK_TRACE_INFO();
+        TRACED_HOOK_HANDLE OutHandle = new HOOK_TRACE_INFO();
 
-		pTrampoline->OutHandle = OutHandle;
+        pTrampoline->OutHandle = OutHandle;
 
-		OutHandle->Link = pTrampoline;
-	}
+        OutHandle->Link = pTrampoline;
+    }
 }
 
 LONG AddTrampolineToGlobalList(PDETOUR_TRAMPOLINE pTrampoline)
@@ -1901,87 +1875,87 @@ LONG AddTrampolineToGlobalList(PDETOUR_TRAMPOLINE pTrampoline)
 
 
 LONG LhInstallHook(
-	void *InEntryPoint,
-	void *InHookProc,
-	void *InCallback,
-	TRACED_HOOK_HANDLE OutHandle)
+    void *InEntryPoint,
+    void *InHookProc,
+    void *InCallback,
+    TRACED_HOOK_HANDLE OutHandle)
 {
 /*
 Description:
 
-	Installs a hook at the given entry point, redirecting all
-	calls to the given hooking method. The returned handle will
-	either be released on library unloading or explicitly through
-	LhUninstallHook() or LhUninstallAllHooks().
+    Installs a hook at the given entry point, redirecting all
+    calls to the given hooking method. The returned handle will
+    either be released on library unloading or explicitly through
+    LhUninstallHook() or LhUninstallAllHooks().
 
 Parameters:
 
-	- InEntryPoint
+    - InEntryPoint
 
-	An entry point to hook. Not all entry points are hookable. In such
-	a case STATUS_NOT_SUPPORTED will be returned.
+    An entry point to hook. Not all entry points are hookable. In such
+    a case STATUS_NOT_SUPPORTED will be returned.
 
-	- InHookProc
+    - InHookProc
 
-	The method that should be called instead of the given entry point.
-	Please note that calling convention, parameter count and return value
-	shall match EXACTLY!
+    The method that should be called instead of the given entry point.
+    Please note that calling convention, parameter count and return value
+    shall match EXACTLY!
 
-	- InCallback
+    - InCallback
 
-	An uninterpreted callback later available through
-	LhBarrierGetCallback().
+    An uninterpreted callback later available through
+    LhBarrierGetCallback().
 
-	- OutPHandle
+    - OutPHandle
 
-	The memory portion supplied by *OutHandle is expected to be preallocated
-	by the caller. This structure is then filled by the method on success and
-	must stay valid for hook-life time. Only if you explicitly call one of
-	the hook uninstallation APIs, you can safely release the handle memory.
+    The memory portion supplied by *OutHandle is expected to be preallocated
+    by the caller. This structure is then filled by the method on success and
+    must stay valid for hook-life time. Only if you explicitly call one of
+    the hook uninstallation APIs, you can safely release the handle memory.
 
 Returns:
 
-	STATUS_NO_MEMORY
+    STATUS_NO_MEMORY
 
-	Unable to allocate memory around the target entry point.
+    Unable to allocate memory around the target entry point.
 
-	STATUS_NOT_SUPPORTED
+    STATUS_NOT_SUPPORTED
 
-	The target entry point contains unsupported instructions.
+    The target entry point contains unsupported instructions.
 
-	STATUS_INSUFFICIENT_RESOURCES
+    STATUS_INSUFFICIENT_RESOURCES
 
-	The limit of MAX_HOOK_COUNT simultaneous hooks was reached.
+    The limit of MAX_HOOK_COUNT simultaneous hooks was reached.
 
 */
 
-	LONG                NtStatus = -1;
-	LONG                error = -1;
-	PDETOUR_TRAMPOLINE  pTrampoline = NULL;
+    LONG                NtStatus = -1;
+    LONG                error = -1;
+    PDETOUR_TRAMPOLINE  pTrampoline = NULL;
 
-	// validate parameters
-	if (!IsValidPointer(InEntryPoint, 1))
-		THROW(-2, L"Invalid entry point.");
+    // validate parameters
+    if (!IsValidPointer(InEntryPoint, 1))
+        THROW(-2, L"Invalid entry point.");
 
-	if (!IsValidPointer(InHookProc, 1))
-		THROW(-3, L"Invalid hook procedure.");
+    if (!IsValidPointer(InHookProc, 1))
+        THROW(-3, L"Invalid hook procedure.");
 
-	if (!IsValidPointer(OutHandle, sizeof(HOOK_TRACE_INFO)))
-		THROW(-4, L"The hook handle storage is expected to be allocated by the caller.");
+    if (!IsValidPointer(OutHandle, sizeof(HOOK_TRACE_INFO)))
+        THROW(-4, L"The hook handle storage is expected to be allocated by the caller.");
 
-	if (OutHandle->Link != NULL)
-		THROW(-5, L"The given trace handle seems to already be associated with a hook.");
+    if (OutHandle->Link != NULL)
+        THROW(-5, L"The given trace handle seems to already be associated with a hook.");
 
-	error = DetourTransactionBegin();
+    error = DetourTransactionBegin();
 
-	error = DetourUpdateThread(GetCurrentThread());
+    error = DetourUpdateThread(GetCurrentThread());
 
-	error = DetourAttachEx(&(PVOID &)InEntryPoint, InHookProc, &pTrampoline, NULL, NULL);
+    error = DetourAttachEx(&(PVOID &)InEntryPoint, InHookProc, &pTrampoline, NULL, NULL);
 
-	if (error == NO_ERROR)
-	{
-		DetourSetCallbackForLocalHook(pTrampoline, InCallback);
-	}
+    if (error == NO_ERROR)
+    {
+        DetourSetCallbackForLocalHook(pTrampoline, InCallback);
+    }
     error = DetourTransactionCommit();
     if (OutHandle != NULL && error == NO_ERROR)
     {
@@ -1992,7 +1966,7 @@ Returns:
     }
 THROW_OUTRO:
 
-	return error;
+    return error;
 }
 
 
@@ -2014,30 +1988,30 @@ A traced hook handle. If the hook is already removed, this method
 will still return STATUS_SUCCESS.
 */
 
-	LONG error = -1;
+    LONG                    error = -1;
 
-	PDETOUR_TRAMPOLINE      Hook = NULL;
-	LONG                    NtStatus = -1;
-	BOOLEAN                 IsAllocated = FALSE;
+    PDETOUR_TRAMPOLINE      Hook = NULL;
+    LONG                    NtStatus = -1;
+    BOOLEAN                 IsAllocated = FALSE;
 
-	if (!IsValidPointer(InHandle, sizeof(HOOK_TRACE_INFO)))
-		return FALSE;
+    if (!IsValidPointer(InHandle, sizeof(HOOK_TRACE_INFO)))
+        return FALSE;
 
-	RtlAcquireLock(&GlobalHookLock);
-	{
-		if ((InHandle->Link != NULL) && LhIsValidHandle(InHandle, &Hook))
-		{
+    RtlAcquireLock(&GlobalHookLock);
+    {
+        if ((InHandle->Link != NULL) && LhIsValidHandle(InHandle, &Hook))
+        {
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
             DetourDetach(&(PVOID&)Hook->OldProc, Hook->pbDetour);
-			InHandle->Link = NULL;
+            InHandle->Link = NULL;
 
-			if (Hook->HookProc != NULL)
-			{
-				Hook->HookProc = NULL;
+            if (Hook->HookProc != NULL)
+            {
+                Hook->HookProc = NULL;
 
-				IsAllocated = TRUE;
-			}
+                IsAllocated = TRUE;
+            }
             error = DetourTransactionCommit();
 
             if (!IsAllocated)
@@ -2046,20 +2020,20 @@ will still return STATUS_SUCCESS.
 
                 RETURN;
             }
-		}
-	}
-	RtlReleaseLock(&GlobalHookLock);
+        }
+    }
+    RtlReleaseLock(&GlobalHookLock);
 
-	RETURN(STATUS_SUCCESS);
+    RETURN(STATUS_SUCCESS);
 
 FINALLY_OUTRO:
-	return NtStatus;
+    return NtStatus;
 }
 
 LONG LhIsThreadIntercepted(
-	TRACED_HOOK_HANDLE InHook,
-	ULONG InThreadID,
-	BOOL* OutResult)
+    TRACED_HOOK_HANDLE InHook,
+    ULONG InThreadID,
+    BOOL* OutResult)
 {
 /*
 Description:
@@ -2071,111 +2045,111 @@ about the implementation.
 
 */
 
-	LONG                NtStatus;
-	PLOCAL_HOOK_INFO    Handle;
+    LONG                NtStatus;
+    PLOCAL_HOOK_INFO    Handle;
 
-	if (!LhIsValidHandle(InHook, &Handle))
-		THROW(-1, (PWCHAR)L"The given hook handle is invalid or already disposed.");
+    if (!LhIsValidHandle(InHook, &Handle))
+        THROW(-1, (PWCHAR)L"The given hook handle is invalid or already disposed.");
 
-	if (!IsValidPointer(OutResult, sizeof(BOOL)))
-		THROW(-3, (PWCHAR)L"Invalid pointer for result storage.");
+    if (!IsValidPointer(OutResult, sizeof(BOOL)))
+        THROW(-3, (PWCHAR)L"Invalid pointer for result storage.");
 
-	*OutResult = IsThreadIntercepted(&Handle->LocalACL, InThreadID);
+    *OutResult = IsThreadIntercepted(&Handle->LocalACL, InThreadID);
 
-	RETURN;
+    RETURN;
 
 THROW_OUTRO:
 FINALLY_OUTRO:
-	return NtStatus;
+    return NtStatus;
 }
 
 LONG LhSetInclusiveACL(
-	ULONG* InThreadIdList,
-	ULONG InThreadCount,
-	TRACED_HOOK_HANDLE InHandle)
+    ULONG* InThreadIdList,
+    ULONG InThreadCount,
+    TRACED_HOOK_HANDLE InHandle)
 {
 /*
 Description:
 
-	Sets an inclusive hook local ACL based on the given thread ID list.
-	Only threads in this list will be intercepted by the hook. If the
-	global ACL also is inclusive, then all threads stated there are
-	intercepted too.
+    Sets an inclusive hook local ACL based on the given thread ID list.
+    Only threads in this list will be intercepted by the hook. If the
+    global ACL also is inclusive, then all threads stated there are
+    intercepted too.
 
 Parameters:
-	- InThreadIdList
-	An array of thread IDs. If you specific zero for an entry in this array,
-	it will be automatically replaced with the calling thread ID.
+    - InThreadIdList
+    An array of thread IDs. If you specific zero for an entry in this array,
+    it will be automatically replaced with the calling thread ID.
 
-	- InThreadCount
-	The count of entries listed in the thread ID list. This value must not exceed
-	MAX_ACE_COUNT!
+    - InThreadCount
+    The count of entries listed in the thread ID list. This value must not exceed
+    MAX_ACE_COUNT!
 
-	- InHandle
-	The hook handle whose local ACL is going to be set.
+    - InHandle
+    The hook handle whose local ACL is going to be set.
 */
 
-	PLOCAL_HOOK_INFO        Handle;
+    PLOCAL_HOOK_INFO        Handle;
 
-	if (!LhIsValidHandle(InHandle, &Handle))
-		return -3;
+    if (!LhIsValidHandle(InHandle, &Handle))
+        return -3;
 
-	return LhSetACL(&Handle->LocalACL, FALSE, InThreadIdList, InThreadCount);
+    return LhSetACL(&Handle->LocalACL, FALSE, InThreadIdList, InThreadCount);
 }
 LONG LhGetHookBypassAddress(
-	TRACED_HOOK_HANDLE InHook,
-	PVOID** OutAddress)
+    TRACED_HOOK_HANDLE InHook,
+    PVOID** OutAddress)
 {
 /*
 Description:
 
-	Retrieves the address to bypass the hook. Using the returned value to call the original
-	function bypasses all thread safety measures and must be used with care.
-	This function should be called each time the address is required to ensure the hook  and
-	associated memory is still valid at the time of use.
-	CAUTION:
-	This must be used with extreme caution. If the hook is uninstalled and pending hooks
-	removed, the address returned by this function will no longer point to valid memory and
-	attempting to use the address will result in unexpected behaviour, most likely crashing
-	the process.
+    Retrieves the address to bypass the hook. Using the returned value to call the original
+    function bypasses all thread safety measures and must be used with care.
+    This function should be called each time the address is required to ensure the hook  and
+    associated memory is still valid at the time of use.
+    CAUTION:
+    This must be used with extreme caution. If the hook is uninstalled and pending hooks
+    removed, the address returned by this function will no longer point to valid memory and
+    attempting to use the address will result in unexpected behaviour, most likely crashing
+    the process.
 
 Parameters:
 
-	- InHook
+    - InHook
 
-	The hook to retrieve the relocated entry point for.
+    The hook to retrieve the relocated entry point for.
 
-	- OutAddress
+    - OutAddress
 
-	Upon successfully retrieving the hook details this will contain
-	the address of the relocated function entry point. This address
-	can be used to call the original function from outside of a hook
-	while still bypassing the hook.
+    Upon successfully retrieving the hook details this will contain
+    the address of the relocated function entry point. This address
+    can be used to call the original function from outside of a hook
+    while still bypassing the hook.
 
 Returns:
 
-	STATUS_SUCCESS             - OutAddress will contain the result
-	STATUS_INVALID_PARAMETER_1 - the hook is invalid
-	STATUS_INVALID_PARAMETER_3 - the target pointer is invalid
+    STATUS_SUCCESS             - OutAddress will contain the result
+    STATUS_INVALID_PARAMETER_1 - the hook is invalid
+    STATUS_INVALID_PARAMETER_3 - the target pointer is invalid
 
 */
 
-	LONG    			NtStatus;
-	PLOCAL_HOOK_INFO    Handle;
+    LONG                NtStatus;
+    PLOCAL_HOOK_INFO    Handle;
 
-	if (!LhIsValidHandle(InHook, &Handle))
-		THROW(-1, L"The given hook handle is invalid or already disposed.");
+    if (!LhIsValidHandle(InHook, &Handle))
+        THROW(-1, L"The given hook handle is invalid or already disposed.");
 
-	if (!IsValidPointer(OutAddress, sizeof(PVOID*)))
-		THROW(-3, L"Invalid pointer for result storage.");
+    if (!IsValidPointer(OutAddress, sizeof(PVOID*)))
+        THROW(-3, L"Invalid pointer for result storage.");
 
-	*OutAddress = (PVOID*)Handle->OldProc;
+    *OutAddress = (PVOID*)Handle->OldProc;
 
-	RETURN;
+    RETURN;
 
 THROW_OUTRO:
 FINALLY_OUTRO:
-	return NtStatus;
+    return NtStatus;
 }
 
 LONG LhSetExclusiveACL(
@@ -2286,11 +2260,11 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             PBYTE endOfTramp = (PBYTE)&o->pTrampoline->rbTrampolineCode;
             memcpy(endOfTramp, trampoline, TrampolineSize);
             o->pTrampoline->HookIntro = BarrierIntro;
-			o->pTrampoline->HookOutro = BarrierOutro;
-			o->pTrampoline->Trampoline = endOfTramp;
-			o->pTrampoline->OldProc = o->pTrampoline->rbCode;
-			o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
-			o->pTrampoline->IsExecutedPtr = new int();
+            o->pTrampoline->HookOutro = BarrierOutro;
+            o->pTrampoline->Trampoline = endOfTramp;
+            o->pTrampoline->OldProc = o->pTrampoline->rbCode;
+            o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
+            o->pTrampoline->IsExecutedPtr = new int();
 
             AddTrampolineToGlobalList(o->pTrampoline);
 
@@ -2320,14 +2294,14 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             #pragma warning (disable:4311) // pointer truncation
                 switch(*((ULONG*)(Ptr)))
                 {
-                /*Handle*/			case 0x1A2B3C05: *((ULONG*)Ptr) = (ULONG)o->pTrampoline; break;
-                /*UnmanagedIntro*/	case 0x1A2B3C03: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->HookIntro; break;
-                /*OldProc*/			case 0x1A2B3C01: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->OldProc; break;
-                /*Ptr:NewProc*/		case 0x1A2B3C07: *((ULONG*)Ptr) = (ULONG)&o->pTrampoline->HookProc; break;
-                /*NewProc*/			case 0x1A2B3C00: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->HookProc; break;
-                /*UnmanagedOutro*/	case 0x1A2B3C06: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->HookOutro; break;
-                /*IsExecuted*/		case 0x1A2B3C02: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->IsExecutedPtr; break;
-                /*RetAddr*/			case 0x1A2B3C04: *((ULONG*)Ptr) = (ULONG)((PBYTE)o->pTrampoline->Trampoline + 92); break;
+                /*Handle*/            case 0x1A2B3C05: *((ULONG*)Ptr) = (ULONG)o->pTrampoline; break;
+                /*UnmanagedIntro*/    case 0x1A2B3C03: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->HookIntro; break;
+                /*OldProc*/            case 0x1A2B3C01: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->OldProc; break;
+                /*Ptr:NewProc*/        case 0x1A2B3C07: *((ULONG*)Ptr) = (ULONG)&o->pTrampoline->HookProc; break;
+                /*NewProc*/            case 0x1A2B3C00: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->HookProc; break;
+                /*UnmanagedOutro*/    case 0x1A2B3C06: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->HookOutro; break;
+                /*IsExecuted*/        case 0x1A2B3C02: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->IsExecutedPtr; break;
+                /*RetAddr*/            case 0x1A2B3C04: *((ULONG*)Ptr) = (ULONG)((PBYTE)o->pTrampoline->Trampoline + 92); break;
                 }
 
                 Ptr++;
@@ -2348,13 +2322,13 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             const ULONG TrampolineSize = GetTrampolineSize();
  
             PBYTE endOfTramp = (PBYTE)&o->pTrampoline->rbTrampolineCode;
-            PBYTE trampolineStart = align4(trampoline);
-            memcpy(endOfTramp, trampolineStart, TrampolineSize);
-            o->pTrampoline->HookIntro = BarrierIntro;
-			o->pTrampoline->HookOutro = BarrierOutro;
-			o->pTrampoline->Trampoline = endOfTramp;
-			o->pTrampoline->OldProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->rbCode);
-			o->pTrampoline->HookProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->pbDetour);            
+
+            memcpy(endOfTramp, trampoline, TrampolineSize);
+            o->pTrampoline->HookIntro = DETOURS_PBYTE_TO_PFUNC(BarrierIntro);
+            o->pTrampoline->HookOutro = DETOURS_PBYTE_TO_PFUNC(BarrierOutro);
+            o->pTrampoline->Trampoline = DETOURS_PBYTE_TO_PFUNC(endOfTramp);
+            o->pTrampoline->OldProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->rbCode);
+            o->pTrampoline->HookProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->pbDetour);            
             DETOUR_TRACE(("detours: oldProc=%p: "
                           "%02x %02x %02x %02x "
                           "%02x %02x %02x %02x "
@@ -2363,7 +2337,7 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
                           o->pTrampoline->OldProc[0], o->pTrampoline->OldProc[1], o->pTrampoline->OldProc[2], o->pTrampoline->OldProc[3],
                           o->pTrampoline->OldProc[4], o->pTrampoline->OldProc[5], o->pTrampoline->OldProc[6], o->pTrampoline->OldProc[7],
                           o->pTrampoline->OldProc[8], o->pTrampoline->OldProc[9], o->pTrampoline->OldProc[10], o->pTrampoline->OldProc[11]));          
-			o->pTrampoline->IsExecutedPtr = new int();    
+            o->pTrampoline->IsExecutedPtr = new int();    
   
             AddTrampolineToGlobalList(o->pTrampoline);
 
