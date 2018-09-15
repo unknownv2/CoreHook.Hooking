@@ -1567,7 +1567,7 @@ static ULONG ___TrampolineSize = 0;
 
 #ifdef DETOURS_ARM
 	extern "C" void __stdcall Trampoline_ASM_ARM();
-	extern "C" void __stdcall Trampoline_ASM_ARM_DATA();
+	extern "C" void*          Trampoline_ASM_ARM_DATA();
 	extern "C" void __stdcall Trampoline_ASM_ARM_CODE();
 #endif
 
@@ -1609,12 +1609,12 @@ ULONG GetTrampolineSize()
 {
 	if (___TrampolineSize != 0)
 		return ___TrampolineSize;
+
 #ifdef DETOURS_ARM            
 	___TrampolineSize = (ULONG)
 		((UCHAR*)Trampoline_ASM_ARM_DATA - (UCHAR*)Trampoline_ASM_ARM_CODE);
 
 	return ___TrampolineSize;
-
 #else
     UCHAR*		Ptr = DetourGetTrampolinePtr();
 	UCHAR*		BasePtr = Ptr;

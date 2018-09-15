@@ -94,7 +94,7 @@ CALL_HOOK_HANDLER
 ; call hook handler        
         ldr     r5, NewProc
         adr     r4, CALL_NET_OUTRO ; adjust return address
-		orr		r4, r4, 1
+		orr		r4, r4, 1 ; set PC bit 0 (Thumb state flag) for thumb mode address
         str     r4, [sp, #0x6C] ; store outro return to stack after hook handler is called         
         B       TRAMPOLINE_EXIT
  ; this is where the handler returns...
