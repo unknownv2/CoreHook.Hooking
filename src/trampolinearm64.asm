@@ -1,8 +1,8 @@
    AREA     .text, CODE
-                           
+
 Trampoline_ASM_ARM64 FUNCTION
 
-        EXPORT  Trampoline_ASM_ARM64 
+        EXPORT  Trampoline_ASM_ARM64
 
 NETIntro        ; .NET Barrier Intro Function
         DCB 0
@@ -162,11 +162,11 @@ trampoline_exit
         ldp     x29, x30, [sp], #16
         br      x10
 
-; outro signature, to automatically determine code size        
+; outro signature, to automatically determine code size
         DCB     0x78
         DCB     0x56
         DCB     0x34
-        DCB     0x12  
+        DCB     0x12
 
         ENDFUNC
-        END                     
+        END
