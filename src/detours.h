@@ -491,7 +491,7 @@ LONG WINAPI DetourTransactionCommit(VOID);
 #define STATUS_SUCCESS              0
 #define RETURN                      { RtlSetLastError(STATUS_SUCCESS, STATUS_SUCCESS, L""); NtStatus = STATUS_SUCCESS; goto FINALLY_OUTRO; }
 #define FORCE(expr)                 { if(!RTL_SUCCESS(NtStatus = (expr))) goto THROW_OUTRO; }
-#define IsValidPointer				RtlIsValidPointer
+#define IsValidPointer                RtlIsValidPointer
 
 
 BOOL RtlIsValidPointer(PVOID InPtr, ULONG InSize);
@@ -500,9 +500,9 @@ typedef struct _DETOUR_TRAMPOLINE * PLOCAL_HOOK_INFO;
 
 typedef struct _HOOK_ACL_
 {
-	ULONG                   Count;
-	BOOL                    IsExclusive;
-	ULONG                   Entries[MAX_ACE_COUNT];
+    ULONG                   Count;
+    BOOL                    IsExclusive;
+    ULONG                   Entries[MAX_ACE_COUNT];
 }HOOK_ACL;
 
 typedef struct _HOOK_TRACE_INFO_
@@ -516,28 +516,28 @@ typedef struct _HOOK_TRACE_INFO_
     make it active!
 */
 
-	LONG LhSetInclusiveACL(
-				ULONG* InThreadIdList,
-				ULONG InThreadCount,
-				TRACED_HOOK_HANDLE InHandle);
+    LONG LhSetInclusiveACL(
+                ULONG* InThreadIdList,
+                ULONG InThreadCount,
+                TRACED_HOOK_HANDLE InHandle);
 
-	LONG LhSetExclusiveACL(
-				ULONG* InThreadIdList,
-				ULONG InThreadCount,
-				TRACED_HOOK_HANDLE InHandle);
+    LONG LhSetExclusiveACL(
+                ULONG* InThreadIdList,
+                ULONG InThreadCount,
+                TRACED_HOOK_HANDLE InHandle);
 
-	LONG LhSetGlobalInclusiveACL(
-				ULONG* InThreadIdList,
-				ULONG InThreadCount);
+    LONG LhSetGlobalInclusiveACL(
+                ULONG* InThreadIdList,
+                ULONG InThreadCount);
 
-	LONG LhSetGlobalExclusiveACL(
-				ULONG* InThreadIdList,
-				ULONG InThreadCount);
+    LONG LhSetGlobalExclusiveACL(
+                ULONG* InThreadIdList,
+                ULONG InThreadCount);
 
-	LONG LhIsThreadIntercepted(
-				TRACED_HOOK_HANDLE InHook,
-				ULONG InThreadID,
-				BOOL* OutResult);
+    LONG LhIsThreadIntercepted(
+                TRACED_HOOK_HANDLE InHook,
+                ULONG InThreadID,
+                BOOL* OutResult);
 
     LONG LhSetACL(
                 HOOK_ACL* InAcl,
@@ -553,17 +553,17 @@ typedef struct _HOOK_TRACE_INFO_
     valid hook handler...
 */
 LONG LhBarrierGetCallback(
-	PVOID* OutValue);
+    PVOID* OutValue);
 
 LONG LhBarrierGetReturnAddress(
-	PVOID* OutValue);
+    PVOID* OutValue);
 
 LONG LhBarrierGetAddressOfReturnAddress(
-	PVOID** OutValue);
+    PVOID** OutValue);
 
 LONG LhGetHookBypassAddress(
-	TRACED_HOOK_HANDLE InHook,
-	PVOID** OutAddress);
+    TRACED_HOOK_HANDLE InHook,
+    PVOID** OutAddress);
 
 // Stack tracing functions
 LONG LhBarrierBeginStackTrace(PVOID* OutBackup);
@@ -571,9 +571,9 @@ LONG LhBarrierBeginStackTrace(PVOID* OutBackup);
 LONG LhBarrierEndStackTrace(PVOID InBackup);
 
 LONG LhBarrierCallStackTrace(
-	PVOID* OutMethodArray,
-	ULONG InMaxMethodCount,
-	ULONG* OutMethodCount);
+    PVOID* OutMethodArray,
+    ULONG InMaxMethodCount,
+    ULONG* OutMethodCount);
 
 LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer);
 
@@ -1208,48 +1208,48 @@ void RtlSleep(ULONG InTimeout);
 
 typedef struct _RUNTIME_INFO_
 {
-	// "true" if the current thread is within the related hook handler
-	BOOL            IsExecuting;
-	// the hook this information entry belongs to... This allows a per thread and hook storage!
-	DWORD           HLSIdent;
-	// the return address of the current thread's hook handler...
-	void*           RetAddress;
+    // "true" if the current thread is within the related hook handler
+    BOOL            IsExecuting;
+    // the hook this information entry belongs to... This allows a per thread and hook storage!
+    DWORD           HLSIdent;
+    // the return address of the current thread's hook handler...
+    void*           RetAddress;
     // the address of the return address of the current thread's hook handler...
-	void**          AddrOfRetAddr;
+    void**          AddrOfRetAddr;
 }RUNTIME_INFO;
 
 typedef struct _THREAD_RUNTIME_INFO_
 {
-	RUNTIME_INFO*		Entries;
-	RUNTIME_INFO*		Current;
-	void*				Callback;
-	BOOL				IsProtected;
+    RUNTIME_INFO*        Entries;
+    RUNTIME_INFO*        Current;
+    void*                Callback;
+    BOOL                 IsProtected;
 }THREAD_RUNTIME_INFO, *LPTHREAD_RUNTIME_INFO;
 
 typedef struct _THREAD_LOCAL_STORAGE_
 {
-    THREAD_RUNTIME_INFO		Entries[MAX_THREAD_COUNT];
-    DWORD					IdList[MAX_THREAD_COUNT];
-    RTL_SPIN_LOCK			ThreadSafe;
+    THREAD_RUNTIME_INFO      Entries[MAX_THREAD_COUNT];
+    DWORD                    IdList[MAX_THREAD_COUNT];
+    RTL_SPIN_LOCK            ThreadSafe;
 }THREAD_LOCAL_STORAGE;
 
 typedef struct _BARRIER_UNIT_
 {
-	HOOK_ACL				GlobalACL;
-	BOOL					IsInitialized;
-	THREAD_LOCAL_STORAGE	TLS;
+    HOOK_ACL                GlobalACL;
+    BOOL                    IsInitialized;
+    THREAD_LOCAL_STORAGE    TLS;
 }BARRIER_UNIT;
 
 
 BOOL TlsGetCurrentValue(
-            THREAD_LOCAL_STORAGE* InTls,                
+            THREAD_LOCAL_STORAGE* InTls,
             THREAD_RUNTIME_INFO** OutValue);
 BOOL TlsAddCurrentThread(THREAD_LOCAL_STORAGE* InTls);
 
 void RtlFreeMemory(void* InPointer);
 
 void* RtlAllocateMemory(
-            BOOL InZeroMemory, 
+            BOOL InZeroMemory,
             ULONG InSize);
 
 #undef RtlCopyMemory
@@ -1264,9 +1264,10 @@ void RtlZeroMemory(
             ULONG InByteCount);
 
 BOOL IsThreadIntercepted(
-	HOOK_ACL* LocalACL, 
-	ULONG InThreadID);
-void ReleaseSelfProtection();                
+    HOOK_ACL* LocalACL,
+    ULONG InThreadID);
+
+void ReleaseSelfProtection();
 
 extern BARRIER_UNIT         Unit;
 extern RTL_SPIN_LOCK        GlobalHookLock;
