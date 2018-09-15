@@ -473,8 +473,6 @@ typedef VOID * PDETOUR_LOADED_BINARY;
 LONG WINAPI DetourTransactionBegin(VOID);
 LONG WINAPI DetourTransactionAbort(VOID);
 LONG WINAPI DetourTransactionCommit(VOID);
-void* WINAPI DetourGetLastHandle(VOID);
-
 
 //////////////////////////////////////////////////////////////////////////////
 //

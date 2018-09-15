@@ -1837,12 +1837,6 @@ Description:
 	return InHandle;
 }
 
-
-static TRACED_HOOK_HANDLE           LastOutHandle = NULL;
-void* WINAPI DetourGetLastHandle()
-{
-    return LastOutHandle;
-}
 TRACED_HOOK_HANDLE WINAPI DetourGetHookHandleForFunction(PDETOUR_TRAMPOLINE pTrampoline)
 {
     if(pTrampoline != NULL) {
@@ -1850,6 +1844,7 @@ TRACED_HOOK_HANDLE WINAPI DetourGetHookHandleForFunction(PDETOUR_TRAMPOLINE pTra
     }
     return NULL;
 }
+
 LONG WINAPI DetourSetCallbackForLocalHook(PDETOUR_TRAMPOLINE pTrampoline, PVOID pCallback)
 {
     if(pTrampoline != NULL) {
@@ -1867,7 +1862,7 @@ VOID InsertTraceHandle(PDETOUR_TRAMPOLINE pTrampoline)
 
 		TRACED_HOOK_HANDLE OutHandle = new HOOK_TRACE_INFO();
 
-		LastOutHandle = pTrampoline->OutHandle = OutHandle;
+		pTrampoline->OutHandle = OutHandle;
 
 		OutHandle->Link = pTrampoline;
 	}
