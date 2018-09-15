@@ -773,13 +773,13 @@ struct _DETOUR_TRAMPOLINE
     void*               Callback;
     ULONG               HLSIndex;
     ULONG               HLSIdent;
-    TRACED_HOOK_HANDLE  OutHandle; // handle returned to user  
+    TRACED_HOOK_HANDLE  OutHandle; // handle returned to user
     void*               Trampoline;
     INT                 IsExecuted;
-    void*               HookIntro; // . NET Intro function  
-    UCHAR*              OldProc;  // old target function      
+    void*               HookIntro; // . NET Intro function
+    UCHAR*              OldProc;  // old target function
     void*               HookProc; // function we detour to
-    void*               HookOutro;   // .NET Outro function  
+    void*               HookOutro;   // .NET Outro function
     int*                IsExecutedPtr;
     BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];
 };
@@ -945,18 +945,18 @@ struct _DETOUR_TRAMPOLINE
     PBYTE               pbRemain;       // first instruction after moved code. [free list]
     PBYTE               pbDetour;       // first instruction of detour function.
     HOOK_ACL            LocalACL;
-    void*               Callback;    
+    void*               Callback;
     ULONG               HLSIndex;
     ULONG               HLSIdent;
-    TRACED_HOOK_HANDLE  OutHandle; // handle returned to user  
+    TRACED_HOOK_HANDLE  OutHandle; // handle returned to user
     void*               Trampoline;
     INT                 IsExecuted;
-    void*               HookIntro; // . NET Intro function  
-    UCHAR*              OldProc;  // old target function      
+    void*               HookIntro; // . NET Intro function
+    UCHAR*              OldProc;  // old target function
     void*               HookProc; // function we detour to
-    void*               HookOutro;   // .NET Outro function  
+    void*               HookOutro;   // .NET Outro function
     int*                IsExecutedPtr;
-    BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];    
+    BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];
 };
 
 //C_ASSERT(sizeof(_DETOUR_TRAMPOLINE) == 120);
@@ -1782,7 +1782,6 @@ Description:
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
         InHandle = (DETOUR_TRAMPOLINE*)((PBYTE)(InHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
-        //InHandle -= 1;
 #endif
 
     DETOUR_ASSERT(AcquireSelfProtection(),L"detours.cpp - AcquireSelfProtection()");
@@ -1822,10 +1821,10 @@ LONG WINAPI DetourSetCallbackForLocalHook(PDETOUR_TRAMPOLINE pTrampoline, PVOID 
 {
     if(pTrampoline != NULL) {
         pTrampoline->Callback = pCallback;
-        return 0;
+        return STATUS_SUCCESS;
     }
 
-    return -1;
+    return STATUS_INVALID_PARAMETER_1;
 }
 
 VOID InsertTraceHandle(PDETOUR_TRAMPOLINE pTrampoline)
@@ -1930,21 +1929,22 @@ Returns:
 */
 
     LONG                NtStatus = -1;
-    LONG                error = -1;
+    LONG                error    = -1;
     PDETOUR_TRAMPOLINE  pTrampoline = NULL;
 
     // validate parameters
-    if (!IsValidPointer(InEntryPoint, 1))
-        THROW(-2, L"Invalid entry point.");
-
-    if (!IsValidPointer(InHookProc, 1))
-        THROW(-3, L"Invalid hook procedure.");
-
-    if (!IsValidPointer(OutHandle, sizeof(HOOK_TRACE_INFO)))
-        THROW(-4, L"The hook handle storage is expected to be allocated by the caller.");
-
-    if (OutHandle->Link != NULL)
-        THROW(-5, L"The given trace handle seems to already be associated with a hook.");
+    if (!IsValidPointer(InEntryPoint, 1)) {
+        THROW(STATUS_INVALID_PARAMETER_1, L"Invalid entry point.");
+    }
+    if (!IsValidPointer(InHookProc, 1)) {
+        THROW(STATUS_INVALID_PARAMETER_2, L"Invalid hook procedure.");
+    }
+    if (!IsValidPointer(OutHandle, sizeof(HOOK_TRACE_INFO))) {
+        THROW(STATUS_INVALID_PARAMETER_3, L"The hook handle storage is expected to be allocated by the caller.");
+    }
+    if (OutHandle->Link != NULL) {
+        THROW(STATUS_INVALID_PARAMETER_4, L"The given trace handle seems to already be associated with a hook.");
+    }
 
     error = DetourTransactionBegin();
 
@@ -1994,8 +1994,9 @@ will still return STATUS_SUCCESS.
     LONG                    NtStatus = -1;
     BOOLEAN                 IsAllocated = FALSE;
 
-    if (!IsValidPointer(InHandle, sizeof(HOOK_TRACE_INFO)))
+    if (!IsValidPointer(InHandle, sizeof(HOOK_TRACE_INFO))) {
         return FALSE;
+    }
 
     RtlAcquireLock(&GlobalHookLock);
     {
@@ -2048,11 +2049,13 @@ about the implementation.
     LONG                NtStatus;
     PLOCAL_HOOK_INFO    Handle;
 
-    if (!LhIsValidHandle(InHook, &Handle))
-        THROW(-1, (PWCHAR)L"The given hook handle is invalid or already disposed.");
+    if (!LhIsValidHandle(InHook, &Handle)) {
+        THROW(STATUS_INVALID_PARAMETER_1, (PWCHAR)L"The given hook handle is invalid or already disposed.");
+    }
 
-    if (!IsValidPointer(OutResult, sizeof(BOOL)))
-        THROW(-3, (PWCHAR)L"Invalid pointer for result storage.");
+    if (!IsValidPointer(OutResult, sizeof(BOOL))) {
+        THROW(STATUS_INVALID_PARAMETER_3, (PWCHAR)L"Invalid pointer for result storage.");
+    }
 
     *OutResult = IsThreadIntercepted(&Handle->LocalACL, InThreadID);
 
@@ -2091,8 +2094,9 @@ Parameters:
 
     PLOCAL_HOOK_INFO        Handle;
 
-    if (!LhIsValidHandle(InHandle, &Handle))
-        return -3;
+    if (!LhIsValidHandle(InHandle, &Handle)) {
+        return STATUS_INVALID_PARAMETER_3;
+    }
 
     return LhSetACL(&Handle->LocalACL, FALSE, InThreadIdList, InThreadCount);
 }
@@ -2117,14 +2121,14 @@ Parameters:
 
     - InHook
 
-    The hook to retrieve the relocated entry point for.
+        The hook to retrieve the relocated entry point for.
 
     - OutAddress
 
-    Upon successfully retrieving the hook details this will contain
-    the address of the relocated function entry point. This address
-    can be used to call the original function from outside of a hook
-    while still bypassing the hook.
+        Upon successfully retrieving the hook details this will contain
+        the address of the relocated function entry point. This address
+        can be used to call the original function from outside of a hook
+        while still bypassing the hook.
 
 Returns:
 
@@ -2137,11 +2141,12 @@ Returns:
     LONG                NtStatus;
     PLOCAL_HOOK_INFO    Handle;
 
-    if (!LhIsValidHandle(InHook, &Handle))
-        THROW(-1, L"The given hook handle is invalid or already disposed.");
-
-    if (!IsValidPointer(OutAddress, sizeof(PVOID*)))
-        THROW(-3, L"Invalid pointer for result storage.");
+    if (!LhIsValidHandle(InHook, &Handle)) {
+        THROW(STATUS_INVALID_PARAMETER_1, L"The given hook handle is invalid or already disposed.");
+    }
+    if (!IsValidPointer(OutAddress, sizeof(PVOID*))) {
+        THROW(STATUS_INVALID_PARAMETER_3, L"Invalid pointer for result storage.");
+    }
 
     *OutAddress = (PVOID*)Handle->OldProc;
 
@@ -2177,9 +2182,9 @@ Parameters:
 
     PLOCAL_HOOK_INFO        Handle;
 
-    if(!LhIsValidHandle(InHandle, &Handle))
-        return -3;
-
+    if (!LhIsValidHandle(InHandle, &Handle)) {
+        return STATUS_INVALID_PARAMETER_3;
+    }
     return LhSetACL(&Handle->LocalACL, TRUE, InThreadIdList, InThreadCount);
 }
 #endif
@@ -2328,7 +2333,7 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             o->pTrampoline->HookOutro = DETOURS_PBYTE_TO_PFUNC(BarrierOutro);
             o->pTrampoline->Trampoline = DETOURS_PBYTE_TO_PFUNC(endOfTramp);
             o->pTrampoline->OldProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->rbCode);
-            o->pTrampoline->HookProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->pbDetour);            
+            o->pTrampoline->HookProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->pbDetour);
             DETOUR_TRACE(("detours: oldProc=%p: "
                           "%02x %02x %02x %02x "
                           "%02x %02x %02x %02x "

@@ -136,7 +136,7 @@ LONG RtlProtectMemory(void *InPointer, ULONG InSize, ULONG InNewProtection)
     }
     else
     {
-        return 0;
+        return STATUS_SUCCESS;
     }
 THROW_OUTRO:
 
@@ -324,11 +324,13 @@ Description:
 
 */
 
-    if (!IsValidPointer(InTracedHandle, sizeof(HOOK_TRACE_INFO)))
+    if (!IsValidPointer(InTracedHandle, sizeof(HOOK_TRACE_INFO))) {
         return FALSE;
+    }
 
-    if (OutHandle != NULL)
+    if (OutHandle != NULL) {
         *OutHandle = InTracedHandle->Link;
+    }
 
     return TRUE;
 }
@@ -366,13 +368,13 @@ Parameters:
 
     DETOUR_ASSERT(IsValidPointer(InAcl, sizeof(HOOK_ACL)), L"barrier.cpp - IsValidPointer(InAcl, sizeof(HOOK_ACL))");
 
-    if (InThreadCount > MAX_ACE_COUNT)
-    {
-        return -2;
+    if (InThreadCount > MAX_ACE_COUNT) {
+        return STATUS_INVALID_PARAMETER_2;
     }
 
-    if (!IsValidPointer(InThreadIdList, InThreadCount * sizeof(ULONG)))
-        return -1;
+    if (!IsValidPointer(InThreadIdList, InThreadCount * sizeof(ULONG))) {
+        return STATUS_INVALID_PARAMETER_1;
+    }
 
     for (Index = 0; Index < InThreadCount; Index++)
     {
@@ -393,10 +395,10 @@ Parameters:
     }
     else
     {
-        return -3;
+        return STATUS_ACCESS_DENIED;
     }
 
-    return 0;
+    return STATUS_SUCCESS;
 }
 
 HOOK_ACL *LhBarrierGetAcl()
@@ -424,7 +426,7 @@ Description:
 
     hCoreHookHeap = HeapCreate(0, 0, 0);
 
-    return 0;
+    return STATUS_SUCCESS;
 }
 
 BOOL TlsGetCurrentValue(
@@ -506,8 +508,9 @@ Returns:
     // select Index AND check whether thread is already registered.
     for (i = 0; i < MAX_THREAD_COUNT; i++)
     {
-        if ((InTls->IdList[i] == 0) && (Index == -1))
+        if ((InTls->IdList[i] == 0) && (Index == -1)) {
             Index = i;
+        }
 
         DETOUR_ASSERT(InTls->IdList[i] != CurrentId, L"barrier.cpp - InTls->IdList[i] != CurrentId");
     }
@@ -737,12 +740,10 @@ Returns:
 
     ULONG CheckID;
 
-    if (InThreadID == 0)
-    {
+    if (InThreadID == 0) {
         CheckID = GetCurrentThreadId();
     }
-    else
-    {
+    else {
         CheckID = InThreadID;
     }
 
@@ -995,7 +996,7 @@ Returns:
 */
     
     LONG                    NtStatus;
-    PVOID                    Backup = NULL;
+    PVOID                   Backup = NULL;
 
     if (InMaxMethodCount > 64) {
         THROW(STATUS_INVALID_PARAMETER_2, L"barrier.cpp - At maximum 64 modules are supported.");
