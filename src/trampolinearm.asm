@@ -1,11 +1,11 @@
         AREA     .text, CODE, THUMB, READONLY
-                     
+
 Trampoline_ASM_ARM FUNCTION
 
         EXPORT  Trampoline_ASM_ARM 
         EXPORT  Trampoline_ASM_ARM_DATA
         EXPORT  Trampoline_ASM_ARM_CODE
-       
+
 NETIntro        ; .NET Barrier Intro Function
         dcb 0
         dcb 0
@@ -32,14 +32,14 @@ IsExecutedPtr  ; Count of times trampoline was executed
         dcb 0
         dcb 0
 
-Trampoline_ASM_ARM_CODE      
+Trampoline_ASM_ARM_CODE
 start     
         push    {r0, r1, r2, r3, r4, lr}
         push    {r5-r10}
         vpush   {d0-d7}
         ldr     r5, IsExecutedPtr
         dmb     ish
-try_inc_lock        
+try_inc_lock
         ldrex   r0, [r5]
         add     r0, r0, #1
         strex   r1, r0, [r5]
@@ -49,9 +49,9 @@ try_inc_lock
         ldr     r2, NewProc
         cmp     r2, #0
         bne     CALL_NET_ENTRY
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; call original method      
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; call original method
         dmb     ish
-try_dec_lock        
+try_dec_lock
         ldrex   r0, [r5]
         add     r0, r0, #-1
         strex   r1, r0, [r5]
@@ -71,7 +71,7 @@ CALL_NET_ENTRY
         ldr     r1, [sp, #0x6C] ; return address (value stored in original sp)
         ldr     r4, NETIntro
         blx     r4 ; Hook->NETIntro(Hook, RetAddr, InitialSP);
-; should call original method?              
+; should call original method?
         cmp     r0, #0
         bne     CALL_HOOK_HANDLER
 
@@ -91,7 +91,7 @@ try_dec_lock2
 
 CALL_HOOK_HANDLER
 
-; call hook handler        
+; call hook handler
         ldr     r5, NewProc
         adr     r4, CALL_NET_OUTRO ; adjust return address
         orr     r4, r4, 1 ; set PC bit 0 (Thumb state flag) for thumb mode address
@@ -108,8 +108,8 @@ CALL_NET_OUTRO
         blx     r5       ; Hook->NETOutro(Hook, InAddrOfRetAddr);
 
         ldr     r5, IsExecutedPtr
-        dmb     ish     
-try_dec_lock3        
+        dmb     ish
+try_dec_lock3
         ldrex   r0, [r5]
         add     r0, r0, #-1
         strex   r1, r0, [r5]
@@ -124,18 +124,18 @@ try_dec_lock3
 TRAMPOLINE_EXIT
         mov     r12, r5
         vpop    {d0-d7}
-        pop     {r5-r10}         
+        pop     {r5-r10}
         pop     {r0, r1, r2, r3, r4, lr}
         
         bx      r12 ; mov     pc, r12
 
-; outro signature, to automatically determine code size    
+; outro signature, to automatically determine code size
 Trampoline_ASM_ARM_DATA
         dcb     0x78
         dcb     0x56
         dcb     0x34
-        dcb     0x12  
+        dcb     0x12
       
         ENDFUNC
 
-        END                     
+        END
