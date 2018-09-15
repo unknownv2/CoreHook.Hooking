@@ -7,30 +7,30 @@ Trampoline_ASM_ARM FUNCTION
         EXPORT  Trampoline_ASM_ARM_CODE
        
 NETIntro        ; .NET Barrier Intro Function
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
 OldProc        ; Original Replaced Function
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
 NewProc        ; Detour Function
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
 NETOutro       ; .NET Barrier Outro Function
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
 IsExecutedPtr  ; Count of times trampoline was executed
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
 
 Trampoline_ASM_ARM_CODE      
 start     
@@ -131,10 +131,10 @@ TRAMPOLINE_EXIT
 
 ; outro signature, to automatically determine code size    
 Trampoline_ASM_ARM_DATA
-        DCB     0x78
-        DCB     0x56
-        DCB     0x34
-        DCB     0x12  
+        dcb     0x78
+        dcb     0x56
+        dcb     0x34
+        dcb     0x12  
       
         ENDFUNC
 
