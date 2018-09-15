@@ -2322,8 +2322,8 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             const ULONG TrampolineSize = GetTrampolineSize();
  
             PBYTE endOfTramp = (PBYTE)&o->pTrampoline->rbTrampolineCode;
-
-            memcpy(endOfTramp, trampoline, TrampolineSize);
+            PBYTE trampolineStart = align4(trampoline);
+            memcpy(endOfTramp, trampolineStart, TrampolineSize);
             o->pTrampoline->HookIntro = DETOURS_PBYTE_TO_PFUNC(BarrierIntro);
             o->pTrampoline->HookOutro = DETOURS_PBYTE_TO_PFUNC(BarrierOutro);
             o->pTrampoline->Trampoline = DETOURS_PBYTE_TO_PFUNC(endOfTramp);
