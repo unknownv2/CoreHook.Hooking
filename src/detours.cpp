@@ -1616,8 +1616,8 @@ ULONG GetTrampolineSize()
 
 	return ___TrampolineSize;
 #else
-    UCHAR*		Ptr = DetourGetTrampolinePtr();
-	UCHAR*		BasePtr = Ptr;
+    UCHAR*      Ptr = DetourGetTrampolinePtr();
+    UCHAR*      BasePtr = Ptr;
     ULONG       Signature;
     ULONG       Index;
 
