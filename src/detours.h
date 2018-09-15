@@ -491,7 +491,7 @@ LONG WINAPI DetourTransactionCommit(VOID);
 #define STATUS_SUCCESS              0
 #define RETURN                      { RtlSetLastError(STATUS_SUCCESS, STATUS_SUCCESS, L""); NtStatus = STATUS_SUCCESS; goto FINALLY_OUTRO; }
 #define FORCE(expr)                 { if(!RTL_SUCCESS(NtStatus = (expr))) goto THROW_OUTRO; }
-#define IsValidPointer                RtlIsValidPointer
+#define IsValidPointer              RtlIsValidPointer
 
 
 BOOL RtlIsValidPointer(PVOID InPtr, ULONG InSize);
