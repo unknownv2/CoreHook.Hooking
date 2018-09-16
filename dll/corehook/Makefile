@@ -51,22 +51,22 @@ $(BIND)\corehook$(DETOURS_BITS).dll $(BIND)\corehook$(DETOURS_BITS).lib: \
         /export:DetourIsHelperProcess \
         /export:DetourRestoreAfterWith \
         /export:DetourGetEntryPoint \
-        /export:LhCriticalInitialize \
-        /export:LhInstallHook \
-        /export:LhUninstallHook \
-        /export:LhBarrierGetCallback \
-        /export:LhSetExclusiveACL \
-        /export:LhSetInclusiveACL \
-        /export:LhSetGlobalExclusiveACL \
-        /export:LhSetGlobalInclusiveACL \
-        /export:LhIsThreadIntercepted \
-        /export:LhBarrierProcessAttach \
-        /export:LhGetHookBypassAddress \
-        /export:LhBarrierGetReturnAddress \
-        /export:LhBarrierGetAddressOfReturnAddress \
-        /export:LhBarrierBeginStackTrace \
-        /export:LhBarrierEndStackTrace \
-        /export:LhBarrierCallStackTrace \
+        /export:DetourCriticalInitialize \
+        /export:DetourInstallHook \
+        /export:DetourUninstallHook \
+        /export:DetourBarrierGetCallback \
+        /export:DetourSetExclusiveACL \
+        /export:DetourSetInclusiveACL \
+        /export:DetourSetGlobalExclusiveACL \
+        /export:DetourSetGlobalInclusiveACL \
+        /export:DetourIsThreadIntercepted \
+        /export:DetourBarrierProcessAttach \
+        /export:DetourGetHookBypassAddress \
+        /export:DetourBarrierGetReturnAddress \
+        /export:DetourBarrierGetAddressOfReturnAddress \
+        /export:DetourBarrierBeginStackTrace \
+        /export:DetourBarrierEndStackTrace \
+        /export:DetourBarrierCallStackTrace \
         $(LIBS)
 
 $(OBJD)\corehook$(DETOURS_BITS).bsc : $(OBJD)\corehook.obj

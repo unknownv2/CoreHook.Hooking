@@ -21,19 +21,19 @@ EXPORTS
    DetourIsHelperProcess
    DetourRestoreAfterWith
    DetourGetEntryPoint
-   LhCriticalInitialize
-   LhInstallHook
-   LhUninstallHook
-   LhBarrierGetCallback
-   LhSetExclusiveACL
-   LhSetInclusiveACL
-   LhSetGlobalExclusiveACL
-   LhSetGlobalInclusiveACL
-   LhIsThreadIntercepted
-   LhBarrierProcessAttach
-   LhGetHookBypassAddress
-   LhBarrierGetReturnAddress
-   LhBarrierGetAddressOfReturnAddress
-   LhBarrierBeginStackTrace
-   LhBarrierEndStackTrace
-   LhBarrierCallStackTrace
+   DetourCriticalInitialize
+   DetourInstallHook
+   DetourUninstallHook
+   DetourBarrierGetCallback
+   DetourSetExclusiveACL
+   DetourSetInclusiveACL
+   DetourSetGlobalExclusiveACL
+   DetourSetGlobalInclusiveACL
+   DetourIsThreadIntercepted
+   DetourBarrierProcessAttach
+   DetourGetHookBypassAddress
+   DetourBarrierGetReturnAddress
+   DetourBarrierGetAddressOfReturnAddress
+   DetourBarrierBeginStackTrace
+   DetourBarrierEndStackTrace
+   DetourBarrierCallStackTrace

@@ -268,7 +268,7 @@ void RtlAssert(BOOL InAssert, LPCWSTR lpMessageText)
     FatalAppExitW(0, lpMessageText);
 }
 
-LONG LhSetGlobalInclusiveACL(
+LONG DetourSetGlobalInclusiveACL(
     ULONG *InThreadIdList,
     ULONG InThreadCount)
 {
@@ -287,10 +287,10 @@ Parameters:
         MAX_ACE_COUNT! 
 */
 
-    return LhSetACL(LhBarrierGetAcl(), FALSE, InThreadIdList, InThreadCount);
+    return DetourSetACL(DetourBarrierGetAcl(), FALSE, InThreadIdList, InThreadCount);
 }
 
-LONG LhSetGlobalExclusiveACL(
+LONG DetourSetGlobalExclusiveACL(
     ULONG *InThreadIdList,
     ULONG InThreadCount)
 {
@@ -309,10 +309,10 @@ Parameters:
         MAX_ACE_COUNT! 
 */
 
-    return LhSetACL(LhBarrierGetAcl(), TRUE, InThreadIdList, InThreadCount);
+    return DetourSetACL(DetourBarrierGetAcl(), TRUE, InThreadIdList, InThreadCount);
 }
 
-BOOL LhIsValidHandle(
+BOOL DetourIsValidHandle(
     TRACED_HOOK_HANDLE InTracedHandle,
     PLOCAL_HOOK_INFO *OutHandle)
 {
@@ -336,7 +336,7 @@ Description:
 
     return TRUE;
 }
-LONG LhSetACL(
+LONG DetourSetACL(
     HOOK_ACL *InAcl,
     BOOL InIsExclusive,
     ULONG *InThreadIdList,
@@ -403,12 +403,12 @@ Parameters:
     return STATUS_SUCCESS;
 }
 
-HOOK_ACL *LhBarrierGetAcl()
+HOOK_ACL *DetourBarrierGetAcl()
 {
     return &Unit.GlobalACL;
 }
 
-LONG LhBarrierProcessAttach()
+LONG DetourBarrierProcessAttach()
 {
 /*
 Description:
@@ -564,7 +564,7 @@ Parameters:
     RtlReleaseLock(&InTls->ThreadSafe);
 }
 
-void LhBarrierProcessDetach()
+void DetourBarrierProcessDetach()
 {
 /*
 Description:
@@ -590,7 +590,7 @@ Description:
     HeapDestroy(hCoreHookHeap);
 }
 
-void LhBarrierThreadDetach()
+void DetourBarrierThreadDetach()
 {
 /*
 Description:
@@ -615,7 +615,7 @@ Description:
 
 RTL_SPIN_LOCK GlobalHookLock;
 
-void LhCriticalInitialize()
+void DetourCriticalInitialize()
 {
 /*
 Description:
@@ -626,7 +626,7 @@ Description:
     RtlInitializeLock(&GlobalHookLock);
 }
 
-void LhCriticalFinalize()
+void DetourCriticalFinalize()
 {
 /*
 Description:
@@ -732,7 +732,7 @@ BOOL IsThreadIntercepted(
 /*
 Description:
 
-    Please refer to LhIsThreadIntercepted() for more information.
+    Please refer to DetourIsThreadIntercepted() for more information.
 
 Returns:
 
@@ -785,14 +785,14 @@ Returns:
     }
 }
 
-LONG LhBarrierGetCallback(PVOID *OutValue)
+LONG DetourBarrierGetCallback(PVOID *OutValue)
 {
 /*
 Description:
 
     Is expected to be called inside a hook handler. Otherwise it
     will fail with STATUS_NOT_SUPPORTED. The method retrieves
-    the callback initially passed to the related LhInstallHook()
+    the callback initially passed to the related DetourInstallHook()
     call.
 
 */
@@ -825,7 +825,7 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG LhBarrierGetReturnAddress(PVOID* OutValue)
+LONG DetourBarrierGetReturnAddress(PVOID* OutValue)
 {
 /*
 Description:
@@ -865,7 +865,7 @@ FINALLY_OUTRO:
 }
 
 
-LONG LhBarrierGetAddressOfReturnAddress(PVOID** OutValue)
+LONG DetourBarrierGetAddressOfReturnAddress(PVOID** OutValue)
 {
 /*
 Description:
@@ -899,7 +899,7 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG LhBarrierBeginStackTrace(PVOID* OutBackup)
+LONG DetourBarrierBeginStackTrace(PVOID* OutBackup)
 {
 /*
 Description:
@@ -909,7 +909,7 @@ Description:
     Temporarily restores the call stack to allow stack traces.
 
     You have to pass the stored backup pointer to
-    LhBarrierEndStackTrace() BEFORE leaving the handler, otherwise
+    DetourBarrierEndStackTrace() BEFORE leaving the handler, otherwise
     the application will be left in an unstable state!
 */
 
@@ -938,7 +938,7 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG LhBarrierEndStackTrace(PVOID InBackup)
+LONG DetourBarrierEndStackTrace(PVOID InBackup)
 {
 /*
 Description:
@@ -947,7 +947,7 @@ Description:
     will fail with STATUS_NOT_SUPPORTED.
 
     You have to pass the backup pointer obtained with
-    LhBarrierBeginStackTrace().
+    DetourBarrierBeginStackTrace().
 */
 
     LONG                NtStatus;
@@ -957,7 +957,7 @@ Description:
         THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given stack backup pointer is invalid.");
     }
 
-    FORCE(LhBarrierGetAddressOfReturnAddress(&AddrOfRetAddr));
+    FORCE(DetourBarrierGetAddressOfReturnAddress(&AddrOfRetAddr));
 
     *AddrOfRetAddr = InBackup;
 
@@ -968,7 +968,7 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG LhBarrierCallStackTrace(
+LONG DetourBarrierCallStackTrace(
     PVOID* OutMethodArray,
     ULONG InMaxMethodCount,
     ULONG* OutMethodCount)
@@ -1016,7 +1016,7 @@ Returns:
     }
 
     
-    FORCE(LhBarrierBeginStackTrace(&Backup));
+    FORCE(DetourBarrierBeginStackTrace(&Backup));
     
     if (CaptureStackBackTrace == NULL) {
         THROW(STATUS_NOT_IMPLEMENTED, L"barrier.cpp - This method requires Windows XP or later.");
@@ -1030,7 +1030,7 @@ THROW_OUTRO:
 FINALLY_OUTRO:
     {
         if (Backup != NULL) {
-            LhBarrierEndStackTrace(Backup);
+            DetourBarrierEndStackTrace(Backup);
         }
         return NtStatus;
     }

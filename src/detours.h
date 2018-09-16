@@ -516,61 +516,61 @@ typedef struct _HOOK_TRACE_INFO_
     make it active!
 */
 
-    LONG LhSetInclusiveACL(
+    LONG DetourSetInclusiveACL(
                 ULONG* InThreadIdList,
                 ULONG InThreadCount,
                 TRACED_HOOK_HANDLE InHandle);
 
-    LONG LhSetExclusiveACL(
+    LONG DetourSetExclusiveACL(
                 ULONG* InThreadIdList,
                 ULONG InThreadCount,
                 TRACED_HOOK_HANDLE InHandle);
 
-    LONG LhSetGlobalInclusiveACL(
+    LONG DetourSetGlobalInclusiveACL(
                 ULONG* InThreadIdList,
                 ULONG InThreadCount);
 
-    LONG LhSetGlobalExclusiveACL(
+    LONG DetourSetGlobalExclusiveACL(
                 ULONG* InThreadIdList,
                 ULONG InThreadCount);
 
-    LONG LhIsThreadIntercepted(
+    LONG DetourIsThreadIntercepted(
                 TRACED_HOOK_HANDLE InHook,
                 ULONG InThreadID,
                 BOOL* OutResult);
 
-    LONG LhSetACL(
+    LONG DetourSetACL(
                 HOOK_ACL* InAcl,
                 BOOL InIsExclusive,
                 ULONG* InThreadIdList,
                 ULONG InThreadCount);
 
-    HOOK_ACL* LhBarrierGetAcl();
+    HOOK_ACL* DetourBarrierGetAcl();
 /*
     The following barrier methods are meant to be used in hook handlers only!
 
     They will all fail with STATUS_NOT_SUPPORTED if called outside a
     valid hook handler...
 */
-LONG LhBarrierGetCallback(
+LONG DetourBarrierGetCallback(
     PVOID* OutValue);
 
-LONG LhBarrierGetReturnAddress(
+LONG DetourBarrierGetReturnAddress(
     PVOID* OutValue);
 
-LONG LhBarrierGetAddressOfReturnAddress(
+LONG DetourBarrierGetAddressOfReturnAddress(
     PVOID** OutValue);
 
-LONG LhGetHookBypassAddress(
+LONG DetourGetHookBypassAddress(
     TRACED_HOOK_HANDLE InHook,
     PVOID** OutAddress);
 
 // Stack tracing functions
-LONG LhBarrierBeginStackTrace(PVOID* OutBackup);
+LONG DetourBarrierBeginStackTrace(PVOID* OutBackup);
 
-LONG LhBarrierEndStackTrace(PVOID InBackup);
+LONG DetourBarrierEndStackTrace(PVOID InBackup);
 
-LONG LhBarrierCallStackTrace(
+LONG DetourBarrierCallStackTrace(
     PVOID* OutMethodArray,
     ULONG InMaxMethodCount,
     ULONG* OutMethodCount);
@@ -596,21 +596,21 @@ BOOL WINAPI DetourSetRetainRegions(_In_ BOOL fRetain);
 PVOID WINAPI DetourSetSystemRegionLowerBound(_In_ PVOID pSystemRegionLowerBound);
 PVOID WINAPI DetourSetSystemRegionUpperBound(_In_ PVOID pSystemRegionUpperBound);
 
-void LhBarrierThreadDetach();
+void DetourBarrierThreadDetach();
 
-LONG LhBarrierProcessAttach();
-void LhBarrierProcessDetach();
+LONG DetourBarrierProcessAttach();
+void DetourBarrierProcessDetach();
 
-void LhCriticalInitialize();
-void LhCriticalFinalize();
+void DetourCriticalInitialize();
+void DetourCriticalFinalize();
 
-LONG LhInstallHook(
+LONG DetourInstallHook(
             void* InEntryPoint,
             void* InHookProc,
             void* InCallback,
             TRACED_HOOK_HANDLE OutHandle);
 
-LONG WINAPI LhUninstallHook(TRACED_HOOK_HANDLE InHandle);
+LONG WINAPI DetourUninstallHook(TRACED_HOOK_HANDLE InHandle);
 
 ////////////////////////////////////////////////////////////// Code Functions.
 //
@@ -1180,7 +1180,7 @@ BOOL WINAPI DetourVirtualProtectSameExecute(_In_  PVOID pAddress,
 //////////////////////////////////////////////////////////////////////////////
 
 
-BOOL LhIsValidHandle(
+BOOL DetourIsValidHandle(
             TRACED_HOOK_HANDLE InTracedHandle,
             PLOCAL_HOOK_INFO* OutHandle);
 
