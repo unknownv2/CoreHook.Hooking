@@ -2,7 +2,7 @@
 #include "hook.h"
 
 
-TEST(testHook, myHookTest) {
+TEST(TestHook1, SimpleHookTest1) {
 
     EXPECT_EQ(true, HookTest());
 }
