@@ -14,21 +14,21 @@ unsigned int TestDetourA(unsigned int seconds, unsigned int a, unsigned int b, u
 }
 bool HookTest()
 {
-    LhBarrierProcessAttach();
+    DetourBarrierProcessAttach();
 
-    LhCriticalInitialize();
+    DetourCriticalInitialize();
 
     LONG selfHandle = 0;
     TRACED_HOOK_HANDLE outHandle = new HOOK_TRACE_INFO();
 
-    LhInstallHook((void*)TestDetourB, (void*)TestDetourA, &selfHandle, outHandle);
+    DetourInstallHook((void*)TestDetourB, (void*)TestDetourA, &selfHandle, outHandle);
 
-    LhSetInclusiveACL(new ULONG(), 1, outHandle);
+    DetourSetInclusiveACL(new ULONG(), 1, outHandle);
 
     TestDetourB(1, 2, 3, 4, 5, 6);
 
-    LhBarrierProcessDetach();
-    LhCriticalFinalize();
+    DetourBarrierProcessDetach();
+    DetourCriticalFinalize();
 
     return detoured_test;
 }

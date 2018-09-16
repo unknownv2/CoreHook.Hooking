@@ -1666,7 +1666,7 @@ Description:
             execute without intercepting the call...
         */
 
-        /*  !!Note that the assembler code does not invoke LhBarrierOutro() in this case!! */
+        /*  !!Note that the assembler code does not invoke BarrierOutro() in this case!! */
 
         return FALSE;
     }
@@ -1690,7 +1690,7 @@ Description:
     */
     if(!AcquireSelfProtection())
     {
-        /*  !!Note that the assembler code does not invoke LhBarrierOutro() in this case!! */
+        /*  !!Note that the assembler code does not invoke BarrierOutro() in this case!! */
 
         return FALSE;
     }
@@ -1725,7 +1725,7 @@ Description:
 
             I call this the "Thread deadlock barrier".
 
-            !!Note that the assembler code does not invoke LhBarrierOutro() in this case!!
+            !!Note that the assembler code does not invoke BarrierOutro() in this case!!
         */
 
         goto DONT_INTERCEPT;
@@ -1873,7 +1873,7 @@ LONG AddTrampolineToGlobalList(PDETOUR_TRAMPOLINE pTrampoline)
 }
 
 
-LONG LhInstallHook(
+LONG DetourInstallHook(
     void *InEntryPoint,
     void *InHookProc,
     void *InCallback,
@@ -1885,7 +1885,7 @@ Description:
     Installs a hook at the given entry point, redirecting all
     calls to the given hooking method. The returned handle will
     either be released on library unloading or explicitly through
-    LhUninstallHook() or LhUninstallAllHooks().
+    DetourUninstallHook() or DetourUninstallAllHooks().
 
 Parameters:
 
@@ -1903,7 +1903,7 @@ Parameters:
     - InCallback
 
     An uninterpreted callback later available through
-    LhBarrierGetCallback().
+    DetourBarrierGetCallback().
 
     - OutPHandle
 
@@ -1970,13 +1970,13 @@ THROW_OUTRO:
 }
 
 
-LONG WINAPI LhUninstallHook(TRACED_HOOK_HANDLE InHandle)
+LONG WINAPI DetourUninstallHook(TRACED_HOOK_HANDLE InHandle)
 {
 /*
 Description:
 
 Removes the given hook. To also release associated resources,
-you will have to call LhWaitForPendingRemovals(). In any case
+you will have to call DetourWaitForPendingRemovals(). In any case
 your hook handler will never be executed again, after calling this
 method.
 
@@ -2000,7 +2000,7 @@ will still return STATUS_SUCCESS.
 
     RtlAcquireLock(&GlobalHookLock);
     {
-        if ((InHandle->Link != NULL) && LhIsValidHandle(InHandle, &Hook))
+        if ((InHandle->Link != NULL) && DetourIsValidHandle(InHandle, &Hook))
         {
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
@@ -2031,7 +2031,7 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG LhIsThreadIntercepted(
+LONG DetourIsThreadIntercepted(
     TRACED_HOOK_HANDLE InHook,
     ULONG InThreadID,
     BOOL* OutResult)
@@ -2049,7 +2049,7 @@ about the implementation.
     LONG                NtStatus;
     PLOCAL_HOOK_INFO    Handle;
 
-    if (!LhIsValidHandle(InHook, &Handle)) {
+    if (!DetourIsValidHandle(InHook, &Handle)) {
         THROW(STATUS_INVALID_PARAMETER_1, (PWCHAR)L"The given hook handle is invalid or already disposed.");
     }
 
@@ -2066,7 +2066,7 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG LhSetInclusiveACL(
+LONG DetourSetInclusiveACL(
     ULONG* InThreadIdList,
     ULONG InThreadCount,
     TRACED_HOOK_HANDLE InHandle)
@@ -2094,13 +2094,13 @@ Parameters:
 
     PLOCAL_HOOK_INFO        Handle;
 
-    if (!LhIsValidHandle(InHandle, &Handle)) {
+    if (!DetourIsValidHandle(InHandle, &Handle)) {
         return STATUS_INVALID_PARAMETER_3;
     }
 
-    return LhSetACL(&Handle->LocalACL, FALSE, InThreadIdList, InThreadCount);
+    return DetourSetACL(&Handle->LocalACL, FALSE, InThreadIdList, InThreadCount);
 }
-LONG LhGetHookBypassAddress(
+LONG DetourGetHookBypassAddress(
     TRACED_HOOK_HANDLE InHook,
     PVOID** OutAddress)
 {
@@ -2141,7 +2141,7 @@ Returns:
     LONG                NtStatus;
     PLOCAL_HOOK_INFO    Handle;
 
-    if (!LhIsValidHandle(InHook, &Handle)) {
+    if (!DetourIsValidHandle(InHook, &Handle)) {
         THROW(STATUS_INVALID_PARAMETER_1, L"The given hook handle is invalid or already disposed.");
     }
     if (!IsValidPointer(OutAddress, sizeof(PVOID*))) {
@@ -2157,7 +2157,7 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG LhSetExclusiveACL(
+LONG DetourSetExclusiveACL(
             ULONG* InThreadIdList,
             ULONG InThreadCount,
             TRACED_HOOK_HANDLE InHandle)
@@ -2182,10 +2182,10 @@ Parameters:
 
     PLOCAL_HOOK_INFO        Handle;
 
-    if (!LhIsValidHandle(InHandle, &Handle)) {
+    if (!DetourIsValidHandle(InHandle, &Handle)) {
         return STATUS_INVALID_PARAMETER_3;
     }
-    return LhSetACL(&Handle->LocalACL, TRUE, InThreadIdList, InThreadCount);
+    return DetourSetACL(&Handle->LocalACL, TRUE, InThreadIdList, InThreadCount);
 }
 #endif
 LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)

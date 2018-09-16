@@ -13,17 +13,17 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved)
     if (dwReason == DLL_PROCESS_ATTACH) {
         DetourRestoreAfterWith();
 
-        LhBarrierProcessAttach();
+        DetourBarrierProcessAttach();
 
-        LhCriticalInitialize();
+        DetourCriticalInitialize();
     }
 	else if (dwReason == DLL_THREAD_ATTACH) {
-		LhBarrierThreadDetach();
+		DetourBarrierThreadDetach();
 	}
     else if (dwReason == DLL_PROCESS_DETACH) {
-        LhCriticalFinalize();
+        DetourCriticalFinalize();
         
-        LhBarrierProcessDetach();
+        DetourBarrierProcessDetach();
     }
     return TRUE;
 }
