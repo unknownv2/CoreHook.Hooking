@@ -1261,6 +1261,11 @@ static PDETOUR_TRAMPOLINE detour_alloc_trampoline(PBYTE pbTarget)
         }
         s_pRegion->pFree = (PDETOUR_TRAMPOLINE)pTrampoline->pbRemain;
         memset(pTrampoline, 0xcc, sizeof(*pTrampoline));
+        // reset pointers and values checked in detour_free_trampoline 
+        pTrampoline->IsExecutedPtr = NULL;
+        pTrampoline->OutHandle = NULL;
+        pTrampoline->HLSIndex = (ULONG)-1;
+
         return pTrampoline;
     }
 
@@ -1338,18 +1343,20 @@ static void detour_free_trampoline(PDETOUR_TRAMPOLINE pTrampoline)
 {
     PDETOUR_REGION pRegion = (PDETOUR_REGION)
         ((ULONG_PTR)pTrampoline & ~(ULONG_PTR)0xffff);
-#if defined(DETOURS_X86) || defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
+
     if( pTrampoline->IsExecutedPtr != NULL) {
         delete pTrampoline->IsExecutedPtr;
     }
     if( pTrampoline->OutHandle != NULL) {    
         delete pTrampoline->OutHandle;
     }
-    if (GlobalSlotList[pTrampoline->HLSIndex] == pTrampoline->HLSIdent)
-    {
-        GlobalSlotList[pTrampoline->HLSIndex] = 0;
-    }   
-#endif
+    if (pTrampoline->HLSIndex != -1) {
+        if (GlobalSlotList[pTrampoline->HLSIndex] == pTrampoline->HLSIdent)
+        {
+            GlobalSlotList[pTrampoline->HLSIndex] = 0;
+        }
+    }
+
     memset(pTrampoline, 0, sizeof(*pTrampoline));
     pTrampoline->pbRemain = (PBYTE)pRegion->pFree;
     pRegion->pFree = pTrampoline;
@@ -1829,7 +1836,7 @@ LONG WINAPI DetourSetCallbackForLocalHook(PDETOUR_TRAMPOLINE pTrampoline, PVOID 
 
 VOID InsertTraceHandle(PDETOUR_TRAMPOLINE pTrampoline)
 {
-    if (pTrampoline != NULL && pTrampoline->OutHandle != NULL)
+    if (pTrampoline != NULL && pTrampoline->OutHandle == NULL)
     {
         memset(&pTrampoline->LocalACL, 0, sizeof(HOOK_ACL));
 
