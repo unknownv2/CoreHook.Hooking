@@ -35,9 +35,10 @@ bool HookTest()
        OriginalFunction(1);
 
        DetourUninstallHook(hookHandle);
-
-       DetourBarrierProcessDetach();
-       DetourCriticalFinalize();
    }
+
+   DetourBarrierProcessDetach();
+   DetourCriticalFinalize();
+
    return detoured_test;
 }
