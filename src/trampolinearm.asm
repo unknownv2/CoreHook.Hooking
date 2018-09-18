@@ -1,10 +1,10 @@
-        area     .text, code, thumb, readonly
+        AREA     .text, CODE, THUMB, READONLY
 
 Trampoline_ASM_ARM FUNCTION
 
-        export  Trampoline_ASM_ARM 
-        export  Trampoline_ASM_ARM_DATA
-        export  Trampoline_ASM_ARM_CODE
+        EXPORT  Trampoline_ASM_ARM 
+        EXPORT  Trampoline_ASM_ARM_DATA
+        EXPORT  Trampoline_ASM_ARM_CODE
 
 NETIntro       ; .NET Barrier Intro Function
         dcb 0
@@ -132,6 +132,6 @@ Trampoline_ASM_ARM_DATA
         dcb     0x34
         dcb     0x12
       
-        endfunc
+        ENDFUNC
 
-        end
+        END
