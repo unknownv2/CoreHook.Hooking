@@ -1,55 +1,58 @@
-   AREA     .text, CODE
+   AREA     .text, CODE, READONLY
 
 Trampoline_ASM_ARM64 FUNCTION
 
         EXPORT  Trampoline_ASM_ARM64
+        EXPORT  Trampoline_ASM_ARM64_DATA
+        EXPORT  Trampoline_ASM_ARM64_CODE
 
 NETIntro        ; .NET Barrier Intro Function
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
 OldProc         ; Original Replaced Function
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
 NewProc        ; Detour Function
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
 NETOutro       ; .NET Barrier Outro Function
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
 IsExecutedPtr  ; Count of times trampoline was executed
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
-        DCB 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
+        dcb 0
 
+Trampoline_ASM_ARM64_CODE
 start  
         stp     x29, x30, [sp, #-16]!
         mov     x29, sp
@@ -62,9 +65,9 @@ start
         stp     x2, x3, [sp, #(8*16+2*8)]
         stp     x4, x5, [sp, #(8*16+4*8)]
         stp     x6, x7, [sp, #(8*16+6*8)]
-        str     x8,     [sp, #(8*16+8*8)]            
+        str     x8,     [sp, #(8*16+8*8)]
 
-        ldr     x10, IsExecutedPtr            
+        ldr     x10, IsExecutedPtr
 try_inc_lock    
         ldxr    w0, [x10]
         add     w0, w0, #1
@@ -79,15 +82,15 @@ try_dec_lock
         stxr    w1, w0, [x10]
         cbnz    x1, try_dec_lock
         ldr     x10, OldProc
-        b       trampoline_exit        
+        b       trampoline_exit
 ; call hook handler or original method...
 call_net_entry
         adr     x0, start ;call NET intro
         add     x2, sp, #(10*8 + 8*16) + 8 ; original sp (address of return address)
         ldr     x1, [sp, #(10*8 + 8*16) + 8] ; return address (value stored in original sp)
-        ldr     x10, NETIntro  
+        ldr     x10, NETIntro
         blr     x10 ;Hook->NETIntro(Hook, RetAddr, InitialSP)
-;should call original method?           
+;should call original method?
         cbnz    x0, call_hook_handler
 
 ; call original method 
@@ -102,10 +105,10 @@ try_dec_lock2
         b       trampoline_exit
 call_hook_handler
 
-;call hook handler        
+;call hook handler
         ldr     x10, NewProc
         adr     x4, call_net_outro  ;adjust return address
-        str     x4, [sp, #(10*8 + 8*16) + 8] ; store outro return to stack after hook handler is called     
+        str     x4, [sp, #(10*8 + 8*16) + 8] ; store outro return to stack after hook handler is called
         b       trampoline_exit
  ;this is where the handler returns...
 call_net_outro
@@ -163,10 +166,11 @@ trampoline_exit
         br      x10
 
 ; outro signature, to automatically determine code size
-        DCB     0x78
-        DCB     0x56
-        DCB     0x34
-        DCB     0x12
+Trampoline_ASM_ARM64_DATA
+        dcb     0x78
+        dcb     0x56
+        dcb     0x34
+        dcb     0x12
 
         ENDFUNC
         END

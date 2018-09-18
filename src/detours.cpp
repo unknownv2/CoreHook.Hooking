@@ -1233,6 +1233,22 @@ static PVOID detour_alloc_region_from_hi(PBYTE pbLo, PBYTE pbHi)
     return NULL;
 }
 
+static void detour_initialize_trampoline(PDETOUR_TRAMPOLINE pTrampoline) {
+    // Use 0xcc to fill all code templates to 'int 3' (breakpoint instruction)
+    memset(pTrampoline, 0xcc, sizeof(*pTrampoline));
+
+    // reset pointers and values checked in detour_free_trampoline
+    pTrampoline->Callback = NULL;
+    pTrampoline->Trampoline = NULL;
+    pTrampoline->HookIntro = NULL;
+    pTrampoline->OldProc = NULL;
+    pTrampoline->HookProc = NULL;
+    pTrampoline->HookOutro = NULL;
+    pTrampoline->IsExecutedPtr = NULL;
+    pTrampoline->OutHandle = NULL;
+
+    pTrampoline->HLSIndex = (ULONG)-1;
+}
 static PDETOUR_TRAMPOLINE detour_alloc_trampoline(PBYTE pbTarget)
 {
     // We have to place trampolines within +/- 2GB of target.
@@ -1260,7 +1276,9 @@ static PDETOUR_TRAMPOLINE detour_alloc_trampoline(PBYTE pbTarget)
             return NULL;
         }
         s_pRegion->pFree = (PDETOUR_TRAMPOLINE)pTrampoline->pbRemain;
-        memset(pTrampoline, 0xcc, sizeof(*pTrampoline));
+
+        detour_initialize_trampoline(pTrampoline);
+
         return pTrampoline;
     }
 
@@ -1338,18 +1356,20 @@ static void detour_free_trampoline(PDETOUR_TRAMPOLINE pTrampoline)
 {
     PDETOUR_REGION pRegion = (PDETOUR_REGION)
         ((ULONG_PTR)pTrampoline & ~(ULONG_PTR)0xffff);
-#if defined(DETOURS_X86) || defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
+
     if( pTrampoline->IsExecutedPtr != NULL) {
         delete pTrampoline->IsExecutedPtr;
     }
     if( pTrampoline->OutHandle != NULL) {    
         delete pTrampoline->OutHandle;
     }
-    if (GlobalSlotList[pTrampoline->HLSIndex] == pTrampoline->HLSIdent)
-    {
-        GlobalSlotList[pTrampoline->HLSIndex] = 0;
-    }   
-#endif
+    if (pTrampoline->HLSIndex != -1) {
+        if (GlobalSlotList[pTrampoline->HLSIndex] == pTrampoline->HLSIdent)
+        {
+            GlobalSlotList[pTrampoline->HLSIndex] = 0;
+        }
+    }
+
     memset(pTrampoline, 0, sizeof(*pTrampoline));
     pTrampoline->pbRemain = (PBYTE)pRegion->pFree;
     pRegion->pFree = pTrampoline;
@@ -1555,6 +1575,7 @@ static LONG detour_align_from_target(PDETOUR_TRAMPOLINE pTrampoline, LONG obTarg
     }
     return 0;
 }
+// cache calculated trampoline size since it should be static after the first time 
 static ULONG ___TrampolineSize = 0;
 
 #ifdef DETOURS_X64
@@ -1567,32 +1588,30 @@ static ULONG ___TrampolineSize = 0;
 
 #ifdef DETOURS_ARM
     extern "C" void __stdcall Trampoline_ASM_ARM();
-    extern "C" void*          Trampoline_ASM_ARM_DATA();
     extern "C" void __stdcall Trampoline_ASM_ARM_CODE();
+    extern "C" void*          Trampoline_ASM_ARM_DATA();
 #endif
 
 #ifdef DETOURS_ARM64
     extern "C" void __stdcall Trampoline_ASM_ARM64();
+    extern "C" void __stdcall Trampoline_ASM_ARM64_CODE();
+    extern "C" void*          Trampoline_ASM_ARM64_DATA();
 #endif
 
-#if defined(DETOURS_X64) || defined(DETOURS_X86) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
 UCHAR* DetourGetTrampolinePtr()
 {
 // bypass possible Visual Studio debug jump table
-#ifdef DETOURS_X64
+#if defined(DETOURS_X64)
     UCHAR* Ptr = (UCHAR*)Trampoline_ASM_x64;
-#endif
 
-#ifdef DETOURS_X86
+#elif defined(DETOURS_X86)
     UCHAR* Ptr = (UCHAR*)Trampoline_ASM_x86;
-#endif
 
-#ifdef DETOURS_ARM
+#elif defined DETOURS_ARM
     UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM_CODE;
-#endif
 
-#ifdef DETOURS_ARM64
-    UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM64;
+#elif defined DETOURS_ARM64
+    UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM64_CODE;
 #endif
 
     if(*Ptr == 0xE9)
@@ -1829,7 +1848,7 @@ LONG WINAPI DetourSetCallbackForLocalHook(PDETOUR_TRAMPOLINE pTrampoline, PVOID 
 
 VOID InsertTraceHandle(PDETOUR_TRAMPOLINE pTrampoline)
 {
-    if (pTrampoline != NULL && pTrampoline->OutHandle != NULL)
+    if (pTrampoline != NULL && pTrampoline->OutHandle == NULL)
     {
         memset(&pTrampoline->LocalACL, 0, sizeof(HOOK_ACL));
 
@@ -2187,7 +2206,7 @@ Parameters:
     }
     return DetourSetACL(&Handle->LocalACL, TRUE, InThreadIdList, InThreadCount);
 }
-#endif
+
 LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 {
     if (pppFailedPointer != NULL) {
