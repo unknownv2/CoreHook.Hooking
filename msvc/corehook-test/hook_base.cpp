@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "detours.h"
+#include <memory.h>
 
 bool detoured_test = false;
 
@@ -22,21 +23,27 @@ bool HookTest() {
 
     DetourCriticalInitialize();
 
-    LONG callback = 0;
-    TRACED_HOOK_HANDLE hookHandle = new HOOK_TRACE_INFO();
+    auto callback = std::make_unique<LONG>();
+    auto hookHandle = std::make_unique<HOOK_TRACE_INFO>();
+
+    auto threadIdList = std::make_unique<ULONG>();
+    const LONG threadCount = 1;
 
     LONG error = DetourInstallHook(
-        (void*)OriginalFunction,
-        (void*)DetourForOriginalFunction,
-        &callback,
-        hookHandle);
+        OriginalFunction,
+        DetourForOriginalFunction,
+        callback.get(),
+        hookHandle.get());
 
     if (error == NO_ERROR) {
-       DetourSetInclusiveACL(new ULONG(), 1, hookHandle);
+       DetourSetInclusiveACL(
+           threadIdList.get(), 
+           threadCount,
+           hookHandle.get());
 
        OriginalFunction(1);
 
-       DetourUninstallHook(hookHandle);
+       DetourUninstallHook(hookHandle.get());
     }
 
     DetourBarrierProcessDetach();
