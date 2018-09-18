@@ -1233,6 +1233,22 @@ static PVOID detour_alloc_region_from_hi(PBYTE pbLo, PBYTE pbHi)
     return NULL;
 }
 
+static void detour_initialize_trampoline(PDETOUR_TRAMPOLINE pTrampoline) {
+    // Use 0xcc to fill all code templates to 'int 3' (breakpoint instruction)
+    memset(pTrampoline, 0xcc, sizeof(*pTrampoline));
+
+    // reset pointers and values checked in detour_free_trampoline
+    pTrampoline->Callback = NULL;
+    pTrampoline->Trampoline = NULL;
+    pTrampoline->HookIntro = NULL;
+    pTrampoline->OldProc = NULL;
+    pTrampoline->HookProc = NULL;
+    pTrampoline->HookOutro = NULL;
+    pTrampoline->IsExecutedPtr = NULL;
+    pTrampoline->OutHandle = NULL;
+
+    pTrampoline->HLSIndex = (ULONG)-1;
+}
 static PDETOUR_TRAMPOLINE detour_alloc_trampoline(PBYTE pbTarget)
 {
     // We have to place trampolines within +/- 2GB of target.
@@ -1260,11 +1276,8 @@ static PDETOUR_TRAMPOLINE detour_alloc_trampoline(PBYTE pbTarget)
             return NULL;
         }
         s_pRegion->pFree = (PDETOUR_TRAMPOLINE)pTrampoline->pbRemain;
-        memset(pTrampoline, 0xcc, sizeof(*pTrampoline));
-        // reset pointers and values checked in detour_free_trampoline 
-        pTrampoline->IsExecutedPtr = NULL;
-        pTrampoline->OutHandle = NULL;
-        pTrampoline->HLSIndex = (ULONG)-1;
+
+        detour_initialize_trampoline(pTrampoline);
 
         return pTrampoline;
     }
