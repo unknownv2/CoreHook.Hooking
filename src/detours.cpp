@@ -1575,6 +1575,7 @@ static LONG detour_align_from_target(PDETOUR_TRAMPOLINE pTrampoline, LONG obTarg
     }
     return 0;
 }
+// cache calculated trampoline size since it should be static after the first time 
 static ULONG ___TrampolineSize = 0;
 
 #ifdef DETOURS_X64
@@ -1587,32 +1588,30 @@ static ULONG ___TrampolineSize = 0;
 
 #ifdef DETOURS_ARM
     extern "C" void __stdcall Trampoline_ASM_ARM();
-    extern "C" void*          Trampoline_ASM_ARM_DATA();
     extern "C" void __stdcall Trampoline_ASM_ARM_CODE();
+    extern "C" void*          Trampoline_ASM_ARM_DATA();
 #endif
 
 #ifdef DETOURS_ARM64
     extern "C" void __stdcall Trampoline_ASM_ARM64();
+    extern "C" void __stdcall Trampoline_ASM_ARM64_CODE();
+    extern "C" void*          Trampoline_ASM_ARM64_DATA();
 #endif
 
-#if defined(DETOURS_X64) || defined(DETOURS_X86) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
 UCHAR* DetourGetTrampolinePtr()
 {
 // bypass possible Visual Studio debug jump table
-#ifdef DETOURS_X64
+#if defined(DETOURS_X64)
     UCHAR* Ptr = (UCHAR*)Trampoline_ASM_x64;
-#endif
 
-#ifdef DETOURS_X86
+#elif defined(DETOURS_X86)
     UCHAR* Ptr = (UCHAR*)Trampoline_ASM_x86;
-#endif
 
-#ifdef DETOURS_ARM
+#elif defined DETOURS_ARM
     UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM_CODE;
-#endif
 
-#ifdef DETOURS_ARM64
-    UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM64;
+#elif defined DETOURS_ARM64
+    UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM64_CODE;
 #endif
 
     if(*Ptr == 0xE9)
@@ -2207,7 +2206,7 @@ Parameters:
     }
     return DetourSetACL(&Handle->LocalACL, TRUE, InThreadIdList, InThreadCount);
 }
-#endif
+
 LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 {
     if (pppFailedPointer != NULL) {
