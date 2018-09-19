@@ -16,7 +16,7 @@ unsigned int OriginalFunction_Detour(unsigned int count) {
 }
 
 #pragma optimize( "", on )
-bool DetoursSimpleTest1() {
+bool Detours::DetoursSimpleTest1() {
     auto callback = std::make_unique<LONG>();
     auto hookHandle = std::make_unique<HOOK_TRACE_INFO>();
 
@@ -61,7 +61,7 @@ HANDLE WINAPI CreateFileW_Detour(
 
 // Detour CreateFileW and save the pointer to the first argument: 'lpFileName'
 // The test file should not exist and so CreateFileW will return INVALID_HANDLE_VALUE
-HANDLE Detours::DetoursSimpleTest2(LPCWSTR file) {
+HANDLE Detours::DetoursSimpleTest2(LPCWSTR file, LPCWSTR* outFile) {
     auto callback = std::make_unique<LONG>();
     auto hookHandle = std::make_unique<HOOK_TRACE_INFO>();
 
@@ -92,7 +92,7 @@ HANDLE Detours::DetoursSimpleTest2(LPCWSTR file) {
 
         DetourUninstallHook(hookHandle.get());
 
-        _fileName = _detourFileName;
+        *outFile = _detourFileName;
     }
 
     return hFile;
