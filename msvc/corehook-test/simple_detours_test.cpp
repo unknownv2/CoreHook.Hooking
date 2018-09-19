@@ -17,27 +17,27 @@ unsigned int OriginalFunction_Detour(unsigned int count) {
 
 #pragma optimize( "", on )
 bool Detours::DetoursSimpleTest1() {
-    auto callback = std::make_unique<LONG>();
-    auto hookHandle = std::make_unique<HOOK_TRACE_INFO>();
+    LONG callback = 0;
+    HOOK_TRACE_INFO hookHandle = { 0 };
 
-    auto threadIdList = std::make_unique<ULONG>();
+    ULONG threadIdList = 0;
     const LONG threadCount = 1;
 
     LONG error = DetourInstallHook(
         OriginalFunction,
         OriginalFunction_Detour,
-        callback.get(),
-        hookHandle.get());
+        &callback,
+        &hookHandle);
 
     if (error == NO_ERROR) {
         DetourSetInclusiveACL(
-            threadIdList.get(),
+            &threadIdList,
             threadCount,
-            hookHandle.get());
+            &hookHandle);
 
         OriginalFunction(1);
 
-        DetourUninstallHook(hookHandle.get());
+        DetourUninstallHook(&hookHandle);
     }
 
     return detoured_test;
@@ -62,25 +62,25 @@ HANDLE WINAPI CreateFileW_Detour(
 // Detour CreateFileW and save the pointer to the first argument: 'lpFileName'
 // The test file should not exist and so CreateFileW will return INVALID_HANDLE_VALUE
 HANDLE Detours::DetoursSimpleTest2(LPCWSTR file, LPCWSTR* outFile) {
-    auto callback = std::make_unique<LONG>();
-    auto hookHandle = std::make_unique<HOOK_TRACE_INFO>();
+    LONG callback = 0;
+    HOOK_TRACE_INFO hookHandle = { 0 };
 
-    auto threadIdList = std::make_unique<ULONG>();
+    ULONG threadIdList = 0;
     const LONG threadCount = 1;
 
     LONG error = DetourInstallHook(
         CreateFileW,
         CreateFileW_Detour,
-        callback.get(),
-        hookHandle.get());
+        &callback,
+        &hookHandle);
 
     HANDLE hFile = NULL;
 
     if (error == NO_ERROR) {
         DetourSetInclusiveACL(
-            threadIdList.get(),
+            &threadIdList,
             threadCount,
-            hookHandle.get());
+            &hookHandle);
 
         hFile = CreateFile(file,
             GENERIC_READ,
@@ -90,7 +90,7 @@ HANDLE Detours::DetoursSimpleTest2(LPCWSTR file, LPCWSTR* outFile) {
             0,
             NULL);
 
-        DetourUninstallHook(hookHandle.get());
+        DetourUninstallHook(&hookHandle);
 
         *outFile = _detourFileName;
     }
