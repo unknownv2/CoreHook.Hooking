@@ -6,36 +6,44 @@ bool detoured_test = false;
 // disable optimizations for test functions so they aren't inlined
 #pragma optimize( "", off )
 
-unsigned int OriginalFunction(unsigned int count) {
+unsigned int UserFunction(unsigned int count) {
     return count + 1;
 }
-unsigned int OriginalFunction_Detour(unsigned int count) {
+unsigned int UserFunction_Detour(unsigned int count) {
     detoured_test = true;
 
-    return OriginalFunction(count);
+    return UserFunction(count);
 }
+unsigned int SimpleFunction() {
+    return 0x12345678;
+}
+unsigned int SimpleFunction_Detour() {
+    detoured_test = true;
 
+    return SimpleFunction() + 1;
+}
 #pragma optimize( "", on )
+
 bool Detours::DetourUserFunction() {
+    detoured_test = false;
     LONG callback = 0;
     HOOK_TRACE_INFO hookHandle = { 0 };
 
     ULONG threadIdList = 0;
     const LONG threadCount = 1;
 
-    LONG error = DetourInstallHook(
-        OriginalFunction,
-        OriginalFunction_Detour,
+    if(DetourInstallHook(
+        UserFunction,
+        UserFunction_Detour,
         &callback,
-        &hookHandle);
+        &hookHandle) == NO_ERROR) {
 
-    if (error == NO_ERROR) {
         DetourSetInclusiveACL(
             &threadIdList,
             threadCount,
             &hookHandle);
 
-        OriginalFunction(1);
+        UserFunction(1);
 
         DetourUninstallHook(&hookHandle);
     }
@@ -43,6 +51,41 @@ bool Detours::DetourUserFunction() {
     return detoured_test;
 }
 
+
+int Detours::ShouldBypassDetourFunction()
+{
+    LONG callback = 0;
+    HOOK_TRACE_INFO hookHandle = { 0 };
+
+    DWORD result = 0;
+    ULONG threadIdList = 0;
+    const LONG threadCount = 1;
+
+    typedef DWORD (STDMETHODCALLTYPE SimpleFunctionFp)();
+    SimpleFunctionFp* pfnDelegate = NULL;
+
+    if(DetourInstallHook(
+        SimpleFunction,
+        SimpleFunction_Detour,
+        &callback,
+        &hookHandle) == NO_ERROR)  {
+
+        DetourSetInclusiveACL(
+            &threadIdList,
+            threadCount,
+            &hookHandle);
+
+        if (DetourGetHookBypassAddress(
+            &hookHandle,
+            (PVOID**)&pfnDelegate) == NO_ERROR)  {
+            result = pfnDelegate();
+        }
+
+        DetourUninstallHook(&hookHandle);
+    }
+
+    return result;
+}
 
 CONST WCHAR* _detourFileName;
 
@@ -77,15 +120,14 @@ HANDLE Detours::DetourExportedFunction(LPCWSTR file, LPCWSTR* outFile) {
     ULONG threadIdList = 0;
     const LONG threadCount = 1;
 
-    LONG error = DetourInstallHook(
+    HANDLE hFile = NULL;
+
+    if (DetourInstallHook(
         CreateFileW,
         CreateFileW_Detour,
         &callback,
-        &hookHandle);
+        &hookHandle) == NO_ERROR) {
 
-    HANDLE hFile = NULL;
-
-    if (error == NO_ERROR) {
         DetourSetInclusiveACL(
             &threadIdList,
             threadCount,

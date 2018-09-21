@@ -14,6 +14,10 @@ TEST_F(DetoursTest, SimpleDetoursExportedFunctionTest) {
     EXPECT_EQ(INVALID_HANDLE_VALUE, _dt.DetourExportedFunction(fileName, &fileNamePtr));
 
     EXPECT_EQ(fileName, fileNamePtr);
+}
 
-    ASSERT_STREQ(fileName, fileNamePtr);
+// Call the original function directly, skipping the detour function we set 
+TEST_F(DetoursTest, ShouldBypassDetourFunctionTest) {
+
+    EXPECT_EQ(0x12345678, _dt.ShouldBypassDetourFunction());
 }
