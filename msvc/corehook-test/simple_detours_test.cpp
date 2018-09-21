@@ -16,7 +16,7 @@ unsigned int OriginalFunction_Detour(unsigned int count) {
 }
 
 #pragma optimize( "", on )
-bool Detours::DetoursSimpleTest1() {
+bool Detours::DetourUserFunction() {
     LONG callback = 0;
     HOOK_TRACE_INFO hookHandle = { 0 };
 
@@ -50,18 +50,27 @@ HANDLE WINAPI CreateFileW_Detour(
     LPCWSTR fileName,
     DWORD access,
     DWORD share,
-    LPSECURITY_ATTRIBUTES a3,
+    LPSECURITY_ATTRIBUTES securityAttributes,
     DWORD create,
     DWORD flags,
-    HANDLE templateFile) {
+    HANDLE templateFile
+    )
+{
     _detourFileName = fileName;
 
-    return CreateFileW(fileName, access, share, a3, create, flags, templateFile);
+    return CreateFileW(
+        fileName,
+        access,
+        share,
+        securityAttributes,
+        create, 
+        flags, 
+        templateFile);
 }
 
 // Detour CreateFileW and save the pointer to the first argument: 'lpFileName'
 // The test file should not exist and so CreateFileW will return INVALID_HANDLE_VALUE
-HANDLE Detours::DetoursSimpleTest2(LPCWSTR file, LPCWSTR* outFile) {
+HANDLE Detours::DetourExportedFunction(LPCWSTR file, LPCWSTR* outFile) {
     LONG callback = 0;
     HOOK_TRACE_INFO hookHandle = { 0 };
 

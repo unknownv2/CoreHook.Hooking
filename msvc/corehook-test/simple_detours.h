@@ -7,8 +7,8 @@ class Detours
 private:
 
 public:
-    bool DetoursSimpleTest1();
-    HANDLE DetoursSimpleTest2(LPCWSTR file, LPCWSTR* outFile);
+    bool DetourUserFunction();
+    HANDLE DetourExportedFunction(LPCWSTR file, LPCWSTR* outFile);
 
 };
 
