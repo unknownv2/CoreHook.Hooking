@@ -2181,7 +2181,7 @@ Parameters:
     return DetourSetACL(&Handle->LocalACL, FALSE, InThreadIdList, InThreadCount);
 }
 LONG DetourGetHookBypassAddress(
-    TRACED_HOOK_HANDLE InHook,
+    _In_ TRACED_HOOK_HANDLE pHook,
     PVOID** OutAddress)
 {
 /*
@@ -2199,7 +2199,7 @@ Description:
 
 Parameters:
 
-    - InHook
+    - pHook
 
         The hook to retrieve the relocated entry point for.
 
@@ -2221,7 +2221,7 @@ Returns:
     LONG                NtStatus;
     PLOCAL_HOOK_INFO    Handle;
 
-    if (!DetourIsValidHandle(InHook, &Handle)) {
+    if (!DetourIsValidHandle(pHook, &Handle)) {
         THROW(STATUS_INVALID_PARAMETER_1, L"The given hook handle is invalid or already disposed.");
     }
     if (!IsValidPointer(OutAddress, sizeof(PVOID*))) {
@@ -2352,7 +2352,6 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             o->pTrampoline->IsExecutedPtr = new int();
 
             detour_gen_jmp_indirect(o->pTrampoline->rbCodeIn, (PBYTE*)&o->pTrampoline->Trampoline);
-            //detour_gen_jmp_indirect(o->pTrampoline->rbCodeIn, &o->pTrampoline->pbDetour);
             PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, o->pTrampoline->rbCodeIn);
             pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
             *o->ppbPointer = o->pTrampoline->rbCode;
@@ -2376,7 +2375,6 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 
             PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, (PBYTE)o->pTrampoline->Trampoline);
             
-            //PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, o->pTrampoline->pbDetour);
             pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
             *o->ppbPointer = o->pTrampoline->rbCode;
             UNREFERENCED_PARAMETER(pbCode);
@@ -2406,7 +2404,6 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
                           o->pTrampoline->OldProc[8], o->pTrampoline->OldProc[9], o->pTrampoline->OldProc[10], o->pTrampoline->OldProc[11]));          
   
             PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, (PBYTE)o->pTrampoline->Trampoline);
-            // PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, o->pTrampoline->pbDetour);
             pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
             *o->ppbPointer = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->rbCode);
             UNREFERENCED_PARAMETER(pbCode);
@@ -2426,7 +2423,6 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             o->pTrampoline->IsExecutedPtr = new int();
 
             PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, (PBYTE)o->pTrampoline->Trampoline);
-            //PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, o->pTrampoline->pbDetour);
             pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
             *o->ppbPointer = o->pTrampoline->rbCode;
             UNREFERENCED_PARAMETER(pbCode);
@@ -2484,6 +2480,7 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
                           o->pTrampoline->pbDetour));
             DETOUR_TRACE(("\n"));
 #endif // DETOURS_IA64
+
             AddTrampolineToGlobalList(o->pTrampoline);
         }
     }
