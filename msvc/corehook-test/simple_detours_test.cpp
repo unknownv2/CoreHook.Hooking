@@ -113,7 +113,7 @@ HANDLE WINAPI CreateFileW_Detour(
 
 // Detour CreateFileW and save the pointer to the first argument: 'lpFileName'
 // The test file should not exist and so CreateFileW will return INVALID_HANDLE_VALUE
-HANDLE Detours::DetourExportedFunction(LPCWSTR file, LPCWSTR* outFile) {
+HANDLE Detours::DetourExportedFunction(LPCWSTR file, LPCWSTR *outFile) {
     LONG callback = 0;
     HOOK_TRACE_INFO hookHandle = { 0 };
 
