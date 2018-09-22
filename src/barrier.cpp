@@ -380,8 +380,9 @@ Parameters:
 
     for (Index = 0; Index < InThreadCount; Index++)
     {
-        if (InThreadIdList[Index] == 0)
+        if (InThreadIdList[Index] == 0) {
             InThreadIdList[Index] = GetCurrentThreadId();
+        }
     }
     DWORD dwOld;
     if (VirtualProtect(InAcl, sizeof(HOOK_ACL), PAGE_READWRITE, &dwOld))

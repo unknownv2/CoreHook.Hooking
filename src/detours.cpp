@@ -2,9 +2,7 @@
 //
 //  Core Detours Functionality (detours.cpp of detours.lib)
 //
-//  Microsoft Research Detours Package, Version 4.0.1
 //
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
 //
 
 #pragma warning(disable:4068) // unknown pragma (suppress)
@@ -332,6 +330,69 @@ inline ULONG detour_is_code_filler(PBYTE pbCode)
         return 1;
     }
     return 0;
+}
+
+inline VOID detour_set_trampoline_functions(PDETOUR_TRAMPOLINE pTrampoline,
+                                            ULONG trampolineSize)
+{
+    PBYTE Ptr = (PBYTE)pTrampoline->Trampoline;
+    for (ULONG Index = 0; Index < trampolineSize; Index++)
+    {
+#pragma warning (disable:4311) // pointer truncation
+        switch (*((ULONG*)(Ptr)))
+        {
+            /*Handle*/
+        case 0x1A2B3C05:
+        {
+            *((ULONG*)Ptr) = (ULONG)pTrampoline;
+            break;
+        }
+        /*UnmanagedIntro*/
+        case 0x1A2B3C03:
+        {
+            *((ULONG*)Ptr) = (ULONG)pTrampoline->HookIntro;
+            break;
+        }
+        /*OldProc*/
+        case 0x1A2B3C01:
+        {
+            *((ULONG*)Ptr) = (ULONG)pTrampoline->OldProc;
+            break;
+        }
+        /*Ptr:NewProc*/
+        case 0x1A2B3C07:
+        {
+            *((ULONG*)Ptr) = (ULONG)&pTrampoline->HookProc;
+            break;
+        }
+        /*NewProc*/
+        case 0x1A2B3C00:
+        {
+            *((ULONG*)Ptr) = (ULONG)pTrampoline->HookProc;
+            break;
+        }
+        /*UnmanagedOutro*/
+        case 0x1A2B3C06:
+        {
+            *((ULONG*)Ptr) = (ULONG)pTrampoline->HookOutro;
+            break;
+        }
+        /*IsExecuted*/
+        case 0x1A2B3C02:
+        {
+            *((ULONG*)Ptr) = (ULONG)pTrampoline->IsExecutedPtr;
+            break;
+        }
+        /*RetAddr*/
+        case 0x1A2B3C04:
+        {
+            *((ULONG*)Ptr) = (ULONG)((PBYTE)pTrampoline->Trampoline + 92);
+            break;
+        }
+        }
+
+        Ptr++;
+    }
 }
 
 #endif // DETOURS_X86
@@ -2120,7 +2181,7 @@ Parameters:
     return DetourSetACL(&Handle->LocalACL, FALSE, InThreadIdList, InThreadCount);
 }
 LONG DetourGetHookBypassAddress(
-    TRACED_HOOK_HANDLE InHook,
+    _In_ TRACED_HOOK_HANDLE pHook,
     PVOID** OutAddress)
 {
 /*
@@ -2138,7 +2199,7 @@ Description:
 
 Parameters:
 
-    - InHook
+    - pHook
 
         The hook to retrieve the relocated entry point for.
 
@@ -2160,7 +2221,7 @@ Returns:
     LONG                NtStatus;
     PLOCAL_HOOK_INFO    Handle;
 
-    if (!DetourIsValidHandle(InHook, &Handle)) {
+    if (!DetourIsValidHandle(pHook, &Handle)) {
         THROW(STATUS_INVALID_PARAMETER_1, L"The given hook handle is invalid or already disposed.");
     }
     if (!IsValidPointer(OutAddress, sizeof(PVOID*))) {
@@ -2290,10 +2351,7 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
             o->pTrampoline->IsExecutedPtr = new int();
 
-            AddTrampolineToGlobalList(o->pTrampoline);
-
             detour_gen_jmp_indirect(o->pTrampoline->rbCodeIn, (PBYTE*)&o->pTrampoline->Trampoline);
-            //detour_gen_jmp_indirect(o->pTrampoline->rbCodeIn, &o->pTrampoline->pbDetour);
             PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, o->pTrampoline->rbCodeIn);
             pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
             *o->ppbPointer = o->pTrampoline->rbCode;
@@ -2312,30 +2370,11 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             o->pTrampoline->OldProc = o->pTrampoline->rbCode;
             o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
             o->pTrampoline->IsExecutedPtr = new int();
-            PBYTE Ptr = (PBYTE)o->pTrampoline->Trampoline;
-            for(ULONG Index = 0; Index < TrampolineSize; Index++)
-            {
-            #pragma warning (disable:4311) // pointer truncation
-                switch(*((ULONG*)(Ptr)))
-                {
-                /*Handle*/            case 0x1A2B3C05: *((ULONG*)Ptr) = (ULONG)o->pTrampoline; break;
-                /*UnmanagedIntro*/    case 0x1A2B3C03: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->HookIntro; break;
-                /*OldProc*/            case 0x1A2B3C01: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->OldProc; break;
-                /*Ptr:NewProc*/        case 0x1A2B3C07: *((ULONG*)Ptr) = (ULONG)&o->pTrampoline->HookProc; break;
-                /*NewProc*/            case 0x1A2B3C00: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->HookProc; break;
-                /*UnmanagedOutro*/    case 0x1A2B3C06: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->HookOutro; break;
-                /*IsExecuted*/        case 0x1A2B3C02: *((ULONG*)Ptr) = (ULONG)o->pTrampoline->IsExecutedPtr; break;
-                /*RetAddr*/            case 0x1A2B3C04: *((ULONG*)Ptr) = (ULONG)((PBYTE)o->pTrampoline->Trampoline + 92); break;
-                }
 
-                Ptr++;
-            }
-
-            AddTrampolineToGlobalList(o->pTrampoline);
+            detour_set_trampoline_functions(o->pTrampoline, TrampolineSize);
 
             PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, (PBYTE)o->pTrampoline->Trampoline);
             
-            //PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, o->pTrampoline->pbDetour);
             pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
             *o->ppbPointer = o->pTrampoline->rbCode;
             UNREFERENCED_PARAMETER(pbCode);
@@ -2353,6 +2392,8 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             o->pTrampoline->Trampoline = DETOURS_PBYTE_TO_PFUNC(endOfTramp);
             o->pTrampoline->OldProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->rbCode);
             o->pTrampoline->HookProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->pbDetour);
+            o->pTrampoline->IsExecutedPtr = new int();
+
             DETOUR_TRACE(("detours: oldProc=%p: "
                           "%02x %02x %02x %02x "
                           "%02x %02x %02x %02x "
@@ -2361,12 +2402,8 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
                           o->pTrampoline->OldProc[0], o->pTrampoline->OldProc[1], o->pTrampoline->OldProc[2], o->pTrampoline->OldProc[3],
                           o->pTrampoline->OldProc[4], o->pTrampoline->OldProc[5], o->pTrampoline->OldProc[6], o->pTrampoline->OldProc[7],
                           o->pTrampoline->OldProc[8], o->pTrampoline->OldProc[9], o->pTrampoline->OldProc[10], o->pTrampoline->OldProc[11]));          
-            o->pTrampoline->IsExecutedPtr = new int();    
   
-            AddTrampolineToGlobalList(o->pTrampoline);
-
             PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, (PBYTE)o->pTrampoline->Trampoline);
-            // PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, o->pTrampoline->pbDetour);
             pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
             *o->ppbPointer = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->rbCode);
             UNREFERENCED_PARAMETER(pbCode);
@@ -2385,10 +2422,7 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
             o->pTrampoline->IsExecutedPtr = new int();
 
-            AddTrampolineToGlobalList(o->pTrampoline);
-
             PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, (PBYTE)o->pTrampoline->Trampoline);
-            //PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, o->pTrampoline->pbDetour);
             pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
             *o->ppbPointer = o->pTrampoline->rbCode;
             UNREFERENCED_PARAMETER(pbCode);
@@ -2446,6 +2480,8 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
                           o->pTrampoline->pbDetour));
             DETOUR_TRACE(("\n"));
 #endif // DETOURS_IA64
+
+            AddTrampolineToGlobalList(o->pTrampoline);
         }
     }
 
