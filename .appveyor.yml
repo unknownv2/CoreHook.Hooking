@@ -19,4 +19,13 @@ build:
   verbosity: detailed
 skip_commits:
   files:
-    - '**/*.md'  
+    - '**/*.md'
+artifacts:
+- path: bin.x86\Release\corehook32.dll
+  name: corehook-X86
+- path: bin.x64\Release\corehook64.dll
+  name: CoreHook-X64  
+- path: bin.ARM\Release\corehook32.dll
+  name: corehook-ARM
+- path: bin.ARM64\Release\corehook64.dll
+  name: corehook-ARM64      
