@@ -2085,6 +2085,7 @@ will still return STATUS_SUCCESS.
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
             DetourDetach(&(PVOID&)Hook->OldProc, Hook->pbDetour);
+
             InHandle->Link = NULL;
 
             if (Hook->HookProc != NULL)
