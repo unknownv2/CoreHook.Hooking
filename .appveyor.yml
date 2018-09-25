@@ -34,7 +34,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: "99ssBJ/lNK6AL1FNajtOhloP5bXeUAm8m+cI0us6pW1hVw84MTKxwYzfurYMuaOQ"
-  artifact: /corehook-.*\.dll/
+  artifact: /corehook.*\.dll/
   draft: false
   prerelease: false
   on:
