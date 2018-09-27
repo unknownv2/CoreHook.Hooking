@@ -23,7 +23,7 @@ skip_commits:
   files:
     - '**/*.md'
 after_build:
-  7z a corehook.zip *\Release\*.dll
+  7z a corehook.zip '*\Release\*.dll'
 artifacts:
 - path: corehook.zip
   name: Releases
