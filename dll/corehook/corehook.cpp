@@ -17,9 +17,9 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved)
 
         DetourCriticalInitialize();
     }
-	else if (dwReason == DLL_THREAD_ATTACH) {
-		DetourBarrierThreadDetach();
-	}
+    else if (dwReason == DLL_THREAD_ATTACH) {
+        DetourBarrierThreadDetach();
+    }
     else if (dwReason == DLL_PROCESS_DETACH) {
         DetourCriticalFinalize();
         
