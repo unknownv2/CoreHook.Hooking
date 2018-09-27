@@ -22,8 +22,10 @@ build:
 skip_commits:
   files:
     - '**/*.md'
+after_build:
+  7z a corehook.zip *\Release\*.dll
 artifacts:
-- path: *\Release\*.dll
+- path: corehook.zip
   name: Releases
 deploy:
   provider: GitHub
