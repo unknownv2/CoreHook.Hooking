@@ -3,6 +3,7 @@ branches:
   only:
   - master
   - dev-tests
+  - appveyor
 skip_tags: true
 image: Visual Studio 2017
 platform:
@@ -22,20 +23,14 @@ skip_commits:
   files:
     - '**/*.md'
 artifacts:
-- path: bin.x86\Release\corehook32.dll
-  name: corehook-X86
-- path: bin.x64\Release\corehook64.dll
-  name: CoreHook-X64  
-- path: bin.ARM\Release\corehook32.dll
-  name: corehook-ARM
-- path: bin.ARM64\Release\corehook64.dll
-  name: corehook-ARM64
+- path: *\Release\*.dll
+  name: Releases
 deploy:
   provider: GitHub
   auth_token:
-    secure: "99ssBJ/lNK6AL1FNajtOhloP5bXeUAm8m+cI0us6pW1hVw84MTKxwYzfurYMuaOQ"
-  artifact: /corehook.*\.dll/
+    secure: 99ssBJ/lNK6AL1FNajtOhloP5bXeUAm8m+cI0us6pW1hVw84MTKxwYzfurYMuaOQ
   draft: false
   prerelease: false
+  tag: $(APPVEYOR_REPO_TAG_NAME)
   on:
     appveyor_repo_tag: true
