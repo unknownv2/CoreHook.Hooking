@@ -3,32 +3,40 @@ branches:
   only:
   - master
   - dev-tests
-  - appveyor
-skip_tags: true
+
 image: Visual Studio 2017
+
 platform:
   - x86
   - x64
   - ARM
-  - ARM64  
+  - ARM64
+
 configuration:
   - Debug
   - Release
+
 before_build:
   - nuget restore msvc\corehook.sln
+
 build:
   project: msvc\corehook.sln
   verbosity: detailed
+
 skip_commits:
   files:
     - '**/*.md'
+  
 after_build:
-  7z a corehook.zip '*\Release\*.dll'
+  7z a corehook-%CONFIGURATION%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\*\%CONFIGURATION%\corehook*.dll
+
 artifacts:
-- path: corehook.zip
+- path: corehook-%CONFIGURATION%-%PLATFORM%.zip
   name: Releases
+
 deploy:
   provider: GitHub
+  description: "corehook detour module"
   auth_token:
     secure: 99ssBJ/lNK6AL1FNajtOhloP5bXeUAm8m+cI0us6pW1hVw84MTKxwYzfurYMuaOQ
   draft: false
