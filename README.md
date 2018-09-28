@@ -7,7 +7,7 @@ For [CoreHook](https://github.com/unknownv2/CoreHook), the [Microsoft Detours](h
 
 ## Supported Platforms
 
-`X86, X64, and ARM`. If you have an *Windows on ARM* device to test `ARM64` with, pull requests and contributions are all welcome!
+`X86, X64, and ARM`. If you have a *Windows on ARM* device to test `ARM64` with, pull requests and contributions are all welcome!
 
 ## Building
 
