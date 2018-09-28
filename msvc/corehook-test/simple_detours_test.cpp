@@ -112,27 +112,27 @@ HANDLE WINAPI CreateFileW_Detour(
 }
 
 // Detour CreateFileW and save the pointer to the first argument: 'lpFileName'
-HANDLE Detours::DetourExportedFunction(LPCWSTR file, LPCWSTR *outFile) {
+LONG Detours::DetourExportedFunction(LPCWSTR file, LPCWSTR *outFile) {
     LONG callback = 0;
     HOOK_TRACE_INFO hookHandle = { 0 };
 
     ULONG threadIdList = 0;
     const LONG threadCount = 1;
 
-    HANDLE hFile = NULL;
+    LONG error = ERROR_SUCCESS;
 
-    if (DetourInstallHook(
+    if ((error = DetourInstallHook(
         CreateFileW,
         CreateFileW_Detour,
         &callback,
-        &hookHandle) == NO_ERROR) {
+        &hookHandle)) == NO_ERROR) {
 
         DetourSetInclusiveACL(
             &threadIdList,
             threadCount,
             &hookHandle);
 
-        hFile = CreateFile(file,
+        CreateFile(file,
             GENERIC_READ,
             0,
             NULL,
@@ -145,5 +145,5 @@ HANDLE Detours::DetourExportedFunction(LPCWSTR file, LPCWSTR *outFile) {
         *outFile = _detourFileName;
     }
 
-    return hFile;
+    return error;
 }

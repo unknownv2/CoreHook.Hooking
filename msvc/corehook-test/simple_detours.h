@@ -8,7 +8,7 @@ private:
 
 public:
     bool DetourUserFunction();
-    HANDLE DetourExportedFunction(LPCWSTR file, LPCWSTR *outFile);
+    LONG DetourExportedFunction(LPCWSTR file, LPCWSTR *outFile);
     int ShouldBypassDetourFunction();
 
 };

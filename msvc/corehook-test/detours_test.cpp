@@ -11,7 +11,7 @@ TEST_F(DetoursTest, SimpleDetoursExportedFunctionTest) {
     auto fileName = L"File.txt";
     LPCWSTR fileNamePtr = NULL;
 
-    _dt.DetourExportedFunction(fileName, &fileNamePtr);
+    EXPECT_EQ(_dt.DetourExportedFunction(fileName, &fileNamePtr), NO_ERROR);
 
     EXPECT_EQ(fileName, fileNamePtr);
 }
