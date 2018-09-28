@@ -1,13 +1,13 @@
 # CoreHook Windows Hooking Module
 
-[![Build status](https://ci.appveyor.com/api/projects/status/laoiffynydunh4vp/branch/master?svg=true)](https://ci.appveyor.com/project/unknownv2/corehook-hooking/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/872ts255gwk9hyjp/branch/master?svg=true)](https://ci.appveyor.com/project/unknownv2/corehook-hooking/branch/master)
 
 
 For [CoreHook](https://github.com/unknownv2/CoreHook), the [Microsoft Detours](https://github.com/Microsoft/Detours) package serves as a good binary hooking module since it supports x86, x86_64, ARM, and ARM64, while [EasyHook](https://github.com/EasyHook/EasyHook) only supports x86 and x86_64. Since .NET Core supports the two ARM architectures, we can implement the necessary changes to support those architectures for CoreHook.
 
 ## Supported Platforms
 
-`X86, X64, and ARM` have all been tested and work, but I do not have a *Windows on ARM* device to test `ARM64` support with. If you have one to loan, let me know, otherwise, I will wait for a price drop.
+`X86, X64, and ARM`. If you have a *Windows on ARM* device to test `ARM64` with, pull requests and contributions are all welcome!
 
 ## Building
 
