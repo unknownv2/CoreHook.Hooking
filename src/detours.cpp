@@ -814,7 +814,7 @@ inline ULONG detour_is_code_filler(PBYTE pbCode)
 
 #ifdef DETOURS_ARM
 
-const ULONG DETOUR_TRAMPOLINE_CODE_SIZE = 0xD4;
+const ULONG DETOUR_TRAMPOLINE_CODE_SIZE = 212;
 
 struct _DETOUR_TRAMPOLINE
 {
