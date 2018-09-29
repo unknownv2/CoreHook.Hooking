@@ -52,8 +52,7 @@ bool Detours::DetourUserFunction() {
 }
 
 
-int Detours::ShouldBypassDetourFunction()
-{
+int Detours::ShouldBypassDetourFunction() {
     LONG callback = 0;
     HOOK_TRACE_INFO hookHandle = { 0 };
 
@@ -149,6 +148,5 @@ LONG Detours::DetourExportedFunction(LPCWSTR file, LPCWSTR *outFile) {
 }
 
 PVOID Detours::FindFunction(_In_ LPCSTR pszModule, _In_ LPCSTR pszFunction) {
-
     return DetourFindFunction(pszModule, pszFunction);
 }
