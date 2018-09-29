@@ -147,3 +147,8 @@ LONG Detours::DetourExportedFunction(LPCWSTR file, LPCWSTR *outFile) {
 
     return error;
 }
+
+PVOID Detours::FindFunction(_In_ LPCSTR pszModule, _In_ LPCSTR pszFunction) {
+
+    return DetourFindFunction(pszModule, pszFunction);
+}
