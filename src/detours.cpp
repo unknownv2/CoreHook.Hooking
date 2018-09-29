@@ -133,7 +133,6 @@ struct _DETOUR_TRAMPOLINE
     ULONG               HLSIdent;
     TRACED_HOOK_HANDLE  OutHandle; // handle returned to user
     void*               Trampoline;
-    INT                 IsExecuted;
     void*               HookIntro; // . NET Intro function
     UCHAR*              OldProc;  // old target function
     void*               HookProc; // function we detour to
@@ -142,7 +141,7 @@ struct _DETOUR_TRAMPOLINE
     BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];
 };
 
-C_ASSERT(sizeof(_DETOUR_TRAMPOLINE) == 764);
+C_ASSERT(sizeof(_DETOUR_TRAMPOLINE) == 760);
 
 enum {
     SIZE_OF_JMP = 5
@@ -421,18 +420,17 @@ struct _DETOUR_TRAMPOLINE
     void*               Callback;
     ULONG               HLSIndex;
     ULONG               HLSIdent;
-    TRACED_HOOK_HANDLE  OutHandle; // handle returned to user  
+    TRACED_HOOK_HANDLE  OutHandle; // handle returned to user
     void*               Trampoline;
-    INT                 IsExecuted;
-    void*               HookIntro; // . NET Intro function  
-    UCHAR*              OldProc;  // old target function      
+    void*               HookIntro; // . NET Intro function
+    UCHAR*              OldProc;  // old target function
     void*               HookProc; // function we detour to
-    void*               HookOutro;   // .NET Outro function  
+    void*               HookOutro;   // .NET Outro function
     int*                IsExecutedPtr;
-    BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];    
+    BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];
 };
 
-C_ASSERT(sizeof(_DETOUR_TRAMPOLINE) == 968);
+C_ASSERT(sizeof(_DETOUR_TRAMPOLINE) == 960);
 
 enum {
     SIZE_OF_JMP = 5
@@ -836,7 +834,6 @@ struct _DETOUR_TRAMPOLINE
     ULONG               HLSIdent;
     TRACED_HOOK_HANDLE  OutHandle; // handle returned to user
     void*               Trampoline;
-    INT                 IsExecuted;
     void*               HookIntro; // . NET Intro function
     UCHAR*              OldProc;  // old target function
     void*               HookProc; // function we detour to
@@ -845,7 +842,7 @@ struct _DETOUR_TRAMPOLINE
     BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];
 };
 
-C_ASSERT(sizeof(_DETOUR_TRAMPOLINE) == 880);
+C_ASSERT(sizeof(_DETOUR_TRAMPOLINE) == 876);
 
 enum {
     SIZE_OF_JMP = 8
@@ -991,7 +988,7 @@ inline ULONG detour_is_code_filler(PBYTE pbCode)
 
 #ifdef DETOURS_ARM64
 
-const ULONG DETOUR_TRAMPOLINE_CODE_SIZE = 0x158;
+const ULONG DETOUR_TRAMPOLINE_CODE_SIZE = 344;
 
 struct _DETOUR_TRAMPOLINE
 {
@@ -1011,7 +1008,6 @@ struct _DETOUR_TRAMPOLINE
     ULONG               HLSIdent;
     TRACED_HOOK_HANDLE  OutHandle; // handle returned to user
     void*               Trampoline;
-    INT                 IsExecuted;
     void*               HookIntro; // . NET Intro function
     UCHAR*              OldProc;  // old target function
     void*               HookProc; // function we detour to
@@ -1020,7 +1016,7 @@ struct _DETOUR_TRAMPOLINE
     BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];
 };
 
-//C_ASSERT(sizeof(_DETOUR_TRAMPOLINE) == 120);
+C_ASSERT(sizeof(_DETOUR_TRAMPOLINE) == 1056);
 
 enum {
     SIZE_OF_JMP = 8
