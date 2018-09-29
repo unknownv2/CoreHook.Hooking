@@ -1714,7 +1714,7 @@ ULONG GetTrampolineSize()
 #endif
 }
 
-UINT WINAPI BarrierIntro(DETOUR_TRAMPOLINE* InHandle, void* InRetAddr, void** InAddrOfRetAddr)
+UINT WINAPI BarrierIntro(_In_ DETOUR_TRAMPOLINE* pHandle, _In_ void* pReturnAddr, _Inout_ void** pAddrOfReturnAddr)
 {
 /*
 Description:
@@ -1725,14 +1725,15 @@ Description:
 
     LPTHREAD_RUNTIME_INFO        Info;
     RUNTIME_INFO*                Runtime;
-    BOOL                        Exists;
-
+    BOOL                         Exists;
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
-    InHandle = (DETOUR_TRAMPOLINE*)((PBYTE)(InHandle) - (sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
+    pHandle = (PDETOUR_TRAMPOLINE)((PBYTE)(pHandle) - (sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
 #endif
-    DETOUR_TRACE(("Barrier Intro InHandle=%p, InRetAddr=%p, InAddrOfRetAddr=%p \n",
-        InHandle, InRetAddr, InAddrOfRetAddr) );
+
+    DETOUR_TRACE(("Barrier Intro Handle=%p, ReturnAddr=%p, AddrOfReturnAddr=%p \n",
+        pHandle, pReturnAddr, pAddrOfReturnAddr) );
+
     // are we in OS loader lock?
     if(IsLoaderLock())
     {
@@ -1751,9 +1752,10 @@ Description:
     Exists = TlsGetCurrentValue(&Unit.TLS, &Info);
 
     if(!Exists)
-    {        
-        if(!TlsAddCurrentThread(&Unit.TLS))
+    {
+        if (!TlsAddCurrentThread(&Unit.TLS)) {
             return FALSE;
+        }
     }
 
     /*
@@ -1770,25 +1772,26 @@ Description:
 
         return FALSE;
     }
-    DETOUR_ASSERT(InHandle->HLSIndex < MAX_HOOK_COUNT,L"detours.cpp - InHandle->HLSIndex < MAX_HOOK_COUNT");
+    DETOUR_ASSERT(pHandle->HLSIndex < MAX_HOOK_COUNT, L"detours.cpp - pHandle->HLSIndex < MAX_HOOK_COUNT");
 
     if(!Exists)
     {        
         TlsGetCurrentValue(&Unit.TLS, &Info);
         Info->Entries = (RUNTIME_INFO*)RtlAllocateMemory(TRUE, sizeof(RUNTIME_INFO) * MAX_HOOK_COUNT);
 
-        if(Info->Entries == NULL)
+        if (Info->Entries == NULL) {
             goto DONT_INTERCEPT;
+        }
     }
 
     // get hook runtime info...
-    Runtime = &Info->Entries[InHandle->HLSIndex];
+    Runtime = &Info->Entries[pHandle->HLSIndex];
 
-    if(Runtime->HLSIdent != InHandle->HLSIdent)
+    if(Runtime->HLSIdent != pHandle->HLSIdent)
     {
         // just reset execution information
-        Runtime->HLSIdent = InHandle->HLSIdent;
-        Runtime->IsExecuting = FALSE;        
+        Runtime->HLSIdent = pHandle->HLSIdent;
+        Runtime->IsExecuting = FALSE;
     }
 
     // detect loops in hook execution hiearchy.
@@ -1807,22 +1810,23 @@ Description:
         goto DONT_INTERCEPT;
     }
 
-    Info->Callback = InHandle->Callback;
+    Info->Callback = pHandle->Callback;
     Info->Current = Runtime;
 
     /*
         Now we will negotiate thread/process access based on global and local ACL...
     */
-    Runtime->IsExecuting = IsThreadIntercepted(&InHandle->LocalACL, GetCurrentThreadId());
+    Runtime->IsExecuting = IsThreadIntercepted(&pHandle->LocalACL, GetCurrentThreadId());
 
-    if(!Runtime->IsExecuting)
+    if (!Runtime->IsExecuting) {
         goto DONT_INTERCEPT;
+    }
 
     // save some context specific information
-    Runtime->RetAddress = InRetAddr;
-    Runtime->AddrOfRetAddr = InAddrOfRetAddr;
+    Runtime->RetAddress = pReturnAddr;
+    Runtime->AddrOfRetAddr = pAddrOfReturnAddr;
 
-    ReleaseSelfProtection();    
+    ReleaseSelfProtection();
     return TRUE;
 
 DONT_INTERCEPT:
@@ -1838,10 +1842,10 @@ DONT_INTERCEPT:
 
     return FALSE;
 }
-void* WINAPI BarrierOutro(DETOUR_TRAMPOLINE* InHandle, void** InAddrOfRetAddr)
+void* WINAPI BarrierOutro(_In_ DETOUR_TRAMPOLINE* pHandle, _Inout_ void** pAddrOfReturnAddr)
 {
-    DETOUR_TRACE(("Barrier Outro InHandle=%p, InAddrOfRetAddr=%p \n",
-        InHandle, InAddrOfRetAddr));
+    DETOUR_TRACE(("Barrier Outro Handle=%p, AddrOfReturnAddr=%p \n",
+        pHandle, pAddrOfReturnAddr));
 
 /*
 Description:
@@ -1857,32 +1861,32 @@ Description:
     LPTHREAD_RUNTIME_INFO    Info;
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
-        InHandle = (DETOUR_TRAMPOLINE*)((PBYTE)(InHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
+        pHandle = (PDETOUR_TRAMPOLINE)((PBYTE)(pHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
 #endif
 
-    DETOUR_ASSERT(AcquireSelfProtection(),L"detours.cpp - AcquireSelfProtection()");
+    DETOUR_ASSERT(AcquireSelfProtection(), L"detours.cpp - AcquireSelfProtection()");
 
-    DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL),L"detours.cpp - TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL)");
+    DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL), L"detours.cpp - TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL)");
 
-    Runtime = &Info->Entries[InHandle->HLSIndex];
+    Runtime = &Info->Entries[pHandle->HLSIndex];
 
     // leave handler context
     Info->Current = NULL;
     Info->Callback = NULL;
 
-    DETOUR_ASSERT(Runtime != NULL,L"detours.cpp - Runtime != NULL");
+    DETOUR_ASSERT(Runtime != NULL, L"detours.cpp - Runtime != NULL");
 
-    DETOUR_ASSERT(Runtime->IsExecuting,L"detours.cpp - Runtime->IsExecuting");
+    DETOUR_ASSERT(Runtime->IsExecuting, L"detours.cpp - Runtime->IsExecuting");
 
     Runtime->IsExecuting = FALSE;
 
-    DETOUR_ASSERT(*InAddrOfRetAddr == NULL,L"detours.cpp - *InAddrOfRetAddr == NULL");
+    DETOUR_ASSERT(*pAddrOfReturnAddr == NULL, L"detours.cpp - *pAddrOfRetAddr == NULL");
 
-    *InAddrOfRetAddr = Runtime->RetAddress;
+    *pAddrOfReturnAddr = Runtime->RetAddress;
 
     ReleaseSelfProtection();
 
-    return InHandle;
+    return pHandle;
 }
 
 TRACED_HOOK_HANDLE WINAPI DetourGetHookHandleForFunction(PDETOUR_TRAMPOLINE pTrampoline)
