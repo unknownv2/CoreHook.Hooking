@@ -36,3 +36,10 @@ TEST_F(DetoursTest, ShouldFailToFindModuleAndFunctionTest) {
 TEST_F(DetoursTest, ShouldFindFunctionTest) {
     EXPECT_NE(nullptr, _dt.FindFunction("kernel32.dll", "SleepEx"));
 }
+
+// FindFunction should return NULL if one of parameters is incorrect 
+TEST_F(DetoursTest, FindFunctionNullTest) {
+    EXPECT_EQ(nullptr, _dt.FindFunction("kernel32.dll", nullptr));
+    EXPECT_EQ(nullptr, _dt.FindFunction(nullptr, "SleepEx"));
+    EXPECT_EQ(nullptr, _dt.FindFunction(nullptr, nullptr));
+}
