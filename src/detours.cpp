@@ -1714,7 +1714,9 @@ ULONG GetTrampolineSize()
 #endif
 }
 
-UINT WINAPI BarrierIntro(_In_ DETOUR_TRAMPOLINE* pHandle, _In_ void* pReturnAddr, _Inout_ void** pAddrOfReturnAddr)
+UINT WINAPI BarrierIntro(_In_ DETOUR_TRAMPOLINE *pHandle,
+                         _In_ void *pReturnAddr,
+                         _Inout_ void **ppAddrOfReturnAddr)
 {
 /*
 Description:
@@ -1732,7 +1734,7 @@ Description:
 #endif
 
     DETOUR_TRACE(("Barrier Intro Handle=%p, ReturnAddr=%p, AddrOfReturnAddr=%p \n",
-        pHandle, pReturnAddr, pAddrOfReturnAddr) );
+        pHandle, pReturnAddr, ppAddrOfReturnAddr) );
 
     // are we in OS loader lock?
     if(IsLoaderLock())
@@ -1824,7 +1826,7 @@ Description:
 
     // save some context specific information
     Runtime->RetAddress = pReturnAddr;
-    Runtime->AddrOfRetAddr = pAddrOfReturnAddr;
+    Runtime->AddrOfRetAddr = ppAddrOfReturnAddr;
 
     ReleaseSelfProtection();
     return TRUE;
@@ -1842,10 +1844,11 @@ DONT_INTERCEPT:
 
     return FALSE;
 }
-void* WINAPI BarrierOutro(_In_ DETOUR_TRAMPOLINE* pHandle, _Inout_ void** pAddrOfReturnAddr)
+void* WINAPI BarrierOutro(_In_ DETOUR_TRAMPOLINE *pHandle,
+                          _Inout_ void **ppAddrOfReturnAddr)
 {
     DETOUR_TRACE(("Barrier Outro Handle=%p, AddrOfReturnAddr=%p \n",
-        pHandle, pAddrOfReturnAddr));
+        pHandle, ppAddrOfReturnAddr));
 
 /*
 Description:
@@ -1880,9 +1883,9 @@ Description:
 
     Runtime->IsExecuting = FALSE;
 
-    DETOUR_ASSERT(*pAddrOfReturnAddr == NULL, L"detours.cpp - *pAddrOfRetAddr == NULL");
+    DETOUR_ASSERT(*ppAddrOfReturnAddr == NULL, L"detours.cpp - *pAddrOfRetAddr == NULL");
 
-    *pAddrOfReturnAddr = Runtime->RetAddress;
+    *ppAddrOfReturnAddr = Runtime->RetAddress;
 
     ReleaseSelfProtection();
 
@@ -2062,7 +2065,7 @@ method.
 
 Parameters:
 
-- InHandle
+- pHandle
 
 A traced hook handle. If the hook is already removed, this method
 will still return STATUS_SUCCESS.
@@ -2147,10 +2150,9 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG DetourSetInclusiveACL(
-    ULONG* InThreadIdList,
-    ULONG InThreadCount,
-    TRACED_HOOK_HANDLE InHandle)
+LONG DetourSetInclusiveACL(_In_ DWORD *pThreadIdList,
+                           _In_ DWORD dwThreadCount,
+                           _In_ TRACED_HOOK_HANDLE pHandle)
 {
 /*
 Description:
@@ -2161,29 +2163,28 @@ Description:
     intercepted too.
 
 Parameters:
-    - InThreadIdList
+    - pThreadIdList
     An array of thread IDs. If you specific zero for an entry in this array,
     it will be automatically replaced with the calling thread ID.
 
-    - InThreadCount
+    - dwThreadCount
     The count of entries listed in the thread ID list. This value must not exceed
     MAX_ACE_COUNT!
 
-    - InHandle
+    - pHandle
     The hook handle whose local ACL is going to be set.
 */
 
     PLOCAL_HOOK_INFO        Handle;
 
-    if (!DetourIsValidHandle(InHandle, &Handle)) {
+    if (!DetourIsValidHandle(pHandle, &Handle)) {
         return STATUS_INVALID_PARAMETER_3;
     }
 
-    return DetourSetACL(&Handle->LocalACL, FALSE, InThreadIdList, InThreadCount);
+    return DetourSetACL(&Handle->LocalACL, FALSE, pThreadIdList, dwThreadCount);
 }
-LONG DetourGetHookBypassAddress(
-    _In_ TRACED_HOOK_HANDLE pHook,
-    PVOID** OutAddress)
+LONG DetourGetHookBypassAddress(_In_ TRACED_HOOK_HANDLE pHook,
+                                _Inout_ PVOID **pppOutAddress)
 {
 /*
 Description:
@@ -2204,7 +2205,7 @@ Parameters:
 
         The hook to retrieve the relocated entry point for.
 
-    - OutAddress
+    - pppOutAddress
 
         Upon successfully retrieving the hook details this will contain
         the address of the relocated function entry point. This address
@@ -2213,7 +2214,7 @@ Parameters:
 
 Returns:
 
-    STATUS_SUCCESS             - OutAddress will contain the result
+    STATUS_SUCCESS             - pppOutAddress will contain the result
     STATUS_INVALID_PARAMETER_1 - the hook is invalid
     STATUS_INVALID_PARAMETER_3 - the target pointer is invalid
 
@@ -2225,11 +2226,11 @@ Returns:
     if (!DetourIsValidHandle(pHook, &Handle)) {
         THROW(STATUS_INVALID_PARAMETER_1, L"The given hook handle is invalid or already disposed.");
     }
-    if (!IsValidPointer(OutAddress, sizeof(PVOID*))) {
+    if (!IsValidPointer(pppOutAddress, sizeof(PVOID*))) {
         THROW(STATUS_INVALID_PARAMETER_3, L"Invalid pointer for result storage.");
     }
 
-    *OutAddress = (PVOID*)Handle->OldProc;
+    *pppOutAddress = (PVOID*)Handle->OldProc;
 
     RETURN;
 
@@ -2238,10 +2239,9 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG DetourSetExclusiveACL(
-            ULONG* InThreadIdList,
-            ULONG InThreadCount,
-            TRACED_HOOK_HANDLE InHandle)
+LONG DetourSetExclusiveACL(_In_ DWORD *pThreadIdList,
+                           _In_ DWORD dwThreadCount,
+                           _In_ TRACED_HOOK_HANDLE pHandle)
 {
 /*
 Description:
@@ -2249,24 +2249,24 @@ Description:
     Sets an exclusive hook local ACL based on the given thread ID list.
     
 Parameters:
-    - InThreadIdList
+    - pThreadIdList
         An array of thread IDs. If you specific zero for an entry in this array,
         it will be automatically replaced with the calling thread ID.
 
-    - InThreadCount
+    - dwThreadCount
         The count of entries listed in the thread ID list. This value must not exceed
         MAX_ACE_COUNT! 
 
-    - InHandle
+    - pHandle
         The hook handle whose local ACL is going to be set.
 */
 
     PLOCAL_HOOK_INFO        Handle;
 
-    if (!DetourIsValidHandle(InHandle, &Handle)) {
+    if (!DetourIsValidHandle(pHandle, &Handle)) {
         return STATUS_INVALID_PARAMETER_3;
     }
-    return DetourSetACL(&Handle->LocalACL, TRUE, InThreadIdList, InThreadCount);
+    return DetourSetACL(&Handle->LocalACL, TRUE, pThreadIdList, dwThreadCount);
 }
 
 LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
