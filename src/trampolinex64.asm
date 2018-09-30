@@ -32,7 +32,7 @@ NETIntro:
     db 0
     
 OldProc:
-    ;BYTE*            OldProc; // fixed 4 (8)  
+    ;BYTE*            OldProc; // fixed 4 (8)
     db 0
     db 0
     db 0
@@ -54,7 +54,7 @@ NewProc:
     db 0
     
 NETOutro:
-    ;void*            NETOutro; // fixed 12 (24) 
+    ;void*            NETOutro; // fixed 12 (24)
     db 0
     db 0
     db 0
@@ -65,7 +65,7 @@ NETOutro:
     db 0
     
 IsExecutedPtr:
-    ;size_t*        IsExecutedPtr; // fixed 16 (32) 
+    ;size_t*        IsExecutedPtr; // fixed 16 (32)
     db 0
     db 0
     db 0
