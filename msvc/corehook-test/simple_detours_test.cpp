@@ -51,7 +51,6 @@ bool Detours::DetourUserFunction() {
     return detoured_test;
 }
 
-
 int Detours::ShouldBypassDetourFunction() {
     LONG callback = 0;
     HOOK_TRACE_INFO hookHandle = { 0 };

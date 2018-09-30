@@ -2,9 +2,7 @@
 #include "detours.h"
 #include <memory>
 
-class Detours
-{
-private:
+class Detours {
 
 public:
     bool DetourUserFunction();
@@ -14,7 +12,6 @@ public:
 };
 
 class DetoursTest : public testing::Test {
-
 
 protected:
     virtual void SetUp() {
