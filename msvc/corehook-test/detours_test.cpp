@@ -61,3 +61,11 @@ TEST_F(DetoursTest, InstallInvalidHookParameterTest) {
 
     EXPECT_NE(NO_ERROR, DetourInstallHook(nullptr, nullptr, nullptr, &hookHandle));
 }
+
+// MoveFile should return false with bad parameters but we detour it
+// and return a non-zero value and verify that 
+TEST_F(DetoursTest, DetourExportedFunctionWithUserFunctionTest) {
+    EXPECT_EQ(FALSE, MoveFile(nullptr, nullptr));
+
+    EXPECT_NE(FALSE, _dt.DetourMoveFileWithUserFunction());
+}

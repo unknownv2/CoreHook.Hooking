@@ -9,6 +9,7 @@ public:
     LONG DetourExportedFunction(LPCWSTR file, LPCWSTR *outFile);
     int ShouldBypassDetourFunction();
     PVOID FindFunction(_In_ LPCSTR pszModule, _In_ LPCSTR pszFunction);
+    LONG DetourMoveFileWithUserFunction();
 };
 
 class DetoursTest : public testing::Test {
