@@ -43,3 +43,29 @@ TEST_F(DetoursTest, FindFunctionNullTest) {
     EXPECT_EQ(nullptr, _dt.FindFunction(nullptr, "SleepEx"));
     EXPECT_EQ(nullptr, _dt.FindFunction(nullptr, nullptr));
 }
+
+TEST_F(DetoursTest, InstallInvalidHookParameterTest) {
+    LONG callback = 0;
+    HOOK_TRACE_INFO hookHandle = { 0 };
+    void(*testFunction)(int) = [](int i) { (VOID)i; };
+
+    EXPECT_NE(NO_ERROR, DetourInstallHook(nullptr, nullptr, nullptr, nullptr));
+    EXPECT_NE(NO_ERROR, DetourInstallHook(CreateFileW, nullptr, nullptr, nullptr));
+    EXPECT_NE(NO_ERROR, DetourInstallHook(CreateFileW, testFunction, nullptr, nullptr));
+    EXPECT_NE(NO_ERROR, DetourInstallHook(CreateFileW, testFunction, &callback, nullptr));
+
+    EXPECT_NE(NO_ERROR, DetourInstallHook(CreateFileW, nullptr, &callback, nullptr));
+    EXPECT_NE(NO_ERROR, DetourInstallHook(CreateFileW, nullptr, &callback, &hookHandle));
+
+    EXPECT_NE(NO_ERROR, DetourInstallHook(CreateFileW, nullptr, nullptr, &hookHandle));
+
+    EXPECT_NE(NO_ERROR, DetourInstallHook(nullptr, nullptr, nullptr, &hookHandle));
+}
+
+// MoveFile should return false with bad parameters but we detour it
+// and return a non-zero value and verify that 
+TEST_F(DetoursTest, DetourExportedFunctionWithUserFunctionTest) {
+    EXPECT_EQ(FALSE, MoveFile(nullptr, nullptr));
+
+    EXPECT_NE(FALSE, _dt.DetourMoveFileWithUserFunction());
+}

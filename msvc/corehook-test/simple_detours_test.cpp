@@ -22,6 +22,12 @@ unsigned int SimpleFunction_Detour() {
 
     return SimpleFunction() + 1;
 }
+unsigned int WINAPI MoveFile_Detour(_In_ LPCTSTR lpExistingFileName,
+                                    _In_ LPCTSTR lpNewFileName) {
+    detoured_test = true;
+
+    return SimpleFunction() + 1;
+}
 #pragma optimize( "", on )
 
 bool Detours::DetourUserFunction() {
@@ -50,7 +56,6 @@ bool Detours::DetourUserFunction() {
 
     return detoured_test;
 }
-
 
 int Detours::ShouldBypassDetourFunction() {
     LONG callback = 0;
@@ -149,4 +154,33 @@ LONG Detours::DetourExportedFunction(LPCWSTR file, LPCWSTR *outFile) {
 
 PVOID Detours::FindFunction(_In_ LPCSTR pszModule, _In_ LPCSTR pszFunction) {
     return DetourFindFunction(pszModule, pszFunction);
+}
+
+LONG Detours::DetourMoveFileWithUserFunction() {
+    LONG callback = 0;
+    HOOK_TRACE_INFO hookHandle = { 0 };
+
+    ULONG threadIdList = 0;
+    const LONG threadCount = 1;
+
+    LONG error = ERROR_SUCCESS;
+
+    if ((error = DetourInstallHook(
+        MoveFile,
+        MoveFile_Detour,
+        &callback,
+        &hookHandle)) == NO_ERROR) {
+
+        DetourSetInclusiveACL(
+            &threadIdList,
+            threadCount,
+            &hookHandle);
+
+        error = MoveFile(nullptr, nullptr);
+
+        DetourUninstallHook(&hookHandle);
+    }
+
+    return error;
+
 }

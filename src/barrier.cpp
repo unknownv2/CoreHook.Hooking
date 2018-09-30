@@ -268,9 +268,8 @@ void RtlAssert(BOOL InAssert, LPCWSTR lpMessageText)
     FatalAppExitW(0, lpMessageText);
 }
 
-LONG DetourSetGlobalInclusiveACL(
-    ULONG *InThreadIdList,
-    ULONG InThreadCount)
+LONG DetourSetGlobalInclusiveACL(_In_ DWORD *dwThreadIdList,
+                                 _In_ DWORD dwThreadCount)
 {
 /*
 Description:
@@ -278,21 +277,20 @@ Description:
     Sets an inclusive global ACL based on the given thread ID list.
     
 Parameters:
-    - InThreadIdList
+    - dwThreadIdList
         An array of thread IDs. If you specific zero for an entry in this array,
         it will be automatically replaced with the calling thread ID.
 
-    - InThreadCount
+    - dwThreadCount
         The count of entries listed in the thread ID list. This value must not exceed
         MAX_ACE_COUNT! 
 */
 
-    return DetourSetACL(DetourBarrierGetAcl(), FALSE, InThreadIdList, InThreadCount);
+    return DetourSetACL(DetourBarrierGetAcl(), FALSE, dwThreadIdList, dwThreadCount);
 }
 
-LONG DetourSetGlobalExclusiveACL(
-    ULONG *InThreadIdList,
-    ULONG InThreadCount)
+LONG DetourSetGlobalExclusiveACL(_In_ DWORD *dwThreadIdList,
+                                 _In_ DWORD dwThreadCount)
 {
 /*
 Description:
@@ -300,16 +298,16 @@ Description:
     Sets an exclusive global ACL based on the given thread ID list.
     
 Parameters:
-    - InThreadIdList
+    - dwThreadIdList
         An array of thread IDs. If you specific zero for an entry in this array,
         it will be automatically replaced with the calling thread ID.
 
-    - InThreadCount
+    - dwThreadCount
         The count of entries listed in the thread ID list. This value must not exceed
         MAX_ACE_COUNT! 
 */
 
-    return DetourSetACL(DetourBarrierGetAcl(), TRUE, InThreadIdList, InThreadCount);
+    return DetourSetACL(DetourBarrierGetAcl(), TRUE, dwThreadIdList, dwThreadCount);
 }
 
 BOOL DetourIsValidHandle(
@@ -357,11 +355,11 @@ Parameters:
         TRUE if all listed thread shall be excluded from interception,
         FALSE otherwise
 
-    - InThreadIdList
+    - dwThreadIdList
         An array of thread IDs. If you specific zero for an entry in this array,
         it will be automatically replaced with the calling thread ID.
 
-    - InThreadCount
+    - dwThreadCount
         The count of entries listed in the thread ID list. This value must not exceed
         MAX_ACE_COUNT! 
 */

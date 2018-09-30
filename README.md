@@ -1,5 +1,6 @@
 # CoreHook Windows Hooking Module
 
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/unknownv2/CoreHook.Hooking/blob/master/LICENSE)
 [![Build status](https://ci.appveyor.com/api/projects/status/872ts255gwk9hyjp/branch/master?svg=true)](https://ci.appveyor.com/project/unknownv2/corehook-hooking/branch/master)
 
 
