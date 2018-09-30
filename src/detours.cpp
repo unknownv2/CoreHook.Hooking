@@ -1733,7 +1733,7 @@ Description:
     pHandle = (PDETOUR_TRAMPOLINE)((PBYTE)(pHandle) - (sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
 #endif
 
-    DETOUR_TRACE(("Barrier Intro Handle=%p, ReturnAddr=%p, AddrOfReturnAddr=%p \n",
+    DETOUR_TRACE(("detours: BarrierIntro() Handle=%p, ReturnAddr=%p, AddrOfReturnAddr=%p \n",
         pHandle, pReturnAddr, ppAddrOfReturnAddr) );
 
     // are we in OS loader lock?
@@ -1847,7 +1847,7 @@ DONT_INTERCEPT:
 void* WINAPI BarrierOutro(_In_ DETOUR_TRAMPOLINE *pHandle,
                           _Inout_ void **ppAddrOfReturnAddr)
 {
-    DETOUR_TRACE(("Barrier Outro Handle=%p, AddrOfReturnAddr=%p \n",
+    DETOUR_TRACE(("detours: BarrierOutro() Handle=%p, AddrOfReturnAddr=%p \n",
         pHandle, ppAddrOfReturnAddr));
 
 /*
@@ -2011,7 +2011,7 @@ Returns:
 
 */
 
-    LONG                NtStatus = -1;
+    LONG                NtStatus = STATUS_INTERNAL_ERROR;
     LONG                error    = -1;
     PDETOUR_TRAMPOLINE  pTrampoline = NULL;
 
@@ -2047,9 +2047,10 @@ Returns:
             OutHandle->Link = handle->Link;
         }
     }
+    return error;
 THROW_OUTRO:
 
-    return error;
+    return NtStatus;
 }
 
 
@@ -2819,11 +2820,11 @@ LONG WINAPI DetourAttachEx(_Inout_ PVOID *ppPointer,
         PBYTE pbOp = pbSrc;
         LONG lExtra = 0;
 
-        DETOUR_TRACE((" DetourCopyInstruction(%p,%p)\n",
+        DETOUR_TRACE(("detours: DetourCopyInstruction(%p,%p)\n",
                       pbTrampoline, pbSrc));
         pbSrc = (PBYTE)
             DetourCopyInstruction(pbTrampoline, (PVOID*)&pbPool, pbSrc, NULL, &lExtra);
-        DETOUR_TRACE((" DetourCopyInstruction() = %p (%d bytes)\n",
+        DETOUR_TRACE(("detours: DetourCopyInstruction() = %p (%d bytes)\n",
                       pbSrc, (int)(pbSrc - pbOp)));
         pbTrampoline += (pbSrc - pbOp) + lExtra;
         cbTarget = (LONG)(pbSrc - pbTarget);
@@ -2853,7 +2854,7 @@ LONG WINAPI DetourAttachEx(_Inout_ PVOID *ppPointer,
 
 #if DETOUR_DEBUG
     {
-        DETOUR_TRACE((" detours: rAlign ["));
+        DETOUR_TRACE(("detours: rAlign ["));
         LONG n = 0;
         for (n = 0; n < ARRAYSIZE(pTrampoline->rAlign); n++) {
             if (pTrampoline->rAlign[n].obTarget == 0 &&
