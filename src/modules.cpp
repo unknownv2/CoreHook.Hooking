@@ -173,6 +173,11 @@ PVOID WINAPI DetourFindFunction(_In_ LPCSTR pszModule,
 {
     /////////////////////////////////////////////// First, try GetProcAddress.
     //
+    // There is nothing to find if one of the parameters is NULL
+    if (pszModule == NULL || pszFunction == NULL) {
+        return NULL;
+    }
+
 #pragma prefast(suppress:28752, "We don't do the unicode conversion for LoadLibraryExA.")
     HMODULE hModule = LoadLibraryExA(pszModule, NULL, 0);
     if (hModule == NULL) {
