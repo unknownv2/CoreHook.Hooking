@@ -1737,7 +1737,7 @@ Description:
         pHandle, pReturnAddr, ppAddrOfReturnAddr) );
 
     // are we in OS loader lock?
-    if(IsLoaderLock())
+    if(detour_is_loader_lock())
     {
         /*
             Execution of managed code or even any other code within any loader lock
@@ -1768,7 +1768,7 @@ Description:
         Self protection prevents any further hook interception for the current fiber,
         while setting up the "Thread Deadlock Barrier"...
     */
-    if(!AcquireSelfProtection())
+    if(!detour_acquire_self_protection())
     {
         /*  !!Note that the assembler code does not invoke BarrierOutro() in this case!! */
 
@@ -1828,7 +1828,7 @@ Description:
     Runtime->RetAddress = pReturnAddr;
     Runtime->AddrOfRetAddr = ppAddrOfReturnAddr;
 
-    ReleaseSelfProtection();
+    detour_release_self_protection();
     return TRUE;
 
 DONT_INTERCEPT:
@@ -1839,7 +1839,7 @@ DONT_INTERCEPT:
         Info->Current = NULL;
         Info->Callback = NULL;
 
-        ReleaseSelfProtection();
+        detour_release_self_protection();
     }
 
     return FALSE;
@@ -1867,7 +1867,7 @@ Description:
         pHandle = (PDETOUR_TRAMPOLINE)((PBYTE)(pHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
 #endif
 
-    DETOUR_ASSERT(AcquireSelfProtection(), L"detours.cpp - AcquireSelfProtection()");
+    DETOUR_ASSERT(detour_acquire_self_protection(), L"detours.cpp - detour_acquire_self_protection()");
 
     DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL), L"detours.cpp - TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL)");
 
@@ -1887,7 +1887,7 @@ Description:
 
     *ppAddrOfReturnAddr = Runtime->RetAddress;
 
-    ReleaseSelfProtection();
+    detour_release_self_protection();
 
     return pHandle;
 }
@@ -2084,7 +2084,7 @@ will still return STATUS_SUCCESS.
 
     detour_acquire_lock(&GlobalHookLock);
     {
-        if ((InHandle->Link != NULL) && DetourIsValidHandle(InHandle, &Hook))
+        if ((InHandle->Link != NULL) && detour_is_valid_handle(InHandle, &Hook))
         {
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
@@ -2134,7 +2134,7 @@ about the implementation.
     LONG                NtStatus;
     PLOCAL_HOOK_INFO    Handle;
 
-    if (!DetourIsValidHandle(InHook, &Handle)) {
+    if (!detour_is_valid_handle(InHook, &Handle)) {
         THROW(STATUS_INVALID_PARAMETER_1, (PWCHAR)L"The given hook handle is invalid or already disposed.");
     }
 
@@ -2178,7 +2178,7 @@ Parameters:
 
     PLOCAL_HOOK_INFO        Handle;
 
-    if (!DetourIsValidHandle(pHandle, &Handle)) {
+    if (!detour_is_valid_handle(pHandle, &Handle)) {
         return STATUS_INVALID_PARAMETER_3;
     }
 
@@ -2224,7 +2224,7 @@ Returns:
     LONG                NtStatus;
     PLOCAL_HOOK_INFO    Handle;
 
-    if (!DetourIsValidHandle(pHook, &Handle)) {
+    if (!detour_is_valid_handle(pHook, &Handle)) {
         THROW(STATUS_INVALID_PARAMETER_1, L"The given hook handle is invalid or already disposed.");
     }
     if (!IsValidPointer(pppOutAddress, sizeof(PVOID*))) {
@@ -2264,7 +2264,7 @@ Parameters:
 
     PLOCAL_HOOK_INFO        Handle;
 
-    if (!DetourIsValidHandle(pHandle, &Handle)) {
+    if (!detour_is_valid_handle(pHandle, &Handle)) {
         return STATUS_INVALID_PARAMETER_3;
     }
     return DetourSetACL(&Handle->LocalACL, TRUE, pThreadIdList, dwThreadCount);

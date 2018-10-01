@@ -137,7 +137,7 @@ BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,
     if ((Pointer == NULL) || (Pointer == (PVOID)~0)) {
         return FALSE;
     }
-
+    (void)Size;
     return TRUE;
 }
 
@@ -285,9 +285,8 @@ Parameters:
     return DetourSetACL(DetourBarrierGetAcl(), TRUE, dwThreadIdList, dwThreadCount);
 }
 
-BOOL DetourIsValidHandle(
-    TRACED_HOOK_HANDLE InTracedHandle,
-    PLOCAL_HOOK_INFO *OutHandle)
+BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
+                            _Out_ PLOCAL_HOOK_INFO   *pHandle)
 {
 
 /*
@@ -299,12 +298,12 @@ Description:
 
 */
 
-    if (!IsValidPointer(InTracedHandle, sizeof(HOOK_TRACE_INFO))) {
+    if (!IsValidPointer(pTracedHandle, sizeof(HOOK_TRACE_INFO))) {
         return FALSE;
     }
 
-    if (OutHandle != NULL) {
-        *OutHandle = InTracedHandle->Link;
+    if (pHandle != NULL) {
+        *pHandle = pTracedHandle->Link;
     }
 
     return TRUE;
@@ -611,7 +610,7 @@ Description:
     detour_delete_lock(&GlobalHookLock);
 }
 
-BOOL IsLoaderLock()
+BOOL detour_is_loader_lock()
 {
 /*
 Returns:
@@ -623,18 +622,22 @@ Returns:
 
 */
 
-    BOOL IsLoaderLock = FALSE;
+    BOOL bDetourIsLoaderLock = FALSE;
 
-    return (!AuxUlibIsDLLSynchronizationHeld(&IsLoaderLock) || IsLoaderLock || !Unit.IsInitialized);
+    return (
+           !AuxUlibIsDLLSynchronizationHeld(&bDetourIsLoaderLock)
+           || bDetourIsLoaderLock
+           || !Unit.IsInitialized
+           );
 }
 
-BOOL AcquireSelfProtection()
+BOOL detour_acquire_self_protection()
 {
 /*
 Description:
 
     To provide more convenience for writing the TDB, this self protection
-    will disable ALL hooks for the current thread until ReleaseSelfProtection() 
+    will disable ALL hooks for the current thread until detour_release_self_protection() 
     is called. This allows one to call any API during TDB initialization
     without being intercepted...
 
@@ -659,22 +662,23 @@ Returns:
     return TRUE;
 }
 
-void ReleaseSelfProtection()
+void detour_release_self_protection()
 {
 /*
 Description:
 
-    Exists the TDB self protection. Refer to AcquireSelfProtection() for more
+    Exists the TDB self protection. Refer to detour_acquire_self_protection() for more
     information.
 
     An assertion is raised if the caller has not owned the self protection.
 */
 
-    LPTHREAD_RUNTIME_INFO Runtime = NULL;
+    LPTHREAD_RUNTIME_INFO pRuntime = NULL;
 
-    DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &Runtime) && Runtime->IsProtected, L"barrier.cpp - TlsGetCurrentValue(&Unit.TLS, &Runtime) && Runtime->IsProtected");
+    DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &pRuntime) && pRuntime->IsProtected,
+        L"barrier.cpp - TlsGetCurrentValue(&Unit.TLS, &Runtime) && Runtime->IsProtected");
 
-    Runtime->IsProtected = FALSE;
+    pRuntime->IsProtected = FALSE;
 }
 
 BOOL ACLContains(

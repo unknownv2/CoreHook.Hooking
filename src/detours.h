@@ -608,20 +608,19 @@ void DetourCriticalInitialize();
 void DetourCriticalFinalize();
 
 LONG DetourInstallHook(void *InEntryPoint,
-                        void* InHookProc,
-                        void* InCallback,
-                        TRACED_HOOK_HANDLE OutHandle);
+                       void* InHookProc,
+                       void* InCallback,
+                       TRACED_HOOK_HANDLE OutHandle);
 
 LONG WINAPI DetourUninstallHook(TRACED_HOOK_HANDLE InHandle);
 
-BOOL DetourIsValidHandle(
-    TRACED_HOOK_HANDLE InTracedHandle,
-    PLOCAL_HOOK_INFO* OutHandle);
+BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
+                            _Out_ PLOCAL_HOOK_INFO   *pHandle);
 
-BOOL IsLoaderLock();
+BOOL detour_is_loader_lock();
 
-BOOL AcquireSelfProtection();
-void ReleaseSelfProtection();
+BOOL detour_acquire_self_protection();
+void detour_release_self_protection();
 
 void RtlAssert(BOOL InAssert, LPCWSTR lpMessageText);
 void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage);
