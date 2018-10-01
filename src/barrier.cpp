@@ -38,36 +38,36 @@ HANDLE hCoreHookHeap = NULL;
 
 BARRIER_UNIT Unit;
 
-void RtlInitializeLock(RTL_SPIN_LOCK *OutLock)
+void detour_initialize_lock(_In_ RTL_SPIN_LOCK *pLock)
 {
-    detour_zero_memory(OutLock, sizeof(RTL_SPIN_LOCK));
+    detour_zero_memory(pLock, sizeof(RTL_SPIN_LOCK));
 
-    InitializeCriticalSection(&OutLock->Lock);
+    InitializeCriticalSection(&pLock->Lock);
 }
 
-void RtlAcquireLock(RTL_SPIN_LOCK *InLock)
+void detour_acquire_lock(_In_ RTL_SPIN_LOCK *pLock)
 {
-    EnterCriticalSection(&InLock->Lock);
+    EnterCriticalSection(&pLock->Lock);
 
-    DETOUR_ASSERT(!InLock->IsOwned, L"barrier.cpp - !InLock->IsOwned");
+    DETOUR_ASSERT(!pLock->IsOwned, L"barrier.cpp - !pLock->IsOwned");
 
-    InLock->IsOwned = TRUE;
+    pLock->IsOwned = TRUE;
 }
 
-void RtlReleaseLock(RTL_SPIN_LOCK *InLock)
+void detour_release_lock(_In_ RTL_SPIN_LOCK *pLock)
 {
-    DETOUR_ASSERT(InLock->IsOwned, L"barrier.cpp - InLock->IsOwned");
+    DETOUR_ASSERT(pLock->IsOwned, L"barrier.cpp - pLock->IsOwned");
 
-    InLock->IsOwned = FALSE;
+    pLock->IsOwned = FALSE;
 
-    LeaveCriticalSection(&InLock->Lock);
+    LeaveCriticalSection(&pLock->Lock);
 }
 
-void RtlDeleteLock(RTL_SPIN_LOCK *InLock)
+void detour_delete_lock(_In_ RTL_SPIN_LOCK *pLock)
 {
-    DETOUR_ASSERT(!InLock->IsOwned, L"barrier.cpp - InLock->IsOwned");
+    DETOUR_ASSERT(!pLock->IsOwned, L"barrier.cpp - pLock->IsOwned");
 
-    DeleteCriticalSection(&InLock->Lock);
+    DeleteCriticalSection(&pLock->Lock);
 }
 
 void detour_sleep(_In_ DWORD milliSeconds)
@@ -397,7 +397,7 @@ Description:
     Unit.GlobalACL.IsExclusive = TRUE;
 
     // allocate private heap
-    RtlInitializeLock(&Unit.TLS.ThreadSafe);
+    detour_initialize_lock(&Unit.TLS.ThreadSafe);
 
     Unit.IsInitialized = AuxUlibInitialize() ? TRUE : FALSE;
 
@@ -479,7 +479,7 @@ Returns:
     LONG Index = -1;
     LONG i;
 
-    RtlAcquireLock(&InTls->ThreadSafe);
+    detour_acquire_lock(&InTls->ThreadSafe);
 
     // select Index AND check whether thread is already registered.
     for (i = 0; i < MAX_THREAD_COUNT; i++)
@@ -493,7 +493,7 @@ Returns:
 
     if (Index == -1)
     {
-        RtlReleaseLock(&InTls->ThreadSafe);
+        detour_release_lock(&InTls->ThreadSafe);
 
         return FALSE;
     }
@@ -501,7 +501,7 @@ Returns:
     InTls->IdList[Index] = CurrentId;
     detour_zero_memory(&InTls->Entries[Index], sizeof(THREAD_RUNTIME_INFO));
 
-    RtlReleaseLock(&InTls->ThreadSafe);
+    detour_release_lock(&InTls->ThreadSafe);
 
     return TRUE;
 }
@@ -524,7 +524,7 @@ Parameters:
     DWORD CurrentId = GetCurrentThreadId();
     ULONG Index;
 
-    RtlAcquireLock(&InTls->ThreadSafe);
+    detour_acquire_lock(&InTls->ThreadSafe);
 
     for (Index = 0; Index < MAX_THREAD_COUNT; Index++)
     {
@@ -536,7 +536,7 @@ Parameters:
         }
     }
 
-    RtlReleaseLock(&InTls->ThreadSafe);
+    detour_release_lock(&InTls->ThreadSafe);
 }
 
 void DetourBarrierProcessDetach()
@@ -549,7 +549,7 @@ Description:
 
     ULONG Index;
 
-    RtlDeleteLock(&Unit.TLS.ThreadSafe);
+    detour_delete_lock(&Unit.TLS.ThreadSafe);
 
     // release thread specific resources
     for (Index = 0; Index < MAX_THREAD_COUNT; Index++)
@@ -598,7 +598,7 @@ Description:
     Fail safe initialization of global hooking structures...
 */
 
-    RtlInitializeLock(&GlobalHookLock);
+    detour_initialize_lock(&GlobalHookLock);
 }
 
 void DetourCriticalFinalize()
@@ -610,7 +610,7 @@ Description:
     all hooks. If it is possible also their memory is released. 
 */
 
-    RtlDeleteLock(&GlobalHookLock);
+    detour_delete_lock(&GlobalHookLock);
 }
 
 BOOL IsLoaderLock()

@@ -1184,13 +1184,13 @@ typedef struct _RTL_SPIN_LOCK_
     BOOL                 IsOwned;
 }RTL_SPIN_LOCK;
 
-void RtlInitializeLock(RTL_SPIN_LOCK *InLock);
+void detour_initialize_lock(_In_ RTL_SPIN_LOCK *pLock);
 
-void RtlAcquireLock(RTL_SPIN_LOCK *InLock);
+void detour_acquire_lock(_In_ RTL_SPIN_LOCK *pLock);
 
-void RtlReleaseLock(RTL_SPIN_LOCK *InLock);
+void detour_release_lock(_In_ RTL_SPIN_LOCK *pLock);
 
-void RtlDeleteLock(RTL_SPIN_LOCK *InLock);
+void detour_delete_lock(_In_ RTL_SPIN_LOCK *pLock);
 
 void detour_sleep(_In_ DWORD milliSeconds);
 

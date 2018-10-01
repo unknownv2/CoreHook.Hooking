@@ -1930,7 +1930,7 @@ LONG AddTrampolineToGlobalList(PDETOUR_TRAMPOLINE pTrampoline)
     BOOL    Exists;
 
     // register in global HLS list
-    RtlAcquireLock(&GlobalHookLock);
+    detour_acquire_lock(&GlobalHookLock);
     {
         pTrampoline->HLSIdent = UniqueIDCounter++;
 
@@ -1950,7 +1950,7 @@ LONG AddTrampolineToGlobalList(PDETOUR_TRAMPOLINE pTrampoline)
             }
         }
     }
-    RtlReleaseLock(&GlobalHookLock);
+    detour_release_lock(&GlobalHookLock);
 
     return Exists;
 }
@@ -2082,7 +2082,7 @@ will still return STATUS_SUCCESS.
         return FALSE;
     }
 
-    RtlAcquireLock(&GlobalHookLock);
+    detour_acquire_lock(&GlobalHookLock);
     {
         if ((InHandle->Link != NULL) && DetourIsValidHandle(InHandle, &Hook))
         {
@@ -2102,13 +2102,13 @@ will still return STATUS_SUCCESS.
 
             if (!IsAllocated)
             {
-                RtlReleaseLock(&GlobalHookLock);
+                detour_release_lock(&GlobalHookLock);
 
                 RETURN;
             }
         }
     }
-    RtlReleaseLock(&GlobalHookLock);
+    detour_release_lock(&GlobalHookLock);
 
     RETURN(STATUS_SUCCESS);
 
