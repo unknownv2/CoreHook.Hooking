@@ -1175,7 +1175,7 @@ BOOL DetourIsValidHandle(
 BOOL IsLoaderLock();
 BOOL AcquireSelfProtection();
 
-void RtlAssert(BOOL InAssert,LPCWSTR lpMessageText);
+void RtlAssert(BOOL InAssert, LPCWSTR lpMessageText);
 void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage);
 
 typedef struct _RTL_SPIN_LOCK_
@@ -1184,13 +1184,13 @@ typedef struct _RTL_SPIN_LOCK_
     BOOL                 IsOwned;
 }RTL_SPIN_LOCK;
 
-void RtlInitializeLock(RTL_SPIN_LOCK* InLock);
+void RtlInitializeLock(RTL_SPIN_LOCK *InLock);
 
-void RtlAcquireLock(RTL_SPIN_LOCK* InLock);
+void RtlAcquireLock(RTL_SPIN_LOCK *InLock);
 
-void RtlReleaseLock(RTL_SPIN_LOCK* InLock);
+void RtlReleaseLock(RTL_SPIN_LOCK *InLock);
 
-void RtlDeleteLock(RTL_SPIN_LOCK* InLock);
+void RtlDeleteLock(RTL_SPIN_LOCK *InLock);
 
 void RtlSleep(ULONG InTimeout);
 
@@ -1228,31 +1228,24 @@ typedef struct _BARRIER_UNIT_
     THREAD_LOCAL_STORAGE    TLS;
 }BARRIER_UNIT;
 
+BOOL TlsGetCurrentValue(THREAD_LOCAL_STORAGE *InTls,
+                        THREAD_RUNTIME_INFO **OutValue);
 
-BOOL TlsGetCurrentValue(
-            THREAD_LOCAL_STORAGE* InTls,
-            THREAD_RUNTIME_INFO** OutValue);
 BOOL TlsAddCurrentThread(THREAD_LOCAL_STORAGE* InTls);
 
-void RtlFreeMemory(void* InPointer);
+void RtlFreeMemory(void *InPointer);
 
-void* RtlAllocateMemory(
-            BOOL InZeroMemory,
+void* RtlAllocateMemory(BOOL InZeroMemory,
             ULONG InSize);
 
-#undef RtlCopyMemory
-void RtlCopyMemory(
-            PVOID InDest,
-            PVOID InSource,
-            ULONG InByteCount);
+void detour_copy_memory(_Out_writes_bytes_all_(Size) PVOID  Dest,
+                        _In_reads_bytes_(Size)       PVOID  Src,
+                        _In_                         size_t Size);
 
-#undef RtlZeroMemory
-void RtlZeroMemory(
-            PVOID InTarget,
-            ULONG InByteCount);
+void detour_zero_memory(_Out_writes_bytes_all_(Size) PVOID Dest,
+                        _In_                         size_t Size);
 
-BOOL IsThreadIntercepted(
-    HOOK_ACL* LocalACL,
+BOOL IsThreadIntercepted(HOOK_ACL* LocalACL,
     ULONG InThreadID);
 
 void ReleaseSelfProtection();

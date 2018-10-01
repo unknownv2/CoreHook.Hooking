@@ -40,7 +40,7 @@ BARRIER_UNIT Unit;
 
 void RtlInitializeLock(RTL_SPIN_LOCK *OutLock)
 {
-    RtlZeroMemory(OutLock, sizeof(RTL_SPIN_LOCK));
+    detour_zero_memory(OutLock, sizeof(RTL_SPIN_LOCK));
 
     InitializeCriticalSection(&OutLock->Lock);
 }
@@ -75,22 +75,11 @@ void RtlSleep(ULONG InTimeout)
     Sleep(InTimeout);
 }
 
-void RtlCopyMemory(
-    PVOID InDest,
-    PVOID InSource,
-    ULONG InByteCount)
+void detour_copy_memory(_Out_writes_bytes_all_(Size) PVOID  Dest,
+                        _In_reads_bytes_(Size)       PVOID  Src,
+                        _In_                         size_t Size)
 {
-    ULONG Index;
-    UCHAR *Dest = (UCHAR *)InDest;
-    UCHAR *Src = (UCHAR *)InSource;
-
-    for (Index = 0; Index < InByteCount; Index++)
-    {
-        *Dest = *Src;
-
-        Dest++;
-        Src++;
-    }
+    memcpy(Dest, Src, Size);
 }
 
 void *RtlAllocateMemory(BOOL InZeroMemory, ULONG InSize)
@@ -98,32 +87,18 @@ void *RtlAllocateMemory(BOOL InZeroMemory, ULONG InSize)
     void *Result = HeapAlloc(hCoreHookHeap, 0, InSize);
 
     if (InZeroMemory && (Result != NULL)) {
-        RtlZeroMemory(Result, InSize);
+        detour_zero_memory(Result, InSize);
     }
 
     return Result;
 }
 
-#ifndef _DEBUG
-#pragma optimize("", off) // suppress _memset
-#endif
-void RtlZeroMemory(
-    PVOID InTarget,
-    ULONG InByteCount)
+
+void detour_zero_memory(_Out_writes_bytes_all_(Size) PVOID Dest,
+                        _In_                         size_t Size)
 {
-    ULONG Index;
-    UCHAR *Target = (UCHAR *)InTarget;
-
-    for (Index = 0; Index < InByteCount; Index++)
-    {
-        *Target = 0;
-
-        Target++;
-    }
+    memset(Dest, 0, Size);
 }
-#ifndef _DEBUG
-#pragma optimize("", on)
-#endif
 
 LONG RtlProtectMemory(void *InPointer, ULONG InSize, ULONG InNewProtection)
 {
@@ -389,7 +364,7 @@ Parameters:
         InAcl->IsExclusive = InIsExclusive;
         InAcl->Count = InThreadCount;
 
-        RtlCopyMemory(InAcl->Entries, InThreadIdList, InThreadCount * sizeof(ULONG));
+        detour_copy_memory(InAcl->Entries, InThreadIdList, InThreadCount * sizeof(ULONG));
 
         DWORD dwOld2;
         VirtualProtect(InAcl, sizeof(HOOK_ACL), dwOld, &dwOld2);
@@ -415,7 +390,7 @@ Description:
     Will be called on DLL load and initializes all barrier structures.
 */
 
-    RtlZeroMemory(&Unit, sizeof(Unit));
+    detour_zero_memory(&Unit, sizeof(Unit));
 
     // globally accept all threads...
     Unit.GlobalACL.IsExclusive = TRUE;
@@ -523,7 +498,7 @@ Returns:
     }
 
     InTls->IdList[Index] = CurrentId;
-    RtlZeroMemory(&InTls->Entries[Index], sizeof(THREAD_RUNTIME_INFO));
+    detour_zero_memory(&InTls->Entries[Index], sizeof(THREAD_RUNTIME_INFO));
 
     RtlReleaseLock(&InTls->ThreadSafe);
 
@@ -556,7 +531,7 @@ Parameters:
         {
             InTls->IdList[Index] = 0;
 
-            RtlZeroMemory(&InTls->Entries[Index], sizeof(THREAD_RUNTIME_INFO));
+            detour_zero_memory(&InTls->Entries[Index], sizeof(THREAD_RUNTIME_INFO));
         }
     }
 
@@ -584,7 +559,7 @@ Description:
         }
     }
 
-    RtlZeroMemory(&Unit, sizeof(Unit));
+    detour_zero_memory(&Unit, sizeof(Unit));
 
     HeapDestroy(hCoreHookHeap);
 }
