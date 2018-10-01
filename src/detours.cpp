@@ -2183,8 +2183,8 @@ Parameters:
 
     return detour_set_acl(&Handle->LocalACL, FALSE, pThreadIdList, dwThreadCount);
 }
-LONG DetourGetHookBypassAddress(_In_ TRACED_HOOK_HANDLE pHook,
-                                _Inout_ PVOID **pppOutAddress)
+LONG WINAPI DetourGetHookBypassAddress(_In_ TRACED_HOOK_HANDLE pHook,
+                                       _Outptr_ PVOID **pppOutAddress)
 {
 /*
 Description:

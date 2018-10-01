@@ -762,7 +762,7 @@ Returns:
     }
 }
 
-LONG DetourBarrierGetCallback(PVOID *OutValue)
+LONG WINAPI DetourBarrierGetCallback(_Outptr_ PVOID *ppCallback)
 {
 /*
 Description:
@@ -778,7 +778,7 @@ Description:
     LPTHREAD_RUNTIME_INFO   Runtime;
 
 
-    if (!IsValidPointer(OutValue, sizeof(PVOID)))
+    if (!IsValidPointer(ppCallback, sizeof(PVOID)))
     {
         THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
     }
@@ -788,7 +788,7 @@ Description:
     }
     if (Runtime->Current != NULL) 
     {
-        *OutValue = Runtime->Callback;
+        *ppCallback = Runtime->Callback;
     }
     else 
     { 
@@ -802,7 +802,7 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG DetourBarrierGetReturnAddress(PVOID* OutValue)
+LONG WINAPI DetourBarrierGetReturnAddress(_Outptr_ PVOID *ppReturnAddress)
 {
 /*
 Description:
@@ -819,7 +819,7 @@ Description:
     LONG                        NtStatus;
     LPTHREAD_RUNTIME_INFO       Runtime;
 
-    if (!IsValidPointer(OutValue, sizeof(PVOID))) {
+    if (!IsValidPointer(ppReturnAddress, sizeof(PVOID))) {
         THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
     }
 
@@ -828,7 +828,7 @@ Description:
     }
 
     if (Runtime->Current != NULL) {
-        *OutValue = Runtime->Current->RetAddress;
+        *ppReturnAddress = Runtime->Current->RetAddress;
     }
     else {
         THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
@@ -842,7 +842,7 @@ FINALLY_OUTRO:
 }
 
 
-LONG DetourBarrierGetAddressOfReturnAddress(PVOID** OutValue)
+LONG WINAPI DetourBarrierGetAddressOfReturnAddress(_Outptr_ PVOID **pppAddressOfReturnAddress)
 {
 /*
 Description:
@@ -855,7 +855,7 @@ Description:
     LPTHREAD_RUNTIME_INFO       Runtime;
     LONG                        NtStatus;
 
-    if (OutValue == NULL) {
+    if (pppAddressOfReturnAddress == NULL) {
         THROW(STATUS_INVALID_PARAMETER, L"Invalid storage specified.");
     }
 
@@ -864,7 +864,7 @@ Description:
     }
 
     if (Runtime->Current != NULL) {
-        *OutValue = Runtime->Current->AddrOfRetAddr;
+        *pppAddressOfReturnAddress = Runtime->Current->AddrOfRetAddr;
     }
     else {
         THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
@@ -876,7 +876,7 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG DetourBarrierBeginStackTrace(PVOID* OutBackup)
+LONG WINAPI DetourBarrierBeginStackTrace(PVOID* OutBackup)
 {
 /*
 Description:
@@ -915,7 +915,7 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG DetourBarrierEndStackTrace(PVOID InBackup)
+LONG WINAPI DetourBarrierEndStackTrace(PVOID InBackup)
 {
 /*
 Description:
@@ -945,7 +945,7 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG DetourBarrierCallStackTrace(
+LONG WINAPI DetourBarrierCallStackTrace(
     PVOID* OutMethodArray,
     ULONG InMaxMethodCount,
     ULONG* OutMethodCount)

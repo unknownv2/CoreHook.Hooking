@@ -3,7 +3,6 @@
 //  Core Detours Functionality (detours.h of detours.lib)
 //
 //
-//
 
 #pragma once
 #ifndef _DETOURS_H_
@@ -461,7 +460,7 @@ typedef BOOL (CALLBACK *PF_DETOUR_IMPORT_FUNC_CALLBACK)(_In_opt_ PVOID pContext,
 typedef BOOL (CALLBACK *PF_DETOUR_IMPORT_FUNC_CALLBACK_EX)(_In_opt_ PVOID pContext,
                                                            _In_ DWORD nOrdinal,
                                                            _In_opt_ LPCSTR pszFunc,
-                                                           _In_opt_ PVOID* ppvFunc);
+                                                           _In_opt_ PVOID *ppvFunc);
 
 typedef VOID * PDETOUR_BINARY;
 typedef VOID * PDETOUR_LOADED_BINARY;
@@ -561,9 +560,9 @@ LONG WINAPI DetourIsThreadIntercepted(_In_  TRACED_HOOK_HANDLE pHook,
                                       _Out_ BOOL *pResult);
 
 LONG detour_set_acl(_In_ HOOK_ACL *pAcl,
-                    _In_ BOOL     bIsExclusive,
-                    _In_ DWORD    *dwThreadIdList,
-                    _In_ DWORD    dwThreadCount);
+                    _In_ BOOL bIsExclusive,
+                    _In_ DWORD *dwThreadIdList,
+                    _In_ DWORD dwThreadCount);
 
 HOOK_ACL* DetourBarrierGetAcl();
 
@@ -576,26 +575,26 @@ HOOK_ACL* DetourBarrierGetAcl();
 //  outside a valid hook handler.
 //
 
-LONG DetourBarrierGetCallback(PVOID *OutValue);
+LONG WINAPI DetourBarrierGetCallback(_Outptr_ PVOID *ppCallback);
 
-LONG DetourBarrierGetReturnAddress(PVOID *OutValue);
+LONG WINAPI DetourBarrierGetReturnAddress(_Outptr_ PVOID *ppReturnAddress);
 
-LONG DetourBarrierGetAddressOfReturnAddress(PVOID **OutValue);
+LONG WINAPI DetourBarrierGetAddressOfReturnAddress(_Outptr_ PVOID **pppAddressOfReturnAddress);
 
-LONG DetourGetHookBypassAddress(TRACED_HOOK_HANDLE InHook,
-    PVOID **OutAddress);
+LONG WINAPI DetourGetHookBypassAddress(_In_ TRACED_HOOK_HANDLE pHook,
+                                       _Outptr_ PVOID **pppOutAddress);
 
 ////////////////////////////////////////////////////////////
 //
-//  Stack tracing functions used inside a detoured function
-// 
+//  Stack tracing functions used inside a detoured function.
+//
 //
 
-LONG DetourBarrierBeginStackTrace(PVOID *OutBackup);
+LONG WINAPI DetourBarrierBeginStackTrace(PVOID *OutBackup);
 
-LONG DetourBarrierEndStackTrace(PVOID InBackup);
+LONG WINAPI DetourBarrierEndStackTrace(PVOID InBackup);
 
-LONG DetourBarrierCallStackTrace(PVOID* OutMethodArray,
+LONG WINAPI DetourBarrierCallStackTrace(PVOID* OutMethodArray,
     ULONG InMaxMethodCount,
     ULONG* OutMethodCount);
 
@@ -737,7 +736,7 @@ _Writable_bytes_(*pcbData)
 _Readable_bytes_(*pcbData)
 _Success_(return != NULL)
 PVOID WINAPI DetourFindPayloadEx(_In_ REFGUID rguid,
-                                 _Out_ DWORD * pcbData);
+                                 _Out_ DWORD *pcbData);
 
 DWORD WINAPI DetourGetSizeOfPayloads(_In_opt_ HMODULE hModule);
 
