@@ -1779,7 +1779,7 @@ Description:
     if(!Exists)
     {        
         TlsGetCurrentValue(&Unit.TLS, &Info);
-        Info->Entries = (RUNTIME_INFO*)RtlAllocateMemory(TRUE, sizeof(RUNTIME_INFO) * MAX_HOOK_COUNT);
+        Info->Entries = (RUNTIME_INFO*)detour_allocate_memory(TRUE, sizeof(RUNTIME_INFO) * MAX_HOOK_COUNT);
 
         if (Info->Entries == NULL) {
             goto DONT_INTERCEPT;

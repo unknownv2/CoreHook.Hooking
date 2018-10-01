@@ -70,9 +70,9 @@ void RtlDeleteLock(RTL_SPIN_LOCK *InLock)
     DeleteCriticalSection(&InLock->Lock);
 }
 
-void RtlSleep(ULONG InTimeout)
+void detour_sleep(_In_ DWORD milliSeconds)
 {
-    Sleep(InTimeout);
+    Sleep(milliSeconds);
 }
 
 void detour_copy_memory(_Out_writes_bytes_all_(Size) PVOID  Dest,
@@ -82,15 +82,16 @@ void detour_copy_memory(_Out_writes_bytes_all_(Size) PVOID  Dest,
     memcpy(Dest, Src, Size);
 }
 
-void *RtlAllocateMemory(BOOL InZeroMemory, ULONG InSize)
+void *detour_allocate_memory(_In_ BOOL   bZeroMemory,
+                             _In_ size_t size)
 {
-    void *Result = HeapAlloc(hCoreHookHeap, 0, InSize);
+    void *result = HeapAlloc(hCoreHookHeap, 0, size);
 
-    if (InZeroMemory && (Result != NULL)) {
-        detour_zero_memory(Result, InSize);
+    if (bZeroMemory && (result != NULL)) {
+        detour_zero_memory(result, size);
     }
 
-    return Result;
+    return result;
 }
 
 
@@ -118,11 +119,11 @@ THROW_OUTRO:
     return NtStatus;
 }
 
-void RtlFreeMemory(void *InPointer)
+void detour_free_memory(void * pMemory)
 {
-    DETOUR_ASSERT(InPointer != NULL, L"barrier.cpp - InPointer != NULL");
+    DETOUR_ASSERT(pMemory != NULL, L"barrier.cpp - pMemory != NULL");
 
-    HeapFree(hCoreHookHeap, 0, InPointer);
+    HeapFree(hCoreHookHeap, 0, pMemory);
 }
 
 LONG RtlInterlockedIncrement(LONG *RefValue)
@@ -555,7 +556,7 @@ Description:
     {
         if (Unit.TLS.Entries[Index].Entries != NULL)
         {
-            RtlFreeMemory(Unit.TLS.Entries[Index].Entries);
+            detour_free_memory(Unit.TLS.Entries[Index].Entries);
         }
     }
 
@@ -578,7 +579,7 @@ Description:
     {
         if (Info->Entries != NULL)
         {
-            RtlFreeMemory(Info->Entries);
+            detour_free_memory(Info->Entries);
         }
 
         Info->Entries = NULL;

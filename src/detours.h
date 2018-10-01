@@ -1192,7 +1192,7 @@ void RtlReleaseLock(RTL_SPIN_LOCK *InLock);
 
 void RtlDeleteLock(RTL_SPIN_LOCK *InLock);
 
-void RtlSleep(ULONG InTimeout);
+void detour_sleep(_In_ DWORD milliSeconds);
 
 typedef struct _RUNTIME_INFO_
 {
@@ -1233,10 +1233,10 @@ BOOL TlsGetCurrentValue(THREAD_LOCAL_STORAGE *InTls,
 
 BOOL TlsAddCurrentThread(THREAD_LOCAL_STORAGE* InTls);
 
-void RtlFreeMemory(void *InPointer);
+void detour_free_memory(void *pMemory);
 
-void* RtlAllocateMemory(BOOL InZeroMemory,
-            ULONG InSize);
+void* detour_allocate_memory(_In_ BOOL   bZeroMemory,
+                             _In_ size_t size);
 
 void detour_copy_memory(_Out_writes_bytes_all_(Size) PVOID  Dest,
                         _In_reads_bytes_(Size)       PVOID  Src,
