@@ -2116,10 +2116,9 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG DetourIsThreadIntercepted(
-    TRACED_HOOK_HANDLE InHook,
-    ULONG InThreadID,
-    BOOL* OutResult)
+LONG WINAPI DetourIsThreadIntercepted(_In_  TRACED_HOOK_HANDLE pHook,
+                               _In_  DWORD dwThreadId,
+                               _Out_ BOOL *pResult)
 {
 /*
 Description:
@@ -2134,15 +2133,15 @@ about the implementation.
     LONG                NtStatus;
     PLOCAL_HOOK_INFO    Handle;
 
-    if (!detour_is_valid_handle(InHook, &Handle)) {
+    if (!detour_is_valid_handle(pHook, &Handle)) {
         THROW(STATUS_INVALID_PARAMETER_1, (PWCHAR)L"The given hook handle is invalid or already disposed.");
     }
 
-    if (!IsValidPointer(OutResult, sizeof(BOOL))) {
+    if (!IsValidPointer(pResult, sizeof(BOOL))) {
         THROW(STATUS_INVALID_PARAMETER_3, (PWCHAR)L"Invalid pointer for result storage.");
     }
 
-    *OutResult = detour_is_thread_intercepted(&Handle->LocalACL, InThreadID);
+    *pResult = detour_is_thread_intercepted(&Handle->LocalACL, dwThreadId);
 
     RETURN;
 
@@ -2151,9 +2150,9 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG DetourSetInclusiveACL(_In_ DWORD *pThreadIdList,
-                           _In_ DWORD dwThreadCount,
-                           _In_ TRACED_HOOK_HANDLE pHandle)
+LONG WINAPI DetourSetInclusiveACL(_In_ DWORD *pThreadIdList,
+                                  _In_ DWORD dwThreadCount,
+                                  _In_ TRACED_HOOK_HANDLE pHandle)
 {
 /*
 Description:
@@ -2182,7 +2181,7 @@ Parameters:
         return STATUS_INVALID_PARAMETER_3;
     }
 
-    return DetourSetACL(&Handle->LocalACL, FALSE, pThreadIdList, dwThreadCount);
+    return detour_set_acl(&Handle->LocalACL, FALSE, pThreadIdList, dwThreadCount);
 }
 LONG DetourGetHookBypassAddress(_In_ TRACED_HOOK_HANDLE pHook,
                                 _Inout_ PVOID **pppOutAddress)
@@ -2240,9 +2239,9 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG DetourSetExclusiveACL(_In_ DWORD *pThreadIdList,
-                           _In_ DWORD dwThreadCount,
-                           _In_ TRACED_HOOK_HANDLE pHandle)
+LONG WINAPI DetourSetExclusiveACL(_In_ DWORD *pThreadIdList,
+                                  _In_ DWORD dwThreadCount,
+                                  _In_ TRACED_HOOK_HANDLE pHandle)
 {
 /*
 Description:
@@ -2267,7 +2266,7 @@ Parameters:
     if (!detour_is_valid_handle(pHandle, &Handle)) {
         return STATUS_INVALID_PARAMETER_3;
     }
-    return DetourSetACL(&Handle->LocalACL, TRUE, pThreadIdList, dwThreadCount);
+    return detour_set_acl(&Handle->LocalACL, TRUE, pThreadIdList, dwThreadCount);
 }
 
 LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)

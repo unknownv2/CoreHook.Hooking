@@ -243,8 +243,8 @@ void RtlAssert(BOOL InAssert, LPCWSTR lpMessageText)
     FatalAppExitW(0, lpMessageText);
 }
 
-LONG DetourSetGlobalInclusiveACL(_In_ DWORD *dwThreadIdList,
-                                 _In_ DWORD dwThreadCount)
+LONG WINAPI DetourSetGlobalInclusiveACL(_In_ DWORD *dwThreadIdList,
+                                        _In_ DWORD dwThreadCount)
 {
 /*
 Description:
@@ -261,11 +261,11 @@ Parameters:
         MAX_ACE_COUNT! 
 */
 
-    return DetourSetACL(DetourBarrierGetAcl(), FALSE, dwThreadIdList, dwThreadCount);
+    return detour_set_acl(DetourBarrierGetAcl(), FALSE, dwThreadIdList, dwThreadCount);
 }
 
-LONG DetourSetGlobalExclusiveACL(_In_ DWORD *dwThreadIdList,
-                                 _In_ DWORD dwThreadCount)
+LONG WINAPI DetourSetGlobalExclusiveACL(_In_ DWORD *dwThreadIdList,
+                                        _In_ DWORD dwThreadCount)
 {
 /*
 Description:
@@ -282,7 +282,7 @@ Parameters:
         MAX_ACE_COUNT! 
 */
 
-    return DetourSetACL(DetourBarrierGetAcl(), TRUE, dwThreadIdList, dwThreadCount);
+    return detour_set_acl(DetourBarrierGetAcl(), TRUE, dwThreadIdList, dwThreadCount);
 }
 
 BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
@@ -308,11 +308,10 @@ Description:
 
     return TRUE;
 }
-LONG DetourSetACL(
-    HOOK_ACL *InAcl,
-    BOOL InIsExclusive,
-    ULONG *InThreadIdList,
-    ULONG InThreadCount)
+LONG detour_set_acl(_In_ HOOK_ACL *pAcl,
+                    _In_ BOOL     bIsExclusive,
+                    _In_ DWORD    *dwThreadIdList,
+                    _In_ DWORD    dwThreadCount)
 {
 /*
 Description:
@@ -321,11 +320,11 @@ Description:
     either the global or local hook ACLs.
     
 Parameters:
-    - InAcl
+    - pAcl
         NULL if you want to set the global ACL.
         Any LOCAL_HOOK_INFO::LocalACL to set the hook specific ACL.
 
-    - InIsExclusive
+    - bIsExclusive
         TRUE if all listed thread shall be excluded from interception,
         FALSE otherwise
 
@@ -340,33 +339,33 @@ Parameters:
 
     ULONG Index;
 
-    DETOUR_ASSERT(IsValidPointer(InAcl, sizeof(HOOK_ACL)), L"barrier.cpp - IsValidPointer(InAcl, sizeof(HOOK_ACL))");
+    DETOUR_ASSERT(IsValidPointer(pAcl, sizeof(HOOK_ACL)), L"barrier.cpp - IsValidPointer(InAcl, sizeof(HOOK_ACL))");
 
-    if (InThreadCount > MAX_ACE_COUNT) {
+    if (dwThreadCount > MAX_ACE_COUNT) {
         return STATUS_INVALID_PARAMETER_2;
     }
 
-    if (!IsValidPointer(InThreadIdList, InThreadCount * sizeof(ULONG))) {
+    if (!IsValidPointer(dwThreadIdList, dwThreadCount * sizeof(ULONG))) {
         return STATUS_INVALID_PARAMETER_1;
     }
 
-    for (Index = 0; Index < InThreadCount; Index++)
+    for (Index = 0; Index < dwThreadCount; Index++)
     {
-        if (InThreadIdList[Index] == 0) {
-            InThreadIdList[Index] = GetCurrentThreadId();
+        if (dwThreadIdList[Index] == 0) {
+            dwThreadIdList[Index] = GetCurrentThreadId();
         }
     }
     DWORD dwOld;
-    if (VirtualProtect(InAcl, sizeof(HOOK_ACL), PAGE_READWRITE, &dwOld))
+    if (VirtualProtect(pAcl, sizeof(HOOK_ACL), PAGE_READWRITE, &dwOld))
     {
         // set ACL...
-        InAcl->IsExclusive = InIsExclusive;
-        InAcl->Count = InThreadCount;
+        pAcl->IsExclusive = bIsExclusive;
+        pAcl->Count = dwThreadCount;
 
-        detour_copy_memory(InAcl->Entries, InThreadIdList, InThreadCount * sizeof(ULONG));
+        detour_copy_memory(pAcl->Entries, dwThreadIdList, dwThreadCount * sizeof(ULONG));
 
         DWORD dwOld2;
-        VirtualProtect(InAcl, sizeof(HOOK_ACL), dwOld, &dwOld2);
+        VirtualProtect(pAcl, sizeof(HOOK_ACL), dwOld, &dwOld2);
     }
     else
     {

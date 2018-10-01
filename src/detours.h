@@ -542,28 +542,28 @@ typedef struct _HOOK_TRACE_INFO_
 //  proper ACL to make it active!
 //
 
-LONG DetourSetInclusiveACL(_In_ DWORD *pThreadIdList,
-    _In_ DWORD dwThreadCount,
-    _In_ TRACED_HOOK_HANDLE pHandle);
+LONG WINAPI DetourSetInclusiveACL(_In_ DWORD *pThreadIdList,
+                                  _In_ DWORD dwThreadCount,
+                                  _In_ TRACED_HOOK_HANDLE pHandle);
 
-LONG DetourSetExclusiveACL(_In_ DWORD *pThreadIdList,
-    _In_ DWORD dwThreadCount,
-    _In_ TRACED_HOOK_HANDLE pHandle);
+LONG WINAPI DetourSetExclusiveACL(_In_ DWORD *pThreadIdList,
+                                  _In_ DWORD dwThreadCount,
+                                  _In_ TRACED_HOOK_HANDLE pHandle);
 
-LONG DetourSetGlobalInclusiveACL(_In_ DWORD *dwThreadIdList,
-    _In_ DWORD dwThreadCount);
+LONG WINAPI DetourSetGlobalInclusiveACL(_In_ DWORD *dwThreadIdList,
+                                        _In_ DWORD dwThreadCount);
 
-LONG DetourSetGlobalExclusiveACL(_In_ DWORD *dwThreadIdList,
-    _In_ DWORD dwThreadCount);
+LONG WINAPI DetourSetGlobalExclusiveACL(_In_ DWORD *dwThreadIdList,
+                                        _In_ DWORD dwThreadCount);
 
-LONG DetourIsThreadIntercepted(TRACED_HOOK_HANDLE InHook,
-    ULONG InThreadID,
-    BOOL* OutResult);
+LONG WINAPI DetourIsThreadIntercepted(_In_  TRACED_HOOK_HANDLE pHook,
+                                      _In_  DWORD dwThreadId,
+                                      _Out_ BOOL *pResult);
 
-LONG DetourSetACL(HOOK_ACL* InAcl,
-    BOOL InIsExclusive,
-    ULONG* InThreadIdList,
-    ULONG InThreadCount);
+LONG detour_set_acl(_In_ HOOK_ACL *pAcl,
+                    _In_ BOOL     bIsExclusive,
+                    _In_ DWORD    *dwThreadIdList,
+                    _In_ DWORD    dwThreadCount);
 
 HOOK_ACL* DetourBarrierGetAcl();
 
