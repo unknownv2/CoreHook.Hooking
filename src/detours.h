@@ -2,9 +2,7 @@
 //
 //  Core Detours Functionality (detours.h of detours.lib)
 //
-//  Microsoft Research Detours Package, Version 4.0.1
 //
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
 //
 
 #pragma once
@@ -418,7 +416,7 @@ typedef struct _DETOUR_EXE_HELPER
 /////////////////////////////////////////////////////////////// Helper Macros.
 //
 #define DETOURS_STRINGIFY(x)    DETOURS_STRINGIFY_(x)
-#define DETOURS_STRINGIFY_(x)    #x
+#define DETOURS_STRINGIFY_(x)   #x
 
 ///////////////////////////////////////////////////////////// Binary Typedefs.
 //
@@ -495,15 +493,8 @@ BOOL WINAPI DetourSetRetainRegions(_In_ BOOL fRetain);
 PVOID WINAPI DetourSetSystemRegionLowerBound(_In_ PVOID pSystemRegionLowerBound);
 PVOID WINAPI DetourSetSystemRegionUpperBound(_In_ PVOID pSystemRegionUpperBound);
 
-
-////////////////////////////////////////////////////////////
+//////////////////////////////////////////////// Exception handling code
 //
-// dotnet trampoline barrier definitions
-//
-#define MAX_HOOK_COUNT              1024
-#define MAX_ACE_COUNT               128
-#define MAX_THREAD_COUNT            128
-#define MAX_PASSTHRU_SIZE           1024 * 64
 
 #define DETOUR_ASSERT(expr, Msg)    RtlAssert(expr, Msg);
 #define THROW(code, Msg)            { NtStatus = (code); RtlSetLastError(GetLastError(), NtStatus, Msg); goto THROW_OUTRO; }
@@ -513,10 +504,22 @@ PVOID WINAPI DetourSetSystemRegionUpperBound(_In_ PVOID pSystemRegionUpperBound)
 #define STATUS_SUCCESS              0
 #define RETURN                      { RtlSetLastError(STATUS_SUCCESS, STATUS_SUCCESS, L""); NtStatus = STATUS_SUCCESS; goto FINALLY_OUTRO; }
 #define FORCE(expr)                 { if(!RTL_SUCCESS(NtStatus = (expr))) goto THROW_OUTRO; }
-#define IsValidPointer              RtlIsValidPointer
 
+//////////////////////////////////////////////// Memory validation code
+//
 
-BOOL RtlIsValidPointer(PVOID InPtr, ULONG InSize);
+#define IsValidPointer              detour_is_valid_pointer
+
+BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,
+                             _In_     UINT_PTR    Size);
+
+//////////////////////////////////////////////// dotnet trampoline barrier definitions
+//
+
+#define MAX_HOOK_COUNT              1024
+#define MAX_ACE_COUNT               128
+#define MAX_THREAD_COUNT            128
+#define MAX_PASSTHRU_SIZE           1024 * 64
 
 typedef struct _DETOUR_TRAMPOLINE * PLOCAL_HOOK_INFO;
 
@@ -611,13 +614,14 @@ LONG DetourInstallHook(void *InEntryPoint,
 
 LONG WINAPI DetourUninstallHook(TRACED_HOOK_HANDLE InHandle);
 
-
 BOOL DetourIsValidHandle(
     TRACED_HOOK_HANDLE InTracedHandle,
     PLOCAL_HOOK_INFO* OutHandle);
 
 BOOL IsLoaderLock();
+
 BOOL AcquireSelfProtection();
+void ReleaseSelfProtection();
 
 void RtlAssert(BOOL InAssert, LPCWSTR lpMessageText);
 void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage);
@@ -625,7 +629,7 @@ void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage);
 typedef struct _RTL_SPIN_LOCK_
 {
     CRITICAL_SECTION        Lock;
-    BOOL                 IsOwned;
+    BOOL                    IsOwned;
 }RTL_SPIN_LOCK;
 
 void detour_initialize_lock(_In_ RTL_SPIN_LOCK *pLock);
@@ -672,18 +676,23 @@ typedef struct _BARRIER_UNIT_
     THREAD_LOCAL_STORAGE    TLS;
 }BARRIER_UNIT;
 
-BOOL IsThreadIntercepted(HOOK_ACL* LocalACL,
-    ULONG InThreadID);
-
-void ReleaseSelfProtection();
+BOOL detour_is_thread_intercepted(_In_ HOOK_ACL *pLocalACL,
+                                  _In_ DWORD    dwThreadId);
 
 extern BARRIER_UNIT         Unit;
 extern RTL_SPIN_LOCK        GlobalHookLock;
 
-BOOL TlsGetCurrentValue(THREAD_LOCAL_STORAGE *InTls,
-    THREAD_RUNTIME_INFO **OutValue);
+/////////////////////////////////////////////////////////////
+//
+//  Thread Local Storage functions re-implemented to avoid
+//  possible problems with native TLS functions when
+//  detouring processes like explorer.exe
+//
 
-BOOL TlsAddCurrentThread(THREAD_LOCAL_STORAGE* InTls);
+BOOL TlsGetCurrentValue(_In_  THREAD_LOCAL_STORAGE *pTls,
+                        _Out_ THREAD_RUNTIME_INFO  **OutValue);
+
+BOOL TlsAddCurrentThread(_In_ THREAD_LOCAL_STORAGE *pTls);
 
 ////////////////////////////////////////////////////////////// Code Functions.
 //

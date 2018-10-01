@@ -1818,7 +1818,7 @@ Description:
     /*
         Now we will negotiate thread/process access based on global and local ACL...
     */
-    Runtime->IsExecuting = IsThreadIntercepted(&pHandle->LocalACL, GetCurrentThreadId());
+    Runtime->IsExecuting = detour_is_thread_intercepted(&pHandle->LocalACL, GetCurrentThreadId());
 
     if (!Runtime->IsExecuting) {
         goto DONT_INTERCEPT;
@@ -2142,7 +2142,7 @@ about the implementation.
         THROW(STATUS_INVALID_PARAMETER_3, (PWCHAR)L"Invalid pointer for result storage.");
     }
 
-    *OutResult = IsThreadIntercepted(&Handle->LocalACL, InThreadID);
+    *OutResult = detour_is_thread_intercepted(&Handle->LocalACL, InThreadID);
 
     RETURN;
 

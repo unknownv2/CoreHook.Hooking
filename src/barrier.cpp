@@ -131,13 +131,12 @@ LONG RtlInterlockedIncrement(LONG *RefValue)
     return InterlockedIncrement(RefValue);
 }
 
-BOOL RtlIsValidPointer(PVOID InPtr, ULONG InSize)
+BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,
+                             _In_     UINT_PTR    Size)
 {
-    if ((InPtr == NULL) || (InPtr == (PVOID)~0)) {
+    if ((Pointer == NULL) || (Pointer == (PVOID)~0)) {
         return FALSE;
     }
-
-    DETOUR_ASSERT(!IsBadReadPtr(InPtr, InSize), L"barrier.cpp - !IsBadReadPtr(InPtr, InSize)");
 
     return TRUE;
 }
@@ -406,9 +405,8 @@ Description:
     return STATUS_SUCCESS;
 }
 
-BOOL TlsGetCurrentValue(
-    THREAD_LOCAL_STORAGE *InTls,
-    THREAD_RUNTIME_INFO **OutValue)
+BOOL TlsGetCurrentValue(_In_  THREAD_LOCAL_STORAGE *pTls,
+                        _Out_ THREAD_RUNTIME_INFO  **OutValue)
 {
 /*
 Description:
@@ -419,7 +417,7 @@ Description:
 
 Parameters:
 
-    - InTls
+    - pTls
 
         The storage where the caller is registered.
 
@@ -438,9 +436,9 @@ Returns:
 
     for (Index = 0; Index < MAX_THREAD_COUNT; Index++)
     {
-        if (InTls->IdList[Index] == CurrentId)
+        if (pTls->IdList[Index] == CurrentId)
         {
-            *OutValue = &InTls->Entries[Index];
+            *OutValue = &pTls->Entries[Index];
 
             return TRUE;
         }
@@ -448,7 +446,7 @@ Returns:
 
     return FALSE;
 }
-BOOL TlsAddCurrentThread(THREAD_LOCAL_STORAGE *InTls)
+BOOL TlsAddCurrentThread(_In_ THREAD_LOCAL_STORAGE *pTls)
 {
 /*
 Description:
@@ -466,7 +464,7 @@ Description:
     to the storage!
 
 Parameters:
-    - InTls
+    - pTls
 
         The thread local storage to allocate from.
 
@@ -479,29 +477,29 @@ Returns:
     LONG Index = -1;
     LONG i;
 
-    detour_acquire_lock(&InTls->ThreadSafe);
+    detour_acquire_lock(&pTls->ThreadSafe);
 
     // select Index AND check whether thread is already registered.
     for (i = 0; i < MAX_THREAD_COUNT; i++)
     {
-        if ((InTls->IdList[i] == 0) && (Index == -1)) {
+        if ((pTls->IdList[i] == 0) && (Index == -1)) {
             Index = i;
         }
 
-        DETOUR_ASSERT(InTls->IdList[i] != CurrentId, L"barrier.cpp - InTls->IdList[i] != CurrentId");
+        DETOUR_ASSERT(pTls->IdList[i] != CurrentId, L"barrier.cpp - pTls->IdList[i] != CurrentId");
     }
 
     if (Index == -1)
     {
-        detour_release_lock(&InTls->ThreadSafe);
+        detour_release_lock(&pTls->ThreadSafe);
 
         return FALSE;
     }
 
-    InTls->IdList[Index] = CurrentId;
-    detour_zero_memory(&InTls->Entries[Index], sizeof(THREAD_RUNTIME_INFO));
+    pTls->IdList[Index] = CurrentId;
+    detour_zero_memory(&pTls->Entries[Index], sizeof(THREAD_RUNTIME_INFO));
 
-    detour_release_lock(&InTls->ThreadSafe);
+    detour_release_lock(&pTls->ThreadSafe);
 
     return TRUE;
 }
@@ -516,7 +514,7 @@ Description:
 
 Parameters:
 
-    - InTls
+    - pTls
 
         The storage from which the caller should be removed.
 */
@@ -700,9 +698,8 @@ Returns:
     return FALSE;
 }
 
-BOOL IsThreadIntercepted(
-    HOOK_ACL *LocalACL,
-    ULONG InThreadID)
+BOOL detour_is_thread_intercepted(_In_ HOOK_ACL *pLocalACL,
+                                  _In_ DWORD    dwThreadId)
 {
 /*
 Description:
@@ -715,26 +712,28 @@ Returns:
     FALSE otherwise.
 */
 
-    ULONG CheckID;
+    DWORD checkId;
 
-    if (InThreadID == 0) {
-        CheckID = GetCurrentThreadId();
-    }
-    else {
-        CheckID = InThreadID;
-    }
-
-    if (ACLContains(&Unit.GlobalACL, CheckID))
+    if (dwThreadId == 0)
     {
-        if (ACLContains(LocalACL, CheckID))
+        checkId = GetCurrentThreadId();
+    }
+    else
+    {
+        checkId = dwThreadId;
+    }
+
+    if (ACLContains(&Unit.GlobalACL, checkId))
+    {
+        if (ACLContains(pLocalACL, checkId))
         {
-            if (LocalACL->IsExclusive) {
+            if (pLocalACL->IsExclusive) {
                 return FALSE;
             }
         }
         else
         {
-            if (!LocalACL->IsExclusive) {
+            if (!pLocalACL->IsExclusive) {
                 return FALSE;
             }
         }
@@ -743,15 +742,15 @@ Returns:
     }
     else
     {
-        if (ACLContains(LocalACL, CheckID))
+        if (ACLContains(pLocalACL, checkId))
         {
-            if (LocalACL->IsExclusive) {
+            if (pLocalACL->IsExclusive) {
                 return FALSE;
             }
         }
         else
         {
-            if (!LocalACL->IsExclusive) {
+            if (!pLocalACL->IsExclusive) {
                 return FALSE;
             }
         }
