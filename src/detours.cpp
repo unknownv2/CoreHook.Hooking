@@ -14,6 +14,7 @@
 
 #define _ARM_WINAPI_PARTITION_DESKTOP_SDK_AVAILABLE 1
 #include <windows.h>
+#include "barrier.h"
 
 #if (_MSC_VER < 1299)
 #pragma warning(disable: 4710)

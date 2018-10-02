@@ -10,6 +10,7 @@
 #define _ARM_WINAPI_PARTITION_DESKTOP_SDK_AVAILABLE 1
 #include <windows.h>
 #include <aux_ulib.h>
+
 #if (_MSC_VER < 1310)
 #else
 #pragma warning(push)
@@ -23,7 +24,7 @@
 // #define DETOUR_DEBUG 1
 #define DETOURS_INTERNAL
 #include "detours.h"
-
+#include "barrier.h"
 
 #if DETOURS_VERSION != 0x4c0c1 // 0xMAJORcMINORcPATCH
 #error detours.h version mismatch
