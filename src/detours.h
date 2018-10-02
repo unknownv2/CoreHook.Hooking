@@ -495,13 +495,13 @@ PVOID WINAPI DetourSetSystemRegionUpperBound(_In_ PVOID pSystemRegionUpperBound)
 //////////////////////////////////////////////// Exception handling code
 //
 
-#define DETOUR_ASSERT(expr, Msg)    RtlAssert(expr, Msg);
-#define THROW(code, Msg)            { NtStatus = (code); RtlSetLastError(GetLastError(), NtStatus, Msg); goto THROW_OUTRO; }
+#define DETOUR_ASSERT(expr, Msg)    detour_assert(expr, Msg);
+#define THROW(code, Msg)            { NtStatus = (code); detour_set_last_error(GetLastError(), NtStatus, Msg); goto THROW_OUTRO; }
 
 #define RTL_SUCCESS(ntstatus)       SUCCEEDED(ntstatus)
 
 #define STATUS_SUCCESS              0
-#define RETURN                      { RtlSetLastError(STATUS_SUCCESS, STATUS_SUCCESS, L""); NtStatus = STATUS_SUCCESS; goto FINALLY_OUTRO; }
+#define RETURN                      { detour_set_last_error(STATUS_SUCCESS, STATUS_SUCCESS, L""); NtStatus = STATUS_SUCCESS; goto FINALLY_OUTRO; }
 #define FORCE(expr)                 { if(!RTL_SUCCESS(NtStatus = (expr))) goto THROW_OUTRO; }
 
 //////////////////////////////////////////////// Memory validation code
@@ -587,8 +587,8 @@ LONG WINAPI DetourBarrierCallStackTrace(_Outptr_ PVOID *ppMethodArray,
 //
 //
 
-void RtlAssert(BOOL InAssert, LPCWSTR lpMessageText);
-void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage);
+void detour_assert(_In_ BOOL bAssert, _In_ LPCWSTR lpMessageText);
+void detour_set_last_error(_In_ DWORD dwCode, _In_ DWORD dwStatus, _In_opt_ LPCWSTR lpMessage);
 
 ////////////////////////////////////////////////////////////
 //

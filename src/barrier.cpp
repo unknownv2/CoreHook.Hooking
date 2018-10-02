@@ -187,39 +187,39 @@ LPCWSTR RtlErrorCodeToString(LONG InCode)
     }
 }
 
-void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage)
+void detour_set_last_error(_In_ DWORD dwCode, _In_ DWORD dwStatus, _In_opt_ LPCWSTR lpMessage)
 {
-    LastErrorCode = InCode;
+    LastErrorCode = dwCode;
 
-    if (InMessage == NULL)
+    if (lpMessage == NULL)
     {
         LastError = L"";
-        (void)InNtStatus;
+        (void)dwStatus;
     }
     else
     {
 #if _DEBUG
-        if (lstrlenW(InMessage) > 0)
+        if (lstrlenW(lpMessage) > 0)
         {
             WCHAR msg[1024] = { 0 };
             WCHAR* lpMsgBuf = NULL;
 
-            if (InNtStatus == STATUS_SUCCESS)
+            if (dwStatus == STATUS_SUCCESS)
             {
                 FormatMessage(
                     FORMAT_MESSAGE_ALLOCATE_BUFFER |
                     FORMAT_MESSAGE_FROM_SYSTEM |
                     FORMAT_MESSAGE_IGNORE_INSERTS,
                     NULL,
-                    InCode,
+                    dwCode,
                     MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                     lpMsgBuf,
                     0, NULL);
-                _snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", InMessage, lpMsgBuf);
+                _snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", lpMessage, lpMsgBuf);
             }
             else
             {
-                _snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", InMessage, RtlErrorCodeToString(InNtStatus));
+                _snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", lpMessage, RtlErrorCodeToString(dwStatus));
             }
             DEBUGMSG(msg);
 
@@ -229,12 +229,13 @@ void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage)
             }
         }
 #endif
-        LastError = InMessage;
+        LastError = lpMessage;
     }
 }
-void RtlAssert(BOOL InAssert, LPCWSTR lpMessageText)
+
+void detour_assert(_In_ BOOL bAssert, _In_ LPCWSTR lpMessageText)
 {
-    if (InAssert) {
+    if (bAssert) {
         return;
     }
 
