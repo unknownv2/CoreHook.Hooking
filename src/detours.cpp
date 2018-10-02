@@ -2132,7 +2132,7 @@ about the implementation.
 */
 
     LONG                NtStatus;
-    PLOCAL_HOOK_INFO    Handle;
+    PDETOUR_TRAMPOLINE    Handle;
 
     if (!detour_is_valid_handle(pHook, &Handle)) {
         THROW(STATUS_INVALID_PARAMETER_1, (PWCHAR)L"The given hook handle is invalid or already disposed.");
@@ -2176,7 +2176,7 @@ Parameters:
     The hook handle whose local ACL is going to be set.
 */
 
-    PLOCAL_HOOK_INFO        Handle;
+    PDETOUR_TRAMPOLINE        Handle;
 
     if (!detour_is_valid_handle(pHandle, &Handle)) {
         return STATUS_INVALID_PARAMETER_3;
@@ -2222,7 +2222,7 @@ Returns:
 */
 
     LONG                NtStatus;
-    PLOCAL_HOOK_INFO    Handle;
+    PDETOUR_TRAMPOLINE    Handle;
 
     if (!detour_is_valid_handle(pHook, &Handle)) {
         THROW(STATUS_INVALID_PARAMETER_1, L"The given hook handle is invalid or already disposed.");
@@ -2262,7 +2262,7 @@ Parameters:
         The hook handle whose local ACL is going to be set.
 */
 
-    PLOCAL_HOOK_INFO        Handle;
+    PDETOUR_TRAMPOLINE        Handle;
 
     if (!detour_is_valid_handle(pHandle, &Handle)) {
         return STATUS_INVALID_PARAMETER_3;

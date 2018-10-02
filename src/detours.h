@@ -498,11 +498,11 @@ PVOID WINAPI DetourSetSystemRegionUpperBound(_In_ PVOID pSystemRegionUpperBound)
 #define DETOUR_ASSERT(expr, Msg)    detour_assert(expr, Msg);
 #define THROW(code, Msg)            { NtStatus = (code); detour_set_last_error(GetLastError(), NtStatus, Msg); goto THROW_OUTRO; }
 
-#define RTL_SUCCESS(ntstatus)       SUCCEEDED(ntstatus)
+#define DETOUR_SUCCESS(ntstatus)       SUCCEEDED(ntstatus)
 
 #define STATUS_SUCCESS              0
 #define RETURN                      { detour_set_last_error(STATUS_SUCCESS, STATUS_SUCCESS, L""); NtStatus = STATUS_SUCCESS; goto FINALLY_OUTRO; }
-#define FORCE(expr)                 { if(!RTL_SUCCESS(NtStatus = (expr))) goto THROW_OUTRO; }
+#define FORCE(expr)                 { if(!DETOUR_SUCCESS(NtStatus = (expr))) goto THROW_OUTRO; }
 
 //////////////////////////////////////////////// Memory validation code
 //
@@ -515,11 +515,9 @@ BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,
 //////////////////////////////////////////////// dotnet trampoline hooking structures
 //
 
-typedef struct _DETOUR_TRAMPOLINE * PLOCAL_HOOK_INFO;
-
 typedef struct _HOOK_TRACE_INFO_
 {
-    PLOCAL_HOOK_INFO        Link;
+    PDETOUR_TRAMPOLINE        Link;
 }HOOK_TRACE_INFO, *TRACED_HOOK_HANDLE;
 
 ////////////////////////////////////////////////////////////
@@ -613,7 +611,7 @@ LONG DetourInstallHook(_Inout_ PVOID pEntryPoint,
 LONG WINAPI DetourUninstallHook(_In_ TRACED_HOOK_HANDLE InHandle);
 
 BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
-                            _Out_ PLOCAL_HOOK_INFO   *pHandle);
+                            _Out_ PDETOUR_TRAMPOLINE   *pHandle);
 
 
 

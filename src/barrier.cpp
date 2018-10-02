@@ -221,6 +221,7 @@ void detour_set_last_error(_In_ DWORD dwCode, _In_ DWORD dwStatus, _In_opt_ LPCW
             {
                 _snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", lpMessage, detour_error_code_to_string(dwStatus));
             }
+
             DEBUGMSG(msg);
 
             if (lpMsgBuf != NULL)
@@ -288,7 +289,7 @@ Parameters:
 }
 
 BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
-                            _Out_ PLOCAL_HOOK_INFO   *pHandle)
+                            _Out_ PDETOUR_TRAMPOLINE   *pHandle)
 {
 
 /*
