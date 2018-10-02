@@ -1957,10 +1957,10 @@ LONG AddTrampolineToGlobalList(PDETOUR_TRAMPOLINE pTrampoline)
 
 
 LONG DetourInstallHook(
-    void *InEntryPoint,
-    void *InHookProc,
-    void *InCallback,
-    TRACED_HOOK_HANDLE OutHandle)
+    _Inout_ PVOID pEntryPoint,
+    _In_ PVOID pDetour,
+    _In_ PVOID pCallback,
+    _In_ TRACED_HOOK_HANDLE pReturnedHandle)
 {
 /*
 Description:
@@ -1972,25 +1972,25 @@ Description:
 
 Parameters:
 
-    - InEntryPoint
+    - pEntryPoint
 
     An entry point to hook. Not all entry points are hookable. In such
     a case STATUS_NOT_SUPPORTED will be returned.
 
-    - InHookProc
+    - pHookProc
 
     The method that should be called instead of the given entry point.
     Please note that calling convention, parameter count and return value
     shall match EXACTLY!
 
-    - InCallback
+    - pCallback
 
     An uninterpreted callback later available through
     DetourBarrierGetCallback().
 
-    - OutPHandle
+    - pReturnedHandle
 
-    The memory portion supplied by *OutHandle is expected to be preallocated
+    The memory portion supplied by *pReturnedHandle is expected to be preallocated
     by the caller. This structure is then filled by the method on success and
     must stay valid for hook-life time. Only if you explicitly call one of
     the hook uninstallation APIs, you can safely release the handle memory.
@@ -2016,16 +2016,16 @@ Returns:
     PDETOUR_TRAMPOLINE  pTrampoline = NULL;
 
     // validate parameters
-    if (!IsValidPointer(InEntryPoint, 1)) {
+    if (!IsValidPointer(pEntryPoint, 1)) {
         THROW(STATUS_INVALID_PARAMETER_1, L"Invalid entry point.");
     }
-    if (!IsValidPointer(InHookProc, 1)) {
+    if (!IsValidPointer(pDetour, 1)) {
         THROW(STATUS_INVALID_PARAMETER_2, L"Invalid hook procedure.");
     }
-    if (!IsValidPointer(OutHandle, sizeof(HOOK_TRACE_INFO))) {
+    if (!IsValidPointer(pReturnedHandle, sizeof(HOOK_TRACE_INFO))) {
         THROW(STATUS_INVALID_PARAMETER_3, L"The hook handle storage is expected to be allocated by the caller.");
     }
-    if (OutHandle->Link != NULL) {
+    if (pReturnedHandle->Link != NULL) {
         THROW(STATUS_INVALID_PARAMETER_4, L"The given trace handle seems to already be associated with a hook.");
     }
 
@@ -2033,18 +2033,18 @@ Returns:
 
     error = DetourUpdateThread(GetCurrentThread());
 
-    error = DetourAttachEx(&(PVOID &)InEntryPoint, InHookProc, &pTrampoline, NULL, NULL);
+    error = DetourAttachEx(&(PVOID &)pEntryPoint, pDetour, &pTrampoline, NULL, NULL);
 
     if (error == NO_ERROR)
     {
-        DetourSetCallbackForLocalHook(pTrampoline, InCallback);
+        DetourSetCallbackForLocalHook(pTrampoline, pCallback);
     }
     error = DetourTransactionCommit();
-    if (OutHandle != NULL && error == NO_ERROR)
+    if (pReturnedHandle != NULL && error == NO_ERROR)
     {
         TRACED_HOOK_HANDLE handle = DetourGetHookHandleForFunction(pTrampoline);
         if (handle != NULL) {
-            OutHandle->Link = handle->Link;
+            pReturnedHandle->Link = handle->Link;
         }
     }
     return error;
@@ -2054,7 +2054,7 @@ THROW_OUTRO:
 }
 
 
-LONG WINAPI DetourUninstallHook(TRACED_HOOK_HANDLE InHandle)
+LONG WINAPI DetourUninstallHook(_In_ TRACED_HOOK_HANDLE pHandle)
 {
 /*
 Description:
@@ -2078,36 +2078,36 @@ will still return STATUS_SUCCESS.
     LONG                    NtStatus = -1;
     BOOLEAN                 IsAllocated = FALSE;
 
-    if (!IsValidPointer(InHandle, sizeof(HOOK_TRACE_INFO))) {
+    if (!IsValidPointer(pHandle, sizeof(HOOK_TRACE_INFO))) {
         return FALSE;
     }
 
     detour_acquire_lock(&GlobalHookLock);
+    
+    if ((pHandle->Link != NULL) && detour_is_valid_handle(pHandle, &Hook))
     {
-        if ((InHandle->Link != NULL) && detour_is_valid_handle(InHandle, &Hook))
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourDetach(&(PVOID&)Hook->OldProc, Hook->pbDetour);
+
+        pHandle->Link = NULL;
+
+        if (Hook->HookProc != NULL)
         {
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-            DetourDetach(&(PVOID&)Hook->OldProc, Hook->pbDetour);
+            Hook->HookProc = NULL;
 
-            InHandle->Link = NULL;
+            IsAllocated = TRUE;
+        }
+        error = DetourTransactionCommit();
 
-            if (Hook->HookProc != NULL)
-            {
-                Hook->HookProc = NULL;
+        if (!IsAllocated)
+        {
+            detour_release_lock(&GlobalHookLock);
 
-                IsAllocated = TRUE;
-            }
-            error = DetourTransactionCommit();
-
-            if (!IsAllocated)
-            {
-                detour_release_lock(&GlobalHookLock);
-
-                RETURN;
-            }
+            RETURN;
         }
     }
+    
     detour_release_lock(&GlobalHookLock);
 
     RETURN(STATUS_SUCCESS);

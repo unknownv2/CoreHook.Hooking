@@ -404,7 +404,7 @@ Description:
 }
 
 BOOL TlsGetCurrentValue(_In_  THREAD_LOCAL_STORAGE *pTls,
-                        _Out_ THREAD_RUNTIME_INFO  **OutValue)
+                        _Outptr_ THREAD_RUNTIME_INFO  **OutValue)
 {
 /*
 Description:
@@ -876,7 +876,7 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG WINAPI DetourBarrierBeginStackTrace(PVOID* OutBackup)
+LONG WINAPI DetourBarrierBeginStackTrace(_Outptr_ PVOID* ppBackup)
 {
 /*
 Description:
@@ -893,7 +893,7 @@ Description:
     LONG                        NtStatus;
     LPTHREAD_RUNTIME_INFO       Runtime;
 
-    if (OutBackup == NULL) {
+    if (ppBackup == NULL) {
         THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given backup storage is invalid.");
     }
 
@@ -905,7 +905,7 @@ Description:
         THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
     }
 
-    *OutBackup = *Runtime->Current->AddrOfRetAddr;
+    *ppBackup = *Runtime->Current->AddrOfRetAddr;
     *Runtime->Current->AddrOfRetAddr = Runtime->Current->RetAddress;
 
     RETURN;
@@ -915,7 +915,7 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG WINAPI DetourBarrierEndStackTrace(PVOID InBackup)
+LONG WINAPI DetourBarrierEndStackTrace(_In_ PVOID pBackup)
 {
 /*
 Description:
@@ -930,13 +930,13 @@ Description:
     LONG                NtStatus;
     PVOID*              AddrOfRetAddr;
 
-    if (!IsValidPointer(InBackup, 1)) {
+    if (!IsValidPointer(pBackup, 1)) {
         THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given stack backup pointer is invalid.");
     }
 
     FORCE(DetourBarrierGetAddressOfReturnAddress(&AddrOfRetAddr));
 
-    *AddrOfRetAddr = InBackup;
+    *AddrOfRetAddr = pBackup;
 
     RETURN;
 
@@ -946,9 +946,9 @@ FINALLY_OUTRO:
 }
 
 LONG WINAPI DetourBarrierCallStackTrace(
-    PVOID* OutMethodArray,
-    ULONG InMaxMethodCount,
-    ULONG* OutMethodCount)
+    _Outptr_ PVOID *ppMethodArray,
+    _In_ DWORD dwFramesToCapture,
+    _Inout_ DWORD *pCapturedFramesCount)
 {
 /*
 Description:
@@ -958,15 +958,15 @@ Description:
 
 Parameters:
 
-    - OutMethodArray
+    - ppMethodArray
 
         An array receiving the methods on the call stack.
 
-    - InMaxMethodCount
+    - dwFramesToCapture
 
         The length of the method array.
 
-    - OutMethodCount
+    - pCapturedFramesCount
 
         The actual count of methods on the call stack. This will never
         be greater than 64.
@@ -981,14 +981,14 @@ Returns:
     LONG                    NtStatus;
     PVOID                   Backup = NULL;
 
-    if (InMaxMethodCount > 64) {
+    if (dwFramesToCapture > 64) {
         THROW(STATUS_INVALID_PARAMETER_2, L"barrier.cpp - At maximum 64 modules are supported.");
     }
-    if (!IsValidPointer(OutMethodArray, InMaxMethodCount * sizeof(PVOID))) {
+    if (!IsValidPointer(ppMethodArray, dwFramesToCapture * sizeof(PVOID))) {
         THROW(STATUS_INVALID_PARAMETER_1, L"barrier.cpp - The given module buffer is invalid.");
     }
 
-    if (!IsValidPointer(OutMethodCount, sizeof(ULONG))) {
+    if (!IsValidPointer(pCapturedFramesCount, sizeof(ULONG))) {
         THROW(STATUS_INVALID_PARAMETER_3, L"barrier.cpp - Invalid module count storage.");
     }
 
@@ -999,7 +999,7 @@ Returns:
         THROW(STATUS_NOT_IMPLEMENTED, L"barrier.cpp - This method requires Windows XP or later.");
     }
 
-    *OutMethodCount = CaptureStackBackTrace(1, 32, OutMethodArray, NULL);
+    *pCapturedFramesCount = CaptureStackBackTrace(1, 32, ppMethodArray, NULL);
 
     RETURN;
     

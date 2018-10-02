@@ -590,13 +590,13 @@ LONG WINAPI DetourGetHookBypassAddress(_In_ TRACED_HOOK_HANDLE pHook,
 //
 //
 
-LONG WINAPI DetourBarrierBeginStackTrace(PVOID *OutBackup);
+LONG WINAPI DetourBarrierBeginStackTrace(_Outptr_ PVOID *ppBackup);
 
-LONG WINAPI DetourBarrierEndStackTrace(PVOID InBackup);
+LONG WINAPI DetourBarrierEndStackTrace(_In_ PVOID pBackup);
 
-LONG WINAPI DetourBarrierCallStackTrace(PVOID* OutMethodArray,
-    ULONG InMaxMethodCount,
-    ULONG* OutMethodCount);
+LONG WINAPI DetourBarrierCallStackTrace(_Outptr_ PVOID *ppMethodArray,
+                                        _In_ DWORD dwFramesToCapture,
+                                        _Inout_ DWORD *pCapturedFramesCount);
 
 void DetourBarrierThreadDetach();
 
@@ -606,12 +606,12 @@ void DetourBarrierProcessDetach();
 void DetourCriticalInitialize();
 void DetourCriticalFinalize();
 
-LONG DetourInstallHook(void *InEntryPoint,
-                       void* InHookProc,
-                       void* InCallback,
-                       TRACED_HOOK_HANDLE OutHandle);
+LONG DetourInstallHook(_Inout_ PVOID pEntryPoint,
+                       _In_ PVOID pDetour,
+                       _In_ PVOID pCallback,
+                       _In_ TRACED_HOOK_HANDLE pReturnedHandle);
 
-LONG WINAPI DetourUninstallHook(TRACED_HOOK_HANDLE InHandle);
+LONG WINAPI DetourUninstallHook(_In_ TRACED_HOOK_HANDLE InHandle);
 
 BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
                             _Out_ PLOCAL_HOOK_INFO   *pHandle);
@@ -688,7 +688,7 @@ extern RTL_SPIN_LOCK        GlobalHookLock;
 //
 
 BOOL TlsGetCurrentValue(_In_  THREAD_LOCAL_STORAGE *pTls,
-                        _Out_ THREAD_RUNTIME_INFO  **OutValue);
+                        _Outptr_ THREAD_RUNTIME_INFO  **OutValue);
 
 BOOL TlsAddCurrentThread(_In_ THREAD_LOCAL_STORAGE *pTls);
 
