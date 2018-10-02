@@ -1,3 +1,10 @@
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Trampoline Thread Barrier Functionality (barrier.cpp of detours.lib)
+//
+//
+
+
 #define _CRT_STDIO_ARBITRARY_WIDE_SPECIFIERS 1
 
 #pragma warning(disable : 4068) // unknown pragma (suppress)
@@ -102,34 +109,11 @@ void detour_zero_memory(_Out_writes_bytes_all_(Size) PVOID Dest,
     memset(Dest, 0, Size);
 }
 
-LONG RtlProtectMemory(void *InPointer, ULONG InSize, ULONG InNewProtection)
-{
-    DWORD OldProtect;
-    LONG NtStatus;
-
-    if (!VirtualProtect(InPointer, InSize, InNewProtection, &OldProtect))
-    {
-        THROW(STATUS_INVALID_PARAMETER, L"Unable to make memory executable.")
-    }
-    else
-    {
-        return STATUS_SUCCESS;
-    }
-THROW_OUTRO:
-
-    return NtStatus;
-}
-
 void detour_free_memory(void * pMemory)
 {
     DETOUR_ASSERT(pMemory != NULL, L"barrier.cpp - pMemory != NULL");
 
     HeapFree(hCoreHookHeap, 0, pMemory);
-}
-
-LONG RtlInterlockedIncrement(LONG *RefValue)
-{
-    return InterlockedIncrement(RefValue);
 }
 
 BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,

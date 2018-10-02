@@ -1,4 +1,9 @@
 #pragma once
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Trampoline Thread Barrier Functionality (barrier.h of detours.lib)
+//
+//
 
 BOOL detour_is_loader_lock();
 
