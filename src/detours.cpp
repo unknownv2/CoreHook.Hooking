@@ -1911,7 +1911,7 @@ LONG WINAPI DetourSetCallbackForLocalHook(PDETOUR_TRAMPOLINE pTrampoline, PVOID 
     return STATUS_INVALID_PARAMETER_1;
 }
 
-VOID InsertTraceHandle(PDETOUR_TRAMPOLINE pTrampoline)
+VOID detour_insert_trace_handle(PDETOUR_TRAMPOLINE pTrampoline)
 {
     if (pTrampoline != NULL && pTrampoline->OutHandle == NULL)
     {
@@ -1925,35 +1925,35 @@ VOID InsertTraceHandle(PDETOUR_TRAMPOLINE pTrampoline)
     }
 }
 
-LONG AddTrampolineToGlobalList(PDETOUR_TRAMPOLINE pTrampoline)
+LONG detour_add_trampoline_to_global_list(PDETOUR_TRAMPOLINE pTrampoline)
 {
-    ULONG   Index;
-    BOOL    Exists;
+    DWORD   dwIndex;
+    BOOL    bExists;
 
     // register in global HLS list
     detour_acquire_lock(&GlobalHookLock);
+    
+    pTrampoline->HLSIdent = UniqueIDCounter++;
+
+    bExists = FALSE;
+
+    for(dwIndex = 0; dwIndex < MAX_HOOK_COUNT; dwIndex++)
     {
-        pTrampoline->HLSIdent = UniqueIDCounter++;
-
-        Exists = FALSE;
-
-        for(Index = 0; Index < MAX_HOOK_COUNT; Index++)
+        if(GlobalSlotList[dwIndex] == 0)
         {
-            if(GlobalSlotList[Index] == 0)
-            {
-                GlobalSlotList[Index] = pTrampoline->HLSIdent;
+            GlobalSlotList[dwIndex] = pTrampoline->HLSIdent;
 
-                pTrampoline->HLSIndex = Index;
+            pTrampoline->HLSIndex = dwIndex;
 
-                Exists = TRUE;
+            bExists = TRUE;
 
-                break;
-            }
+            break;
         }
     }
+    
     detour_release_lock(&GlobalHookLock);
 
-    return Exists;
+    return bExists;
 }
 
 
@@ -2118,8 +2118,8 @@ FINALLY_OUTRO:
 }
 
 LONG WINAPI DetourIsThreadIntercepted(_In_  TRACED_HOOK_HANDLE pHook,
-                               _In_  DWORD dwThreadId,
-                               _Out_ BOOL *pResult)
+                                      _In_  DWORD dwThreadId,
+                                      _Out_ BOOL *pResult)
 {
 /*
 Description:
@@ -2483,7 +2483,7 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             DETOUR_TRACE(("\n"));
 #endif // DETOURS_IA64
 
-            AddTrampolineToGlobalList(o->pTrampoline);
+            detour_add_trampoline_to_global_list(o->pTrampoline);
         }
     }
 
@@ -2904,7 +2904,7 @@ LONG WINAPI DetourAttachEx(_Inout_ PVOID *ppPointer,
     pTrampoline->pbRemain = pbTarget + cbTarget;
     pTrampoline->pbDetour = (PBYTE)pDetour;
 
-    InsertTraceHandle(pTrampoline);
+    detour_insert_trace_handle(pTrampoline);
 
 #ifdef DETOURS_IA64
     pTrampoline->ppldDetour = ppldDetour;

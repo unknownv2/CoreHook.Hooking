@@ -154,9 +154,9 @@ static ULONG LastErrorCode = 0;
 #define DEBUGMSG
 #endif
 
-LPCWSTR detour_error_code_to_string(_In_ DWORD dwCode)
+LPCWSTR detour_error_code_to_string(_In_ LONG lCode)
 {
-    switch (dwCode)
+    switch (lCode)
     {
         case STATUS_SUCCESS: return L"STATUS_SUCCESS";
         case STATUS_NOT_SUPPORTED: return L"STATUS_NOT_SUPPORTED";
@@ -187,14 +187,14 @@ LPCWSTR detour_error_code_to_string(_In_ DWORD dwCode)
     }
 }
 
-void detour_set_last_error(_In_ DWORD dwCode, _In_ DWORD dwStatus, _In_opt_ LPCWSTR lpMessage)
+void detour_set_last_error(_In_ LONG lCode, _In_ LONG lStatus, _In_opt_ LPCWSTR lpMessage)
 {
-    LastErrorCode = dwCode;
+    LastErrorCode = lCode;
 
     if (lpMessage == NULL)
     {
         LastError = L"";
-        (void)dwStatus;
+        (void)lStatus;
     }
     else
     {
@@ -204,14 +204,14 @@ void detour_set_last_error(_In_ DWORD dwCode, _In_ DWORD dwStatus, _In_opt_ LPCW
             WCHAR msg[1024] = { 0 };
             WCHAR* lpMsgBuf = NULL;
 
-            if (dwStatus == STATUS_SUCCESS)
+            if (lStatus == STATUS_SUCCESS)
             {
                 FormatMessage(
                     FORMAT_MESSAGE_ALLOCATE_BUFFER |
                     FORMAT_MESSAGE_FROM_SYSTEM |
                     FORMAT_MESSAGE_IGNORE_INSERTS,
                     NULL,
-                    dwCode,
+                    lCode,
                     MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                     lpMsgBuf,
                     0, NULL);
@@ -219,7 +219,7 @@ void detour_set_last_error(_In_ DWORD dwCode, _In_ DWORD dwStatus, _In_opt_ LPCW
             }
             else
             {
-                _snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", lpMessage, detour_error_code_to_string(dwStatus));
+                _snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", lpMessage, detour_error_code_to_string(lStatus));
             }
 
             DEBUGMSG(msg);

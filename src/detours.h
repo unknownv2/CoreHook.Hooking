@@ -585,8 +585,12 @@ LONG WINAPI DetourBarrierCallStackTrace(_Outptr_ PVOID *ppMethodArray,
 //
 //
 
-void detour_assert(_In_ BOOL bAssert, _In_ LPCWSTR lpMessageText);
-void detour_set_last_error(_In_ DWORD dwCode, _In_ DWORD dwStatus, _In_opt_ LPCWSTR lpMessage);
+void detour_assert(_In_ BOOL bAssert,
+                   _In_ LPCWSTR lpMessageText);
+
+void detour_set_last_error(_In_ LONG lCode,
+                           _In_ LONG lStatus,
+                           _In_opt_ LPCWSTR lpMessage);
 
 ////////////////////////////////////////////////////////////
 //
@@ -612,7 +616,6 @@ LONG WINAPI DetourUninstallHook(_In_ TRACED_HOOK_HANDLE InHandle);
 
 BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
                             _Out_ PDETOUR_TRAMPOLINE   *pHandle);
-
 
 
 ////////////////////////////////////////////////////////////// Code Functions.
