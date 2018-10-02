@@ -492,26 +492,6 @@ BOOL WINAPI DetourSetRetainRegions(_In_ BOOL fRetain);
 PVOID WINAPI DetourSetSystemRegionLowerBound(_In_ PVOID pSystemRegionLowerBound);
 PVOID WINAPI DetourSetSystemRegionUpperBound(_In_ PVOID pSystemRegionUpperBound);
 
-//////////////////////////////////////////////// Exception handling code
-//
-
-#define DETOUR_ASSERT(expr, Msg)    detour_assert(expr, Msg);
-#define THROW(code, Msg)            { NtStatus = (code); detour_set_last_error(GetLastError(), NtStatus, Msg); goto THROW_OUTRO; }
-
-#define DETOUR_SUCCESS(ntstatus)       SUCCEEDED(ntstatus)
-
-#define STATUS_SUCCESS              0
-#define RETURN                      { detour_set_last_error(STATUS_SUCCESS, STATUS_SUCCESS, L""); NtStatus = STATUS_SUCCESS; goto FINALLY_OUTRO; }
-#define FORCE(expr)                 { if(!DETOUR_SUCCESS(NtStatus = (expr))) goto THROW_OUTRO; }
-
-//////////////////////////////////////////////// Memory validation code
-//
-
-#define IsValidPointer              detour_is_valid_pointer
-
-BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,
-                             _In_     UINT_PTR    Size);
-
 //////////////////////////////////////////////// dotnet trampoline hooking structures
 //
 
