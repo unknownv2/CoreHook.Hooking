@@ -572,7 +572,7 @@ Description:
     Will be called on thread termination and cleans up the TLS.
 */
 
-    LPTHREAD_RUNTIME_INFO Info;
+    PTHREAD_RUNTIME_INFO Info;
 
     if (TlsGetCurrentValue(&Unit.TLS, &Info))
     {
@@ -653,7 +653,7 @@ Returns:
 
 */
 
-    LPTHREAD_RUNTIME_INFO Runtime = NULL;
+    PTHREAD_RUNTIME_INFO Runtime = NULL;
 
     if (!TlsGetCurrentValue(&Unit.TLS, &Runtime) || Runtime->IsProtected) {
         return FALSE;
@@ -675,7 +675,7 @@ Description:
     An assertion is raised if the caller has not owned the self protection.
 */
 
-    LPTHREAD_RUNTIME_INFO pRuntime = NULL;
+    PTHREAD_RUNTIME_INFO pRuntime = NULL;
 
     DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &pRuntime) && pRuntime->IsProtected,
         L"barrier.cpp - TlsGetCurrentValue(&Unit.TLS, &Runtime) && Runtime->IsProtected");
@@ -778,7 +778,7 @@ Description:
 */
 
     LONG                    NtStatus;
-    LPTHREAD_RUNTIME_INFO   Runtime;
+    PTHREAD_RUNTIME_INFO   Runtime;
 
 
     if (!IsValidPointer(ppCallback, sizeof(PVOID)))
@@ -820,7 +820,7 @@ Description:
 */
 
     LONG                        NtStatus;
-    LPTHREAD_RUNTIME_INFO       Runtime;
+    PTHREAD_RUNTIME_INFO       Runtime;
 
     if (!IsValidPointer(ppReturnAddress, sizeof(PVOID))) {
         THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
@@ -855,7 +855,7 @@ Description:
     the address of the return address of the hook handler.
 */
 
-    LPTHREAD_RUNTIME_INFO       Runtime;
+    PTHREAD_RUNTIME_INFO       Runtime;
     LONG                        NtStatus;
 
     if (pppAddressOfReturnAddress == NULL) {
@@ -894,7 +894,7 @@ Description:
 */
 
     LONG                        NtStatus;
-    LPTHREAD_RUNTIME_INFO       Runtime;
+    PTHREAD_RUNTIME_INFO       Runtime;
 
     if (ppBackup == NULL) {
         THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given backup storage is invalid.");

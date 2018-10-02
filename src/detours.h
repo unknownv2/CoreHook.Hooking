@@ -518,7 +518,7 @@ BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,
 typedef struct _HOOK_TRACE_INFO_
 {
     PDETOUR_TRAMPOLINE        Link;
-}HOOK_TRACE_INFO, *TRACED_HOOK_HANDLE;
+} HOOK_TRACE_INFO, *TRACED_HOOK_HANDLE;
 
 ////////////////////////////////////////////////////////////
 //

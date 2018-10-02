@@ -1726,7 +1726,7 @@ Description:
     thread deadlock barrier.
 */
 
-    LPTHREAD_RUNTIME_INFO        Info;
+    PTHREAD_RUNTIME_INFO        Info;
     RUNTIME_INFO*                Runtime;
     BOOL                         Exists;
 
@@ -1862,7 +1862,7 @@ Description:
 */
 
     RUNTIME_INFO*            Runtime;
-    LPTHREAD_RUNTIME_INFO    Info;
+    PTHREAD_RUNTIME_INFO    Info;
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
         pHandle = (PDETOUR_TRAMPOLINE)((PBYTE)(pHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));

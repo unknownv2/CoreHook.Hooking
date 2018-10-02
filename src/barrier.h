@@ -20,13 +20,13 @@ typedef struct _HOOK_ACL_
     ULONG                   Count;
     BOOL                    IsExclusive;
     ULONG                   Entries[MAX_ACE_COUNT];
-}HOOK_ACL;
+} HOOK_ACL;
 
 typedef struct _RTL_SPIN_LOCK_
 {
     CRITICAL_SECTION        Lock;
     BOOL                    IsOwned;
-}RTL_SPIN_LOCK;
+} RTL_SPIN_LOCK;
 
 typedef struct _RUNTIME_INFO_
 {
@@ -38,7 +38,7 @@ typedef struct _RUNTIME_INFO_
     void*           RetAddress;
     // the address of the return address of the current thread's hook handler...
     void**          AddrOfRetAddr;
-}RUNTIME_INFO;
+} RUNTIME_INFO;
 
 typedef struct _THREAD_RUNTIME_INFO_
 {
@@ -46,21 +46,21 @@ typedef struct _THREAD_RUNTIME_INFO_
     RUNTIME_INFO*        Current;
     void*                Callback;
     BOOL                 IsProtected;
-}THREAD_RUNTIME_INFO, *LPTHREAD_RUNTIME_INFO;
+} THREAD_RUNTIME_INFO, *PTHREAD_RUNTIME_INFO;
 
 typedef struct _THREAD_LOCAL_STORAGE_
 {
     THREAD_RUNTIME_INFO      Entries[MAX_THREAD_COUNT];
     DWORD                    IdList[MAX_THREAD_COUNT];
     RTL_SPIN_LOCK            ThreadSafe;
-}THREAD_LOCAL_STORAGE;
+} THREAD_LOCAL_STORAGE;
 
 typedef struct _BARRIER_UNIT_
 {
     HOOK_ACL                GlobalACL;
     BOOL                    IsInitialized;
     THREAD_LOCAL_STORAGE    TLS;
-}BARRIER_UNIT;
+} BARRIER_UNIT;
 
 void detour_initialize_lock(_In_ RTL_SPIN_LOCK *pLock);
 
