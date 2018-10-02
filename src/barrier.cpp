@@ -262,7 +262,7 @@ Parameters:
         MAX_ACE_COUNT! 
 */
 
-    return detour_set_acl(DetourBarrierGetAcl(), FALSE, dwThreadIdList, dwThreadCount);
+    return detour_set_acl(detour_barrier_get_acl(), FALSE, dwThreadIdList, dwThreadCount);
 }
 
 LONG WINAPI DetourSetGlobalExclusiveACL(_In_ DWORD *dwThreadIdList,
@@ -283,7 +283,7 @@ Parameters:
         MAX_ACE_COUNT! 
 */
 
-    return detour_set_acl(DetourBarrierGetAcl(), TRUE, dwThreadIdList, dwThreadCount);
+    return detour_set_acl(detour_barrier_get_acl(), TRUE, dwThreadIdList, dwThreadCount);
 }
 
 BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
@@ -376,7 +376,7 @@ Parameters:
     return STATUS_SUCCESS;
 }
 
-HOOK_ACL *DetourBarrierGetAcl()
+HOOK_ACL *detour_barrier_get_acl()
 {
     return &Unit.GlobalACL;
 }

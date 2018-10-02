@@ -5,6 +5,95 @@ BOOL detour_is_loader_lock();
 BOOL detour_acquire_self_protection();
 void detour_release_self_protection();
 
+void detour_sleep(_In_ DWORD milliSeconds);
+
+//////////////////////////////////////////////// dotnet trampoline barrier definitions
+//
+
+#define MAX_HOOK_COUNT              1024
+#define MAX_ACE_COUNT               128
+#define MAX_THREAD_COUNT            128
+#define MAX_PASSTHRU_SIZE           1024 * 64
+
+typedef struct _HOOK_ACL_
+{
+    ULONG                   Count;
+    BOOL                    IsExclusive;
+    ULONG                   Entries[MAX_ACE_COUNT];
+}HOOK_ACL;
+
+typedef struct _RTL_SPIN_LOCK_
+{
+    CRITICAL_SECTION        Lock;
+    BOOL                    IsOwned;
+}RTL_SPIN_LOCK;
+
+typedef struct _RUNTIME_INFO_
+{
+    // "true" if the current thread is within the related hook handler
+    BOOL            IsExecuting;
+    // the hook this information entry belongs to... This allows a per thread and hook storage!
+    DWORD           HLSIdent;
+    // the return address of the current thread's hook handler...
+    void*           RetAddress;
+    // the address of the return address of the current thread's hook handler...
+    void**          AddrOfRetAddr;
+}RUNTIME_INFO;
+
+typedef struct _THREAD_RUNTIME_INFO_
+{
+    RUNTIME_INFO*        Entries;
+    RUNTIME_INFO*        Current;
+    void*                Callback;
+    BOOL                 IsProtected;
+}THREAD_RUNTIME_INFO, *LPTHREAD_RUNTIME_INFO;
+
+typedef struct _THREAD_LOCAL_STORAGE_
+{
+    THREAD_RUNTIME_INFO      Entries[MAX_THREAD_COUNT];
+    DWORD                    IdList[MAX_THREAD_COUNT];
+    RTL_SPIN_LOCK            ThreadSafe;
+}THREAD_LOCAL_STORAGE;
+
+typedef struct _BARRIER_UNIT_
+{
+    HOOK_ACL                GlobalACL;
+    BOOL                    IsInitialized;
+    THREAD_LOCAL_STORAGE    TLS;
+}BARRIER_UNIT;
+
+void detour_initialize_lock(_In_ RTL_SPIN_LOCK *pLock);
+
+void detour_acquire_lock(_In_ RTL_SPIN_LOCK *pLock);
+
+void detour_release_lock(_In_ RTL_SPIN_LOCK *pLock);
+
+void detour_delete_lock(_In_ RTL_SPIN_LOCK *pLock);
+
+BOOL detour_is_thread_intercepted(_In_ HOOK_ACL *pLocalACL,
+                                  _In_ DWORD    dwThreadId);
+
+LONG detour_set_acl(_In_ HOOK_ACL *pAcl,
+                    _In_ BOOL bIsExclusive,
+                    _In_ DWORD *dwThreadIdList,
+                    _In_ DWORD dwThreadCount);
+
+HOOK_ACL* detour_barrier_get_acl();
+
+extern BARRIER_UNIT         Unit;
+extern RTL_SPIN_LOCK        GlobalHookLock;
+
+/////////////////////////////////////////////////////////////
+//
+//  Thread Local Storage functions re-implemented to avoid
+//  possible problems with native TLS functions when
+//  detouring processes like explorer.exe
+//
+
+BOOL TlsGetCurrentValue(_In_  THREAD_LOCAL_STORAGE *pTls,
+                        _Outptr_ THREAD_RUNTIME_INFO  **OutValue);
+
+BOOL TlsAddCurrentThread(_In_ THREAD_LOCAL_STORAGE *pTls);
 
 
 ////////////////////////////////////////////////// Memory management functions
@@ -12,14 +101,15 @@ void detour_release_self_protection();
 void  detour_free_memory(void *pMemory);
 
 void* detour_allocate_memory(_In_ BOOL   bZeroMemory,
-    _In_ size_t size);
+                             _In_ size_t size);
 
 void detour_copy_memory(_Out_writes_bytes_all_(Size) PVOID  Dest,
-    _In_reads_bytes_(Size)       PVOID  Src,
-    _In_                         size_t Size);
+                        _In_reads_bytes_(Size)       PVOID  Src,
+                        _In_                         size_t Size);
 
 void detour_zero_memory(_Out_writes_bytes_all_(Size) PVOID Dest,
-    _In_                         size_t Size);
+                        _In_                         size_t Size);
+
 
 //////////////////////////////////////////////////////// NTSTATUS definitions
 

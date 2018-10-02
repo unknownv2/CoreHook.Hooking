@@ -512,22 +512,10 @@ PVOID WINAPI DetourSetSystemRegionUpperBound(_In_ PVOID pSystemRegionUpperBound)
 BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,
                              _In_     UINT_PTR    Size);
 
-//////////////////////////////////////////////// dotnet trampoline barrier definitions
+//////////////////////////////////////////////// dotnet trampoline hooking structures
 //
 
-#define MAX_HOOK_COUNT              1024
-#define MAX_ACE_COUNT               128
-#define MAX_THREAD_COUNT            128
-#define MAX_PASSTHRU_SIZE           1024 * 64
-
 typedef struct _DETOUR_TRAMPOLINE * PLOCAL_HOOK_INFO;
-
-typedef struct _HOOK_ACL_
-{
-    ULONG                   Count;
-    BOOL                    IsExclusive;
-    ULONG                   Entries[MAX_ACE_COUNT];
-}HOOK_ACL;
 
 typedef struct _HOOK_TRACE_INFO_
 {
@@ -559,12 +547,6 @@ LONG WINAPI DetourIsThreadIntercepted(_In_  TRACED_HOOK_HANDLE pHook,
                                       _In_  DWORD dwThreadId,
                                       _Out_ BOOL *pResult);
 
-LONG detour_set_acl(_In_ HOOK_ACL *pAcl,
-                    _In_ BOOL bIsExclusive,
-                    _In_ DWORD *dwThreadIdList,
-                    _In_ DWORD dwThreadCount);
-
-HOOK_ACL* DetourBarrierGetAcl();
 
 ////////////////////////////////////////////////////////////
 //
@@ -598,6 +580,23 @@ LONG WINAPI DetourBarrierCallStackTrace(_Outptr_ PVOID *ppMethodArray,
                                         _In_ DWORD dwFramesToCapture,
                                         _Inout_ DWORD *pCapturedFramesCount);
 
+
+////////////////////////////////////////////////////////////
+//
+//  Exception and error handling
+//
+//
+
+void RtlAssert(BOOL InAssert, LPCWSTR lpMessageText);
+void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage);
+
+////////////////////////////////////////////////////////////
+//
+//  Thread deadlock barrier global variable and structure 
+//  initialization and finalization
+//
+//
+
 void DetourBarrierThreadDetach();
 
 LONG DetourBarrierProcessAttach();
@@ -617,76 +616,6 @@ BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
                             _Out_ PLOCAL_HOOK_INFO   *pHandle);
 
 
-void RtlAssert(BOOL InAssert, LPCWSTR lpMessageText);
-void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage);
-
-typedef struct _RTL_SPIN_LOCK_
-{
-    CRITICAL_SECTION        Lock;
-    BOOL                    IsOwned;
-}RTL_SPIN_LOCK;
-
-void detour_initialize_lock(_In_ RTL_SPIN_LOCK *pLock);
-
-void detour_acquire_lock(_In_ RTL_SPIN_LOCK *pLock);
-
-void detour_release_lock(_In_ RTL_SPIN_LOCK *pLock);
-
-void detour_delete_lock(_In_ RTL_SPIN_LOCK *pLock);
-
-void detour_sleep(_In_ DWORD milliSeconds);
-
-typedef struct _RUNTIME_INFO_
-{
-    // "true" if the current thread is within the related hook handler
-    BOOL            IsExecuting;
-    // the hook this information entry belongs to... This allows a per thread and hook storage!
-    DWORD           HLSIdent;
-    // the return address of the current thread's hook handler...
-    void*           RetAddress;
-    // the address of the return address of the current thread's hook handler...
-    void**          AddrOfRetAddr;
-}RUNTIME_INFO;
-
-typedef struct _THREAD_RUNTIME_INFO_
-{
-    RUNTIME_INFO*        Entries;
-    RUNTIME_INFO*        Current;
-    void*                Callback;
-    BOOL                 IsProtected;
-}THREAD_RUNTIME_INFO, *LPTHREAD_RUNTIME_INFO;
-
-typedef struct _THREAD_LOCAL_STORAGE_
-{
-    THREAD_RUNTIME_INFO      Entries[MAX_THREAD_COUNT];
-    DWORD                    IdList[MAX_THREAD_COUNT];
-    RTL_SPIN_LOCK            ThreadSafe;
-}THREAD_LOCAL_STORAGE;
-
-typedef struct _BARRIER_UNIT_
-{
-    HOOK_ACL                GlobalACL;
-    BOOL                    IsInitialized;
-    THREAD_LOCAL_STORAGE    TLS;
-}BARRIER_UNIT;
-
-BOOL detour_is_thread_intercepted(_In_ HOOK_ACL *pLocalACL,
-                                  _In_ DWORD    dwThreadId);
-
-extern BARRIER_UNIT         Unit;
-extern RTL_SPIN_LOCK        GlobalHookLock;
-
-/////////////////////////////////////////////////////////////
-//
-//  Thread Local Storage functions re-implemented to avoid
-//  possible problems with native TLS functions when
-//  detouring processes like explorer.exe
-//
-
-BOOL TlsGetCurrentValue(_In_  THREAD_LOCAL_STORAGE *pTls,
-                        _Outptr_ THREAD_RUNTIME_INFO  **OutValue);
-
-BOOL TlsAddCurrentThread(_In_ THREAD_LOCAL_STORAGE *pTls);
 
 ////////////////////////////////////////////////////////////// Code Functions.
 //
