@@ -1667,7 +1667,7 @@ PBYTE DetourGetTrampolinePtr()
     Ptr = reinterpret_cast<UCHAR*>(Trampoline_ASM_x86);
 
 #elif defined DETOURS_ARM
-     Ptr = reinterpret_cast<(UCHAR*>(Trampoline_ASM_ARM_CODE);
+     Ptr = reinterpret_cast<UCHAR*>(Trampoline_ASM_ARM_CODE);
 
 #elif defined DETOURS_ARM64
     Ptr = reinterpret_cast<UCHAR*>(Trampoline_ASM_ARM64_CODE);
@@ -1686,12 +1686,13 @@ PBYTE DetourGetTrampolinePtr()
 
 ULONG GetTrampolineSize()
 {
-    if (___TrampolineSize != 0)
+    if (___TrampolineSize != 0) {
         return ___TrampolineSize;
+    }
 
-#ifdef DETOURS_ARM            
-    ___TrampolineSize = (ULONG)
-        ((UCHAR*)Trampoline_ASM_ARM_DATA - (UCHAR*)Trampoline_ASM_ARM_CODE);
+#ifdef DETOURS_ARM
+    ___TrampolineSize = static_cast<ULONG>(
+        (reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_CODE)));
 
     return ___TrampolineSize;
 #else
@@ -1733,7 +1734,8 @@ Description:
     BOOL Exists;
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
-    pHandle = (PDETOUR_TRAMPOLINE)((PBYTE)(pHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
+    pHandle = reinterpret_cast<PDETOUR_TRAMPOLINE>(
+        (reinterpret_cast<PBYTE>(pHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE)));
 #endif
 
     DETOUR_TRACE(("detours: BarrierIntro() Handle=%p, ReturnAddr=%p, AddrOfReturnAddr=%p \n",
@@ -1782,7 +1784,7 @@ Description:
     if(!Exists)
     {        
         TlsGetCurrentValue(&Unit.TLS, &Info);
-        Info->Entries = (RUNTIME_INFO*)detour_allocate_memory(TRUE, sizeof(RUNTIME_INFO) * MAX_HOOK_COUNT);
+        Info->Entries = reinterpret_cast<RUNTIME_INFO*>(detour_allocate_memory(TRUE, sizeof(RUNTIME_INFO) * MAX_HOOK_COUNT));
 
         if (Info->Entries == NULL) {
             goto DONT_INTERCEPT;
@@ -1867,8 +1869,8 @@ Description:
     PTHREAD_RUNTIME_INFO Info;
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
-    pHandle = (PDETOUR_TRAMPOLINE)((PBYTE)(pHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
-
+    pHandle = reinterpret_cast<PDETOUR_TRAMPOLINE>(
+        (reinterpret_cast<PBYTE>(pHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE)));
 #endif
 
     DETOUR_ASSERT(detour_acquire_self_protection(), L"detours.cpp - detour_acquire_self_protection()");
@@ -2138,11 +2140,11 @@ about the implementation.
     PDETOUR_TRAMPOLINE Handle;
 
     if (!detour_is_valid_handle(pHook, &Handle)) {
-        THROW(STATUS_INVALID_PARAMETER_1, (PWCHAR)L"The given hook handle is invalid or already disposed.");
+        THROW(STATUS_INVALID_PARAMETER_1, L"The given hook handle is invalid or already disposed.");
     }
 
     if (!IsValidPointer(pResult, sizeof(BOOL))) {
-        THROW(STATUS_INVALID_PARAMETER_3, (PWCHAR)L"Invalid pointer for result storage.");
+        THROW(STATUS_INVALID_PARAMETER_3, L"Invalid pointer for result storage.");
     }
 
     *pResult = detour_is_thread_intercepted(&Handle->LocalACL, dwThreadId);
@@ -2255,7 +2257,7 @@ Returns:
         THROW(STATUS_INVALID_PARAMETER_3, L"Invalid pointer for result storage.");
     }
 
-    *pppOutAddress = (PVOID*)Handle->OldProc;
+    *pppOutAddress = reinterpret_cast<PVOID*>(Handle->OldProc);
 
     RETURN;
 
@@ -2365,10 +2367,10 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 #endif // DETOURS_IA64
 
 #ifdef DETOURS_X64
-            PBYTE trampoline = DetourGetTrampolinePtr();
+            const PBYTE trampoline = DetourGetTrampolinePtr();
             const ULONG TrampolineSize = GetTrampolineSize();
        
-            PBYTE endOfTramp = (PBYTE)&o->pTrampoline->rbTrampolineCode;
+            const auto endOfTramp = &o->pTrampoline->rbTrampolineCode;
             memcpy(endOfTramp, trampoline, TrampolineSize);
             o->pTrampoline->HookIntro = BarrierIntro;
             o->pTrampoline->HookOutro = BarrierOutro;
@@ -2377,7 +2379,7 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
             o->pTrampoline->IsExecutedPtr = new int();
 
-            detour_gen_jmp_indirect(o->pTrampoline->rbCodeIn, (PBYTE*)&o->pTrampoline->Trampoline);
+            detour_gen_jmp_indirect(o->pTrampoline->rbCodeIn, reinterpret_cast<PBYTE*>(&o->pTrampoline->Trampoline));
             PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, o->pTrampoline->rbCodeIn);
             pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
             *o->ppbPointer = o->pTrampoline->rbCode;
