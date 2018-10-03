@@ -2361,14 +2361,14 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 #endif // DETOURS_IA64
 
 #ifdef DETOURS_X64
-            const PBYTE trampoline = DetourGetTrampolinePtr();
+            const PBYTE trampolinePtr = DetourGetTrampolinePtr();
             const ULONG TrampolineSize = GetTrampolineSize();
        
-            const auto endOfTramp = &o->pTrampoline->rbTrampolineCode;
-            memcpy(endOfTramp, trampoline, TrampolineSize);
+            const auto trampolineCode = &o->pTrampoline->rbTrampolineCode;
+            memcpy(trampolineCode, trampolinePtr, TrampolineSize);
             o->pTrampoline->HookIntro = BarrierIntro;
             o->pTrampoline->HookOutro = BarrierOutro;
-            o->pTrampoline->Trampoline = endOfTramp;
+            o->pTrampoline->Trampoline = trampolineCode;
             o->pTrampoline->OldProc = o->pTrampoline->rbCode;
             o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
             o->pTrampoline->IsExecutedPtr = new int();
@@ -2381,14 +2381,14 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 #endif // DETOURS_X64
 
 #ifdef DETOURS_X86
-            const PBYTE trampoline = DetourGetTrampolinePtr();
+            const PBYTE trampolinePtr = DetourGetTrampolinePtr();
             const ULONG TrampolineSize = GetTrampolineSize();
     
-            const auto endOfTramp = &o->pTrampoline->rbTrampolineCode;
-            memcpy(endOfTramp, trampoline, TrampolineSize);
+            const auto trampolineCode = &o->pTrampoline->rbTrampolineCode;
+            memcpy(trampolineCode, trampolinePtr, TrampolineSize);
             o->pTrampoline->HookIntro = BarrierIntro;
             o->pTrampoline->HookOutro = BarrierOutro;
-            o->pTrampoline->Trampoline = endOfTramp;
+            o->pTrampoline->Trampoline = trampolineCode;
             o->pTrampoline->OldProc = o->pTrampoline->rbCode;
             o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
             o->pTrampoline->IsExecutedPtr = new int();
@@ -2403,15 +2403,15 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 #endif // DETOURS_X86
 
 #ifdef DETOURS_ARM
-            const PBYTE trampoline = DetourGetTrampolinePtr();
+            const PBYTE trampolinePtr = DetourGetTrampolinePtr();
             const ULONG TrampolineSize = GetTrampolineSize();
  
-            const auto endOfTramp = &o->pTrampoline->rbTrampolineCode;
-            const PBYTE trampolineStart = align4(trampoline);
-            memcpy(endOfTramp, trampolineStart, TrampolineSize);
+            const auto trampolineCode = &o->pTrampoline->rbTrampolineCode;
+            const PBYTE trampolineStart = align4(trampolinePtr);
+            memcpy(trampolineCode, trampolineStart, TrampolineSize);
             o->pTrampoline->HookIntro = DETOURS_PBYTE_TO_PFUNC(BarrierIntro);
             o->pTrampoline->HookOutro = DETOURS_PBYTE_TO_PFUNC(BarrierOutro);
-            o->pTrampoline->Trampoline = DETOURS_PBYTE_TO_PFUNC(endOfTramp);
+            o->pTrampoline->Trampoline = DETOURS_PBYTE_TO_PFUNC(trampolineCode);
             o->pTrampoline->OldProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->rbCode);
             o->pTrampoline->HookProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->pbDetour);
             o->pTrampoline->IsExecutedPtr = new int();
@@ -2425,26 +2425,26 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
                           o->pTrampoline->OldProc[4], o->pTrampoline->OldProc[5], o->pTrampoline->OldProc[6], o->pTrampoline->OldProc[7],
                           o->pTrampoline->OldProc[8], o->pTrampoline->OldProc[9], o->pTrampoline->OldProc[10], o->pTrampoline->OldProc[11]));          
   
-            PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, (PBYTE)o->pTrampoline->Trampoline);
+            PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, static_cast<PBYTE>(o->pTrampoline->Trampoline));
             pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
             *o->ppbPointer = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->rbCode);
             UNREFERENCED_PARAMETER(pbCode);
 #endif // DETOURS_ARM
 
 #ifdef DETOURS_ARM64
-            PBYTE trampoline = DetourGetTrampolinePtr();
+            const PBYTE trampolinePtr = DetourGetTrampolinePtr();
             const ULONG TrampolineSize = GetTrampolineSize();
 
-            const auto endOfTramp = &o->pTrampoline->rbTrampolineCode;
-            memcpy(endOfTramp, trampoline, TrampolineSize);
+            const auto trampolineCode = &o->pTrampoline->rbTrampolineCode;
+            memcpy(trampolineCode, trampolinePtr, TrampolineSize);
             o->pTrampoline->HookIntro = BarrierIntro;
             o->pTrampoline->HookOutro = BarrierOutro;
-            o->pTrampoline->Trampoline = endOfTramp;
+            o->pTrampoline->Trampoline = trampolineCode;
             o->pTrampoline->OldProc = o->pTrampoline->rbCode;
             o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
             o->pTrampoline->IsExecutedPtr = new int();
 
-            PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, (PBYTE)o->pTrampoline->Trampoline);
+            PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, NULL, static_cast<PBYTE>(o->pTrampoline->Trampoline));
             pbCode = detour_gen_brk(pbCode, o->pTrampoline->pbRemain);
             *o->ppbPointer = o->pTrampoline->rbCode;
             UNREFERENCED_PARAMETER(pbCode);
