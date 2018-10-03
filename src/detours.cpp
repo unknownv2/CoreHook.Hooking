@@ -2151,6 +2151,27 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
+LONG WINAPI DetourSetGlobalExclusiveACL(_In_ DWORD *dwThreadIdList,
+    _In_ DWORD dwThreadCount)
+{
+    /*
+    Description:
+
+        Sets an exclusive global ACL based on the given thread ID list.
+
+    Parameters:
+        - dwThreadIdList
+            An array of thread IDs. If you specific zero for an entry in this array,
+            it will be automatically replaced with the calling thread ID.
+
+        - dwThreadCount
+            The count of entries listed in the thread ID list. This value must not exceed
+            MAX_ACE_COUNT!
+    */
+
+    return detour_set_acl(detour_barrier_get_acl(), TRUE, dwThreadIdList, dwThreadCount);
+}
+
 LONG WINAPI DetourSetInclusiveACL(_In_ DWORD *pThreadIdList,
                                   _In_ DWORD dwThreadCount,
                                   _In_ TRACED_HOOK_HANDLE pHandle)

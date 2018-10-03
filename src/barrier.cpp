@@ -251,26 +251,6 @@ Parameters:
     return detour_set_acl(detour_barrier_get_acl(), FALSE, dwThreadIdList, dwThreadCount);
 }
 
-LONG WINAPI DetourSetGlobalExclusiveACL(_In_ DWORD *dwThreadIdList,
-                                        _In_ DWORD dwThreadCount)
-{
-/*
-Description:
-
-    Sets an exclusive global ACL based on the given thread ID list.
-    
-Parameters:
-    - dwThreadIdList
-        An array of thread IDs. If you specific zero for an entry in this array,
-        it will be automatically replaced with the calling thread ID.
-
-    - dwThreadCount
-        The count of entries listed in the thread ID list. This value must not exceed
-        MAX_ACE_COUNT! 
-*/
-
-    return detour_set_acl(detour_barrier_get_acl(), TRUE, dwThreadIdList, dwThreadCount);
-}
 
 BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
                             _Out_ PDETOUR_TRAMPOLINE   *pHandle)
