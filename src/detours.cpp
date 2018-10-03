@@ -1656,25 +1656,27 @@ static ULONG ___TrampolineSize = 0;
     extern "C" void*          Trampoline_ASM_ARM64_DATA();
 #endif
 
-UCHAR* DetourGetTrampolinePtr()
+PBYTE DetourGetTrampolinePtr()
 {
-// bypass possible Visual Studio debug jump table
+    // bypass possible Visual Studio debug jump table
+    PBYTE Ptr = NULL;
 #if defined(DETOURS_X64)
-    UCHAR* Ptr = (UCHAR*)Trampoline_ASM_x64;
+    Ptr = reinterpret_cast<UCHAR*>(Trampoline_ASM_x64);
 
 #elif defined(DETOURS_X86)
-    UCHAR* Ptr = (UCHAR*)Trampoline_ASM_x86;
+    Ptr = reinterpret_cast<UCHAR*>(Trampoline_ASM_x86);
 
 #elif defined DETOURS_ARM
-    UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM_CODE;
+     Ptr = reinterpret_cast<(UCHAR*>(Trampoline_ASM_ARM_CODE);
 
 #elif defined DETOURS_ARM64
-    UCHAR* Ptr = (UCHAR*)Trampoline_ASM_ARM64_CODE;
+    Ptr = reinterpret_cast<UCHAR*>(Trampoline_ASM_ARM64_CODE);
+
 #endif
 
-    if(*Ptr == 0xE9)
+    if (*Ptr == 0xE9) {
         Ptr += *((int*)(Ptr + 1)) + 5;
-
+    }
 #ifdef DETOURS_X64
     return Ptr + 5 * 8;
 #else
@@ -1693,20 +1695,20 @@ ULONG GetTrampolineSize()
 
     return ___TrampolineSize;
 #else
-    UCHAR*      Ptr = DetourGetTrampolinePtr();
-    UCHAR*      BasePtr = Ptr;
-    ULONG       Signature;
-    ULONG       Index;
+    PBYTE Ptr = DetourGetTrampolinePtr();
+    PBYTE BasePtr = Ptr;
+    ULONG Signature;
+    ULONG Index;
 
     // search for signature
     for(Index = 0; Index < 2000 /* some always large enough value*/; Index++)
     {
-        Signature = *((ULONG*)Ptr);
+        Signature = *(reinterpret_cast<ULONG*>(Ptr));
 
-        if(Signature == 0x12345678)    
+        if(Signature == 0x12345678)
         {
-            ___TrampolineSize = (ULONG)(Ptr - BasePtr);
-            return ___TrampolineSize;          
+            ___TrampolineSize = static_cast<ULONG>(Ptr - BasePtr);
+            return ___TrampolineSize;
         }
 
         Ptr++;
@@ -1726,12 +1728,12 @@ Description:
     thread deadlock barrier.
 */
 
-    PTHREAD_RUNTIME_INFO        Info;
-    RUNTIME_INFO*                Runtime;
-    BOOL                         Exists;
+    PTHREAD_RUNTIME_INFO Info;
+    RUNTIME_INFO *Runtime;
+    BOOL Exists;
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
-    pHandle = (PDETOUR_TRAMPOLINE)((PBYTE)(pHandle) - (sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
+    pHandle = (PDETOUR_TRAMPOLINE)((PBYTE)(pHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
 #endif
 
     DETOUR_TRACE(("detours: BarrierIntro() Handle=%p, ReturnAddr=%p, AddrOfReturnAddr=%p \n",
@@ -1861,16 +1863,18 @@ Description:
     save it in any efficient manner at this point of execution...
 */
 
-    RUNTIME_INFO*            Runtime;
-    PTHREAD_RUNTIME_INFO    Info;
+    RUNTIME_INFO *Runtime;
+    PTHREAD_RUNTIME_INFO Info;
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
-        pHandle = (PDETOUR_TRAMPOLINE)((PBYTE)(pHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
+    pHandle = (PDETOUR_TRAMPOLINE)((PBYTE)(pHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE));
+
 #endif
 
     DETOUR_ASSERT(detour_acquire_self_protection(), L"detours.cpp - detour_acquire_self_protection()");
 
-    DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL), L"detours.cpp - TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL)");
+    DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL),
+        L"detours.cpp - TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL)");
 
     Runtime = &Info->Entries[pHandle->HLSIndex];
 
@@ -2012,9 +2016,9 @@ Returns:
 
 */
 
-    LONG                NtStatus = STATUS_INTERNAL_ERROR;
-    LONG                error    = -1;
-    PDETOUR_TRAMPOLINE  pTrampoline = NULL;
+    LONG NtStatus = STATUS_INTERNAL_ERROR;
+    LONG error    = -1;
+    PDETOUR_TRAMPOLINE pTrampoline = NULL;
 
     // validate parameters
     if (!IsValidPointer(pEntryPoint, 1)) {
@@ -2073,11 +2077,10 @@ A traced hook handle. If the hook is already removed, this method
 will still return STATUS_SUCCESS.
 */
 
-    LONG                    error = -1;
-
-    PDETOUR_TRAMPOLINE      Hook = NULL;
-    LONG                    NtStatus = -1;
-    BOOLEAN                 IsAllocated = FALSE;
+    LONG error = -1;
+    PDETOUR_TRAMPOLINE Hook = NULL;
+    LONG NtStatus = -1;
+    BOOLEAN IsAllocated = FALSE;
 
     if (!IsValidPointer(pHandle, sizeof(HOOK_TRACE_INFO))) {
         return FALSE;
@@ -2131,8 +2134,8 @@ about the implementation.
 
 */
 
-    LONG                NtStatus;
-    PDETOUR_TRAMPOLINE    Handle;
+    LONG NtStatus;
+    PDETOUR_TRAMPOLINE Handle;
 
     if (!detour_is_valid_handle(pHook, &Handle)) {
         THROW(STATUS_INVALID_PARAMETER_1, (PWCHAR)L"The given hook handle is invalid or already disposed.");
@@ -2197,7 +2200,7 @@ Parameters:
     The hook handle whose local ACL is going to be set.
 */
 
-    PDETOUR_TRAMPOLINE        Handle;
+    PDETOUR_TRAMPOLINE Handle;
 
     if (!detour_is_valid_handle(pHandle, &Handle)) {
         return STATUS_INVALID_PARAMETER_3;
@@ -2242,8 +2245,8 @@ Returns:
 
 */
 
-    LONG                NtStatus;
-    PDETOUR_TRAMPOLINE    Handle;
+    LONG NtStatus;
+    PDETOUR_TRAMPOLINE Handle;
 
     if (!detour_is_valid_handle(pHook, &Handle)) {
         THROW(STATUS_INVALID_PARAMETER_1, L"The given hook handle is invalid or already disposed.");
@@ -2283,7 +2286,7 @@ Parameters:
         The hook handle whose local ACL is going to be set.
 */
 
-    PDETOUR_TRAMPOLINE        Handle;
+    PDETOUR_TRAMPOLINE Handle;
 
     if (!detour_is_valid_handle(pHandle, &Handle)) {
         return STATUS_INVALID_PARAMETER_3;
