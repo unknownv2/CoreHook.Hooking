@@ -396,7 +396,6 @@ Returns:
 */
 
     DWORD CurrentId = GetCurrentThreadId();
-
     LONG Index;
 
     for (Index = 0; Index < MAX_THREAD_COUNT; Index++)
