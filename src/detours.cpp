@@ -132,12 +132,12 @@ struct _DETOUR_TRAMPOLINE
     void*               Callback;
     ULONG               HLSIndex;
     ULONG               HLSIdent;
-    TRACED_HOOK_HANDLE  OutHandle; // handle returned to user
+    TRACED_HOOK_HANDLE  OutHandle;      // handle returned to user
     void*               Trampoline;
-    void*               HookIntro; // . NET Intro function
-    UCHAR*              OldProc;  // old target function
-    void*               HookProc; // function we detour to
-    void*               HookOutro;   // .NET Outro function
+    void*               HookIntro;      // NET Intro function
+    UCHAR*              OldProc;        // old target function
+    void*               HookProc;       // function we detour to
+    void*               HookOutro;      // .NET Outro function
     int*                IsExecutedPtr;
     BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];
 };
@@ -421,12 +421,12 @@ struct _DETOUR_TRAMPOLINE
     void*               Callback;
     ULONG               HLSIndex;
     ULONG               HLSIdent;
-    TRACED_HOOK_HANDLE  OutHandle; // handle returned to user
+    TRACED_HOOK_HANDLE  OutHandle;      // handle returned to user
     void*               Trampoline;
-    void*               HookIntro; // . NET Intro function
-    UCHAR*              OldProc;  // old target function
-    void*               HookProc; // function we detour to
-    void*               HookOutro;   // .NET Outro function
+    void*               HookIntro;      // .NET Intro function
+    UCHAR*              OldProc;        // old target function
+    void*               HookProc;       // function we detour to
+    void*               HookOutro;      // .NET Outro function
     int*                IsExecutedPtr;
     BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];
 };
@@ -833,12 +833,12 @@ struct _DETOUR_TRAMPOLINE
     void*               Callback;
     ULONG               HLSIndex;
     ULONG               HLSIdent;
-    TRACED_HOOK_HANDLE  OutHandle; // handle returned to user
+    TRACED_HOOK_HANDLE  OutHandle;      // handle returned to user
     void*               Trampoline;
-    void*               HookIntro; // . NET Intro function
-    UCHAR*              OldProc;  // old target function
-    void*               HookProc; // function we detour to
-    void*               HookOutro;   // .NET Outro function
+    void*               HookIntro;      // .NET Intro function
+    UCHAR*              OldProc;        // old target function
+    void*               HookProc;       // function we detour to
+    void*               HookOutro;      // .NET Outro function
     int*                IsExecutedPtr;
     BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];
 };
@@ -1007,12 +1007,12 @@ struct _DETOUR_TRAMPOLINE
     void*               Callback;
     ULONG               HLSIndex;
     ULONG               HLSIdent;
-    TRACED_HOOK_HANDLE  OutHandle; // handle returned to user
+    TRACED_HOOK_HANDLE  OutHandle;      // handle returned to user
     void*               Trampoline;
-    void*               HookIntro; // . NET Intro function
-    UCHAR*              OldProc;  // old target function
-    void*               HookProc; // function we detour to
-    void*               HookOutro;   // .NET Outro function
+    void*               HookIntro;      // .NET Intro function
+    UCHAR*              OldProc;        // old target function
+    void*               HookProc;       // function we detour to
+    void*               HookOutro;      // .NET Outro function
     int*                IsExecutedPtr;
     BYTE                rbTrampolineCode[DETOUR_TRAMPOLINE_CODE_SIZE];
 };
@@ -1637,11 +1637,14 @@ static LONG detour_align_from_target(PDETOUR_TRAMPOLINE pTrampoline, LONG obTarg
 static ULONG ___TrampolineSize = 0;
 
 #ifdef DETOURS_X64
-    extern "C" void __stdcall Trampoline_ASM_x64();
+    extern "C" void __stdcall Trampoline_ASM_X64();
+    extern "C" void __stdcall Trampoline_ASM_X64_CODE();
+    extern "C" void*          Trampoline_ASM_X64_DATA();
 #endif
 
 #ifdef DETOURS_X86
-    extern "C" void __stdcall Trampoline_ASM_x86();
+    extern "C" void __stdcall Trampoline_ASM_X86();
+    extern "C" void*          Trampoline_ASM_X86_DATA();
 #endif
 
 #ifdef DETOURS_ARM
@@ -1658,30 +1661,26 @@ static ULONG ___TrampolineSize = 0;
 
 PBYTE DetourGetTrampolinePtr()
 {
-    // bypass possible Visual Studio debug jump table
     PBYTE Ptr = NULL;
+
 #if defined(DETOURS_X64)
-    Ptr = reinterpret_cast<UCHAR*>(Trampoline_ASM_x64);
+    Ptr = reinterpret_cast<PBYTE>(Trampoline_ASM_X64_CODE);
 
 #elif defined(DETOURS_X86)
-    Ptr = reinterpret_cast<UCHAR*>(Trampoline_ASM_x86);
+    Ptr = reinterpret_cast<PBYTE>(Trampoline_ASM_X86);
 
-#elif defined DETOURS_ARM
-     Ptr = reinterpret_cast<UCHAR*>(Trampoline_ASM_ARM_CODE);
+#elif defined(DETOURS_ARM)
+    Ptr = reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_CODE);
 
-#elif defined DETOURS_ARM64
-    Ptr = reinterpret_cast<UCHAR*>(Trampoline_ASM_ARM64_CODE);
+#elif defined(DETOURS_ARM64)
+    Ptr = reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_CODE);
 
 #endif
-
+    // Find the real start of the function if we encounter a jmp instruction
     if (*Ptr == 0xE9) {
         Ptr += *((int*)(Ptr + 1)) + 5;
     }
-#ifdef DETOURS_X64
-    return Ptr + 5 * 8;
-#else
     return Ptr;
-#endif    
 }
 
 ULONG GetTrampolineSize()
@@ -1690,31 +1689,26 @@ ULONG GetTrampolineSize()
         return ___TrampolineSize;
     }
 
-#ifdef DETOURS_ARM
+#if defined(DETOURS_X64)
+    ___TrampolineSize = static_cast<ULONG>(
+        (reinterpret_cast<PBYTE>(Trampoline_ASM_X64_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_X64_CODE)));
+
+    return ___TrampolineSize;
+#elif defined(DETOURS_X86)  
+    ___TrampolineSize = static_cast<ULONG>(
+        (reinterpret_cast<PBYTE>(Trampoline_ASM_X86_DATA) - DetourGetTrampolinePtr()));
+
+    return ___TrampolineSize;
+#elif defined(DETOURS_ARM)
     ___TrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_CODE)));
 
     return ___TrampolineSize;
-#else
-    PBYTE Ptr = DetourGetTrampolinePtr();
-    PBYTE BasePtr = Ptr;
-    ULONG Signature;
-    ULONG Index;
+#elif defined(DETOURS_ARM64)
+    ___TrampolineSize = static_cast<ULONG>(
+        (reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_CODE)));
 
-    // search for signature
-    for(Index = 0; Index < 2000 /* some always large enough value*/; Index++)
-    {
-        Signature = *(reinterpret_cast<ULONG*>(Ptr));
-
-        if(Signature == 0x12345678)
-        {
-            ___TrampolineSize = static_cast<ULONG>(Ptr - BasePtr);
-            return ___TrampolineSize;
-        }
-
-        Ptr++;
-    }
-    return 0;
+    return ___TrampolineSize;
 #endif
 }
 
