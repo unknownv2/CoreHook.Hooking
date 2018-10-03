@@ -14,11 +14,14 @@
 ; prevents the SMC condition and uses RIP relative jumps...
 
 
-public Trampoline_ASM_x64
+public Trampoline_ASM_X64
+
+public Trampoline_ASM_X64_CODE
+public Trampoline_ASM_X64_DATA
 
 _TEXT SEGMENT
 
-Trampoline_ASM_x64 PROC
+Trampoline_ASM_X64 PROC
 
 NETIntro:
     ;void*            NETEntry; // fixed 0 (0) 
@@ -74,7 +77,8 @@ IsExecutedPtr:
     db 0
     db 0
     db 0
-    
+
+Trampoline_ASM_x64_CODE::
 ; ATTENTION: 64-Bit requires stack alignment (RSP) of 16 bytes!!
     ; Apply alignment trick: https://stackoverflow.com/a/9600102
     push rsp
@@ -201,7 +205,7 @@ TRAMPOLINE_EXIT:
     
     jmp qword ptr[rax] ; ATTENTION: In case of hook handler we will return to CALL_NET_OUTRO, otherwise to the caller...
     
-    
+Trampoline_ASM_X64_DATA::
 ; outro signature, to automatically determine code size
     db 78h
     db 56h
