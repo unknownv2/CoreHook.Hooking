@@ -5,9 +5,11 @@
 .model flat, c
 .code
 
-public Trampoline_ASM_x86@0
+public Trampoline_ASM_X86@0
 
-Trampoline_ASM_x86@0 PROC
+public Trampoline_ASM_X86_DATA
+
+Trampoline_ASM_X86@0 PROC
 
 ; Handle:       1A2B3C05h
 ; NETEntry:     1A2B3C03h
@@ -42,7 +44,7 @@ Trampoline_ASM_x86@0 PROC
         jmp TRAMPOLINE_EXIT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; call hook handler or original method...
-CALL_NET_ENTRY:    
+CALL_NET_ENTRY:
     
 ; call NET intro
     push ecx
@@ -70,7 +72,7 @@ CALL_HOOK_HANDLER:
 
 ; call hook handler
     mov eax, 1A2B3C00h
-    jmp TRAMPOLINE_EXIT 
+    jmp TRAMPOLINE_EXIT
 
 CALL_NET_OUTRO: ; this is where the handler returns...
 
@@ -103,6 +105,7 @@ TRAMPOLINE_EXIT:
     
     jmp eax ; ATTENTION: In case of hook handler we will return to CALL_NET_OUTRO, otherwise to the caller...
     
+Trampoline_ASM_X86_DATA::
 ; outro signature, to automatically determine code size
     db 78h
     db 56h
