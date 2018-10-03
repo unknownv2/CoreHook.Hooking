@@ -2,9 +2,6 @@
 //
 //  Core Detours Functionality (detours.h of detours.lib)
 //
-//  Microsoft Research Detours Package, Version 4.0.1
-//
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
 //
 
 #pragma once
@@ -418,7 +415,7 @@ typedef struct _DETOUR_EXE_HELPER
 /////////////////////////////////////////////////////////////// Helper Macros.
 //
 #define DETOURS_STRINGIFY(x)    DETOURS_STRINGIFY_(x)
-#define DETOURS_STRINGIFY_(x)    #x
+#define DETOURS_STRINGIFY_(x)   #x
 
 ///////////////////////////////////////////////////////////// Binary Typedefs.
 //
@@ -463,7 +460,7 @@ typedef BOOL (CALLBACK *PF_DETOUR_IMPORT_FUNC_CALLBACK)(_In_opt_ PVOID pContext,
 typedef BOOL (CALLBACK *PF_DETOUR_IMPORT_FUNC_CALLBACK_EX)(_In_opt_ PVOID pContext,
                                                            _In_ DWORD nOrdinal,
                                                            _In_opt_ LPCSTR pszFunc,
-                                                           _In_opt_ PVOID* ppvFunc);
+                                                           _In_opt_ PVOID *ppvFunc);
 
 typedef VOID * PDETOUR_BINARY;
 typedef VOID * PDETOUR_LOADED_BINARY;
@@ -473,96 +470,6 @@ typedef VOID * PDETOUR_LOADED_BINARY;
 LONG WINAPI DetourTransactionBegin(VOID);
 LONG WINAPI DetourTransactionAbort(VOID);
 LONG WINAPI DetourTransactionCommit(VOID);
-
-//////////////////////////////////////////////////////////////////////////////
-//
-// dotnet trampoline barrier definitions
-//
-#define MAX_HOOK_COUNT              1024
-#define MAX_ACE_COUNT               128
-#define MAX_THREAD_COUNT            128
-#define MAX_PASSTHRU_SIZE           1024 * 64
-
-#define DETOUR_ASSERT(expr, Msg)    RtlAssert(expr, Msg);
-#define THROW(code, Msg)            { NtStatus = (code); RtlSetLastError(GetLastError(), NtStatus, Msg); goto THROW_OUTRO; }
-
-#define RTL_SUCCESS(ntstatus)       SUCCEEDED(ntstatus)
-
-#define STATUS_SUCCESS              0
-#define RETURN                      { RtlSetLastError(STATUS_SUCCESS, STATUS_SUCCESS, L""); NtStatus = STATUS_SUCCESS; goto FINALLY_OUTRO; }
-#define FORCE(expr)                 { if(!RTL_SUCCESS(NtStatus = (expr))) goto THROW_OUTRO; }
-#define IsValidPointer              RtlIsValidPointer
-
-
-BOOL RtlIsValidPointer(PVOID InPtr, ULONG InSize);
-
-typedef struct _DETOUR_TRAMPOLINE * PLOCAL_HOOK_INFO;
-
-typedef struct _HOOK_ACL_
-{
-    ULONG                   Count;
-    BOOL                    IsExclusive;
-    ULONG                   Entries[MAX_ACE_COUNT];
-}HOOK_ACL;
-
-typedef struct _HOOK_TRACE_INFO_
-{
-    PLOCAL_HOOK_INFO        Link;
-}HOOK_TRACE_INFO, *TRACED_HOOK_HANDLE;
-
-/*
-    Setup the ACLs after hook installation. Please note that every
-    hook starts suspended. You will have to set a proper ACL to
-    make it active!
-*/
-
-LONG DetourSetInclusiveACL(_In_ DWORD *pThreadIdList,
-                           _In_ DWORD dwThreadCount,
-                           _In_ TRACED_HOOK_HANDLE pHandle);
-
-LONG DetourSetExclusiveACL(_In_ DWORD *pThreadIdList,
-                           _In_ DWORD dwThreadCount,
-                           _In_ TRACED_HOOK_HANDLE pHandle);
-
-LONG DetourSetGlobalInclusiveACL(_In_ DWORD *dwThreadIdList,
-                                 _In_ DWORD dwThreadCount);
-
-LONG DetourSetGlobalExclusiveACL(_In_ DWORD *dwThreadIdList,
-                                 _In_ DWORD dwThreadCount);
-
-LONG DetourIsThreadIntercepted(TRACED_HOOK_HANDLE InHook,
-            ULONG InThreadID,
-            BOOL* OutResult);
-
-LONG DetourSetACL(HOOK_ACL* InAcl,
-            BOOL InIsExclusive,
-            ULONG* InThreadIdList,
-            ULONG InThreadCount);
-
-    HOOK_ACL* DetourBarrierGetAcl();
-/*
-    The following barrier methods are meant to be used in hook handlers only!
-
-    They will all fail with STATUS_NOT_SUPPORTED if called outside a
-    valid hook handler...
-*/
-LONG DetourBarrierGetCallback(PVOID *OutValue);
-
-LONG DetourBarrierGetReturnAddress(PVOID *OutValue);
-
-LONG DetourBarrierGetAddressOfReturnAddress(PVOID **OutValue);
-
-LONG DetourGetHookBypassAddress(TRACED_HOOK_HANDLE InHook,
-                                PVOID **OutAddress);
-
-// Stack tracing functions
-LONG DetourBarrierBeginStackTrace(PVOID *OutBackup);
-
-LONG DetourBarrierEndStackTrace(PVOID InBackup);
-
-LONG DetourBarrierCallStackTrace(PVOID* OutMethodArray,
-                                ULONG InMaxMethodCount,
-                                ULONG* OutMethodCount);
 
 LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer);
 
@@ -585,6 +492,93 @@ BOOL WINAPI DetourSetRetainRegions(_In_ BOOL fRetain);
 PVOID WINAPI DetourSetSystemRegionLowerBound(_In_ PVOID pSystemRegionLowerBound);
 PVOID WINAPI DetourSetSystemRegionUpperBound(_In_ PVOID pSystemRegionUpperBound);
 
+//////////////////////////////////////////////// dotnet trampoline hooking structures
+//
+
+typedef struct _HOOK_TRACE_INFO_
+{
+    PDETOUR_TRAMPOLINE        Link;
+} HOOK_TRACE_INFO, *TRACED_HOOK_HANDLE;
+
+////////////////////////////////////////////////////////////
+//
+//  Setup the ACLs after hook installation. Please note that
+//  every hook starts suspended. You will have to set a 
+//  proper ACL to make it active!
+//
+
+LONG WINAPI DetourSetInclusiveACL(_In_ DWORD *pThreadIdList,
+                                  _In_ DWORD dwThreadCount,
+                                  _In_ TRACED_HOOK_HANDLE pHandle);
+
+LONG WINAPI DetourSetExclusiveACL(_In_ DWORD *pThreadIdList,
+                                  _In_ DWORD dwThreadCount,
+                                  _In_ TRACED_HOOK_HANDLE pHandle);
+
+LONG WINAPI DetourSetGlobalInclusiveACL(_In_ DWORD *dwThreadIdList,
+                                        _In_ DWORD dwThreadCount);
+
+LONG WINAPI DetourSetGlobalExclusiveACL(_In_ DWORD *dwThreadIdList,
+                                        _In_ DWORD dwThreadCount);
+
+LONG WINAPI DetourIsThreadIntercepted(_In_  TRACED_HOOK_HANDLE pHook,
+                                      _In_  DWORD dwThreadId,
+                                      _Out_ BOOL *pResult);
+
+
+////////////////////////////////////////////////////////////
+//
+//  The following barrier methods are meant to be used in
+//  hook handlers only!
+//
+//  They will all fail with STATUS_NOT_SUPPORTED if called
+//  outside a valid hook handler.
+//
+
+LONG WINAPI DetourBarrierGetCallback(_Outptr_ PVOID *ppCallback);
+
+LONG WINAPI DetourBarrierGetReturnAddress(_Outptr_ PVOID *ppReturnAddress);
+
+LONG WINAPI DetourBarrierGetAddressOfReturnAddress(_Outptr_ PVOID **pppAddressOfReturnAddress);
+
+LONG WINAPI DetourGetHookBypassAddress(_In_ TRACED_HOOK_HANDLE pHook,
+                                       _Outptr_ PVOID **pppOutAddress);
+
+////////////////////////////////////////////////////////////
+//
+//  Stack tracing functions used inside a detoured function.
+//
+//
+
+LONG WINAPI DetourBarrierBeginStackTrace(_Outptr_ PVOID *ppBackup);
+
+LONG WINAPI DetourBarrierEndStackTrace(_In_ PVOID pBackup);
+
+LONG WINAPI DetourBarrierCallStackTrace(_Outptr_ PVOID *ppMethodArray,
+                                        _In_ DWORD dwFramesToCapture,
+                                        _Inout_ DWORD *pCapturedFramesCount);
+
+
+////////////////////////////////////////////////////////////
+//
+//  Exception and error handling
+//
+//
+
+void detour_assert(_In_ BOOL bAssert,
+                   _In_ LPCWSTR lpMessageText);
+
+void detour_set_last_error(_In_ LONG lCode,
+                           _In_ LONG lStatus,
+                           _In_opt_ LPCWSTR lpMessage);
+
+////////////////////////////////////////////////////////////
+//
+//  Thread deadlock barrier global variable and structure 
+//  initialization and finalization
+//
+//
+
 void DetourBarrierThreadDetach();
 
 LONG DetourBarrierProcessAttach();
@@ -593,12 +587,16 @@ void DetourBarrierProcessDetach();
 void DetourCriticalInitialize();
 void DetourCriticalFinalize();
 
-LONG DetourInstallHook(void *InEntryPoint,
-                        void* InHookProc,
-                        void* InCallback,
-                        TRACED_HOOK_HANDLE OutHandle);
+LONG DetourInstallHook(_Inout_ PVOID pEntryPoint,
+                       _In_ PVOID pDetour,
+                       _In_ PVOID pCallback,
+                       _In_ TRACED_HOOK_HANDLE pReturnedHandle);
 
-LONG WINAPI DetourUninstallHook(TRACED_HOOK_HANDLE InHandle);
+LONG WINAPI DetourUninstallHook(_In_ TRACED_HOOK_HANDLE InHandle);
+
+BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
+                            _Out_ PDETOUR_TRAMPOLINE   *pHandle);
+
 
 ////////////////////////////////////////////////////////////// Code Functions.
 //
@@ -644,7 +642,7 @@ _Writable_bytes_(*pcbData)
 _Readable_bytes_(*pcbData)
 _Success_(return != NULL)
 PVOID WINAPI DetourFindPayloadEx(_In_ REFGUID rguid,
-                                 _Out_ DWORD * pcbData);
+                                 _Out_ DWORD *pcbData);
 
 DWORD WINAPI DetourGetSizeOfPayloads(_In_opt_ HMODULE hModule);
 
@@ -1164,127 +1162,6 @@ BOOL WINAPI DetourVirtualProtectSameExecute(_In_  PVOID pAddress,
 //////////////////////////////////////////////////////////////////////////////
 
 #define MM_ALLOCATION_GRANULARITY 0x10000
-
-//////////////////////////////////////////////////////////////////////////////
-
-
-BOOL DetourIsValidHandle(
-            TRACED_HOOK_HANDLE InTracedHandle,
-            PLOCAL_HOOK_INFO* OutHandle);
-
-BOOL IsLoaderLock();
-BOOL AcquireSelfProtection();
-
-void RtlAssert(BOOL InAssert,LPCWSTR lpMessageText);
-void RtlSetLastError(LONG InCode, LONG InNtStatus, LPCWSTR InMessage);
-
-typedef struct _RTL_SPIN_LOCK_
-{
-    CRITICAL_SECTION        Lock;
-    BOOL                 IsOwned;
-}RTL_SPIN_LOCK;
-
-void RtlInitializeLock(RTL_SPIN_LOCK* InLock);
-
-void RtlAcquireLock(RTL_SPIN_LOCK* InLock);
-
-void RtlReleaseLock(RTL_SPIN_LOCK* InLock);
-
-void RtlDeleteLock(RTL_SPIN_LOCK* InLock);
-
-void RtlSleep(ULONG InTimeout);
-
-typedef struct _RUNTIME_INFO_
-{
-    // "true" if the current thread is within the related hook handler
-    BOOL            IsExecuting;
-    // the hook this information entry belongs to... This allows a per thread and hook storage!
-    DWORD           HLSIdent;
-    // the return address of the current thread's hook handler...
-    void*           RetAddress;
-    // the address of the return address of the current thread's hook handler...
-    void**          AddrOfRetAddr;
-}RUNTIME_INFO;
-
-typedef struct _THREAD_RUNTIME_INFO_
-{
-    RUNTIME_INFO*        Entries;
-    RUNTIME_INFO*        Current;
-    void*                Callback;
-    BOOL                 IsProtected;
-}THREAD_RUNTIME_INFO, *LPTHREAD_RUNTIME_INFO;
-
-typedef struct _THREAD_LOCAL_STORAGE_
-{
-    THREAD_RUNTIME_INFO      Entries[MAX_THREAD_COUNT];
-    DWORD                    IdList[MAX_THREAD_COUNT];
-    RTL_SPIN_LOCK            ThreadSafe;
-}THREAD_LOCAL_STORAGE;
-
-typedef struct _BARRIER_UNIT_
-{
-    HOOK_ACL                GlobalACL;
-    BOOL                    IsInitialized;
-    THREAD_LOCAL_STORAGE    TLS;
-}BARRIER_UNIT;
-
-
-BOOL TlsGetCurrentValue(
-            THREAD_LOCAL_STORAGE* InTls,
-            THREAD_RUNTIME_INFO** OutValue);
-BOOL TlsAddCurrentThread(THREAD_LOCAL_STORAGE* InTls);
-
-void RtlFreeMemory(void* InPointer);
-
-void* RtlAllocateMemory(
-            BOOL InZeroMemory,
-            ULONG InSize);
-
-#undef RtlCopyMemory
-void RtlCopyMemory(
-            PVOID InDest,
-            PVOID InSource,
-            ULONG InByteCount);
-
-#undef RtlZeroMemory
-void RtlZeroMemory(
-            PVOID InTarget,
-            ULONG InByteCount);
-
-BOOL IsThreadIntercepted(
-    HOOK_ACL* LocalACL,
-    ULONG InThreadID);
-
-void ReleaseSelfProtection();
-
-extern BARRIER_UNIT         Unit;
-extern RTL_SPIN_LOCK        GlobalHookLock;
-
-
-// NTSTATUS definitions
-
-#define STATUS_NOT_SUPPORTED             ((LONG)0xC00000BBL)
-#define STATUS_INTERNAL_ERROR            ((LONG)0xC00000E5L)
-#define STATUS_PROCEDURE_NOT_FOUND       ((LONG)0xC000007AL)
-#define STATUS_NOINTERFACE               ((LONG)0xC00002B9L)
-#define STATUS_INFO_LENGTH_MISMATCH      ((LONG)0xC0000004L)
-#define STATUS_BUFFER_TOO_SMALL          ((LONG)0xC0000023L)
-#define STATUS_INSUFFICIENT_RESOURCES    ((LONG)0xC000009AL)
-#define STATUS_UNHANDLED_EXCEPTION       ((LONG)0xC0000144L)
-#define STATUS_NOT_FOUND                 ((LONG)0xC0000225L)
-#define STATUS_NOT_IMPLEMENTED           ((LONG)0xC0000002L)
-#define STATUS_ACCESS_DENIED             ((LONG)0xC0000022L)
-#define STATUS_ALREADY_REGISTERED        ((LONG)0xC0000718L)
-#define STATUS_WOW_ASSERTION             ((LONG)0xC0009898L)
-#define STATUS_BUFFER_OVERFLOW           ((LONG)0x80000005L)
-#define STATUS_INVALID_PARAMETER_1       ((LONG)0xC00000EFL)
-#define STATUS_INVALID_PARAMETER_2       ((LONG)0xC00000F0L)
-#define STATUS_INVALID_PARAMETER_3       ((LONG)0xC00000F1L)
-#define STATUS_INVALID_PARAMETER_4       ((LONG)0xC00000F2L)
-#define STATUS_INVALID_PARAMETER_5       ((LONG)0xC00000F3L)
-#define STATUS_INVALID_PARAMETER_6       ((LONG)0xC00000F4L)
-#define STATUS_INVALID_PARAMETER_7       ((LONG)0xC00000F5L)
-#define STATUS_INVALID_PARAMETER_8       ((LONG)0xC00000F6L)
 
 #endif // DETOURS_INTERNAL
 #endif // __cplusplus

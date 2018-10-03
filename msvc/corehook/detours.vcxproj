@@ -58,6 +58,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\barrier.h" />
     <ClInclude Include="..\..\src\detours.h" />
     <ClInclude Include="..\..\src\detver.h" />
   </ItemGroup>

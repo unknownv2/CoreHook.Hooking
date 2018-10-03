@@ -91,7 +91,7 @@ int Detours::ShouldBypassDetourFunction() {
     return result;
 }
 
-CONST WCHAR* _detourFileName;
+LPCWSTR  _detourFileName;
 
 HANDLE WINAPI CreateFileW_Detour(
     LPCWSTR fileName,
@@ -182,5 +182,4 @@ LONG Detours::DetourMoveFileWithUserFunction() {
     }
 
     return error;
-
 }
