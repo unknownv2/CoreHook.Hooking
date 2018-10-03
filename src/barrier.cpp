@@ -741,9 +741,8 @@ Description:
 
 */
 
-    LONG                    NtStatus;
-    PTHREAD_RUNTIME_INFO   Runtime;
-
+    LONG NtStatus;
+    PTHREAD_RUNTIME_INFO Runtime;
 
     if (!IsValidPointer(ppCallback, sizeof(PVOID)))
     {
@@ -783,8 +782,8 @@ Description:
 
 */
 
-    LONG                        NtStatus;
-    PTHREAD_RUNTIME_INFO       Runtime;
+    LONG NtStatus;
+    PTHREAD_RUNTIME_INFO Runtime;
 
     if (!IsValidPointer(ppReturnAddress, sizeof(PVOID))) {
         THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
@@ -819,8 +818,8 @@ Description:
     the address of the return address of the hook handler.
 */
 
-    PTHREAD_RUNTIME_INFO       Runtime;
-    LONG                        NtStatus;
+    PTHREAD_RUNTIME_INFO Runtime;
+    LONG NtStatus;
 
     if (pppAddressOfReturnAddress == NULL) {
         THROW(STATUS_INVALID_PARAMETER, L"Invalid storage specified.");
@@ -857,8 +856,8 @@ Description:
     the application will be left in an unstable state!
 */
 
-    LONG                        NtStatus;
-    PTHREAD_RUNTIME_INFO       Runtime;
+    LONG NtStatus;
+    PTHREAD_RUNTIME_INFO Runtime;
 
     if (ppBackup == NULL) {
         THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given backup storage is invalid.");
@@ -894,8 +893,8 @@ Description:
     DetourBarrierBeginStackTrace().
 */
 
-    LONG                NtStatus;
-    PVOID*              AddrOfRetAddr;
+    LONG NtStatus;
+    PVOID *AddrOfRetAddr;
 
     if (!IsValidPointer(pBackup, 1)) {
         THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given stack backup pointer is invalid.");
@@ -945,8 +944,8 @@ Returns:
         Only supported since Windows XP.
 */
     
-    LONG                    NtStatus;
-    PVOID                   Backup = NULL;
+    LONG NtStatus;
+    PVOID Backup = NULL;
 
     if (dwFramesToCapture > 64) {
         THROW(STATUS_INVALID_PARAMETER_2, L"barrier.cpp - At maximum 64 modules are supported.");
