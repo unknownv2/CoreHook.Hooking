@@ -97,7 +97,6 @@ extern RTL_SPIN_LOCK        GlobalHookLock;
 
 #define DETOUR_SUCCESS(ntstatus)    SUCCEEDED(ntstatus)
 
-#define STATUS_SUCCESS              0
 #define RETURN                      { detour_set_last_error(STATUS_SUCCESS, STATUS_SUCCESS, L""); NtStatus = STATUS_SUCCESS; goto FINALLY_OUTRO; }
 #define FORCE(expr)                 { if(!DETOUR_SUCCESS(NtStatus = (expr))) goto THROW_OUTRO; }
 
@@ -140,7 +139,7 @@ void detour_zero_memory(_Out_writes_bytes_all_(Size) PVOID Dest,
 
 //////////////////////////////////////////////////////// NTSTATUS definitions
 
-
+#define STATUS_SUCCESS                   0
 #define STATUS_NOT_SUPPORTED             ((LONG)0xC00000BBL)
 #define STATUS_INTERNAL_ERROR            ((LONG)0xC00000E5L)
 #define STATUS_PROCEDURE_NOT_FOUND       ((LONG)0xC000007AL)

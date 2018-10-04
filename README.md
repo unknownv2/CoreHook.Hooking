@@ -12,11 +12,16 @@ For [CoreHook](https://github.com/unknownv2/CoreHook), the [Microsoft Detours](h
 
 ## Building
 
-Building the DLL requires Visual Studio and there are two options: You can build the DLL by using the Visual Studio IDE or nmake (it has been tested with `Visual Studio 2017` only). 
+Building the DLL requires Visual Studio and there are two options: You can build the DLL by using the `Visual Studio` (IDE or msbuild with the `Developer Command Prompt`) or nmake (it has been tested with `Visual Studio 2017` only). 
 
 ### Visual Studio
-You can find the [Visual Studio solution in the msvc folder](/msvc). You can choose a configuration (Debug or Release) and a target platform (X86, X64, ARM, ARM64) and build.
+You can find the [Visual Studio solution in the msvc folder](/msvc). You can choose a configuration (**Debug|Release**) and a platform (**X86|X64|ARM|ARM64**) and build. 
 
+An example for building the X64 `corehook64.dll` in the Release configuration:
+
+```
+msbuild msvc/corehook.sln /p:Configuration=Release /p:Platform=x64
+```
 ### NMAKE 
 
 You can find the build environments for your Visual Studio installation normally at `C:\Program Files (x86)\Microsoft Visual Studio\2017\[ProductType]\VC\Auxiliary\Build`, where `[ProductType]` is your version of Visual Studio: **(Community, Professional, or Enterprise)**.
