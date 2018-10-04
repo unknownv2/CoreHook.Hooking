@@ -1693,23 +1693,20 @@ ULONG GetTrampolineSize()
     ___TrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_X64_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_X64_CODE)));
 
-    return ___TrampolineSize;
 #elif defined(DETOURS_X86)  
     ___TrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_X86_DATA) - DetourGetTrampolinePtr()));
 
-    return ___TrampolineSize;
 #elif defined(DETOURS_ARM)
     ___TrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_CODE)));
 
-    return ___TrampolineSize;
 #elif defined(DETOURS_ARM64)
     ___TrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_CODE)));
 
-    return ___TrampolineSize;
 #endif
+    return ___TrampolineSize;
 }
 
 UINT WINAPI BarrierIntro(_In_ DETOUR_TRAMPOLINE *pHandle,
