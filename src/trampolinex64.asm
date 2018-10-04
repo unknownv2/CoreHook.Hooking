@@ -15,7 +15,6 @@
 
 
 public Trampoline_ASM_X64
-
 public Trampoline_ASM_X64_CODE
 public Trampoline_ASM_X64_DATA
 

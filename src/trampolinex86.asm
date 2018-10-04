@@ -6,7 +6,6 @@
 .code
 
 public Trampoline_ASM_X86@0
-
 public Trampoline_ASM_X86_DATA
 
 Trampoline_ASM_X86@0 PROC
