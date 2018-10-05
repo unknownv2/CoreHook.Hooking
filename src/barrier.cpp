@@ -93,11 +93,18 @@ BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,
     return TRUE;
 }
 
-void detour_initialize_lock(_In_ RTL_SPIN_LOCK *pLock)
+static void detour_initialize_lock(_In_ RTL_SPIN_LOCK *pLock)
 {
     detour_zero_memory(pLock, sizeof(RTL_SPIN_LOCK));
 
     InitializeCriticalSection(&pLock->Lock);
+}
+
+void detour_delete_lock(_In_ RTL_SPIN_LOCK *pLock)
+{
+    DETOUR_ASSERT(!pLock->IsOwned, L"barrier.cpp - pLock->IsOwned");
+
+    DeleteCriticalSection(&pLock->Lock);
 }
 
 void detour_acquire_lock(_In_ RTL_SPIN_LOCK *pLock)
@@ -116,13 +123,6 @@ void detour_release_lock(_In_ RTL_SPIN_LOCK *pLock)
     pLock->IsOwned = FALSE;
 
     LeaveCriticalSection(&pLock->Lock);
-}
-
-void detour_delete_lock(_In_ RTL_SPIN_LOCK *pLock)
-{
-    DETOUR_ASSERT(!pLock->IsOwned, L"barrier.cpp - pLock->IsOwned");
-
-    DeleteCriticalSection(&pLock->Lock);
 }
 
 // Error Handling

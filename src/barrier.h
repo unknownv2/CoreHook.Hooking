@@ -67,13 +67,13 @@ typedef struct _BARRIER_UNIT_
     THREAD_LOCAL_STORAGE    TLS;
 } BARRIER_UNIT;
 
-void detour_initialize_lock(_In_ RTL_SPIN_LOCK *pLock);
+static void detour_initialize_lock(_In_ RTL_SPIN_LOCK *pLock);
+
+static void detour_delete_lock(_In_ RTL_SPIN_LOCK *pLock);
 
 void detour_acquire_lock(_In_ RTL_SPIN_LOCK *pLock);
 
 void detour_release_lock(_In_ RTL_SPIN_LOCK *pLock);
-
-void detour_delete_lock(_In_ RTL_SPIN_LOCK *pLock);
 
 BOOL detour_is_thread_intercepted(_In_ HOOK_ACL *pLocalACL,
                                   _In_ DWORD    dwThreadId);
