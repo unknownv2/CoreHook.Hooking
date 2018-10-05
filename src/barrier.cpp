@@ -46,6 +46,53 @@ HANDLE hCoreHookHeap = NULL;
 
 BARRIER_UNIT Unit;
 
+void detour_sleep(_In_ DWORD milliSeconds)
+{
+    Sleep(milliSeconds);
+}
+
+static void detour_copy_memory(_Out_writes_bytes_all_(Size) PVOID  Dest,
+                               _In_reads_bytes_(Size)       PVOID  Src,
+                               _In_                         size_t Size)
+{
+    memcpy(Dest, Src, Size);
+}
+
+static void detour_zero_memory(_Out_writes_bytes_all_(Size) PVOID Dest,
+    _In_                         size_t Size)
+{
+    memset(Dest, 0, Size);
+}
+
+void *detour_allocate_memory(_In_ BOOL   bZeroMemory,
+                             _In_ size_t size)
+{
+    void *result = HeapAlloc(hCoreHookHeap, 0, size);
+
+    if (bZeroMemory && (result != NULL)) {
+        detour_zero_memory(result, size);
+    }
+
+    return result;
+}
+
+void detour_free_memory(void * pMemory)
+{
+    DETOUR_ASSERT(pMemory != NULL, L"barrier.cpp - pMemory != NULL");
+
+    HeapFree(hCoreHookHeap, 0, pMemory);
+}
+
+BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,
+                             _In_     UINT_PTR    Size)
+{
+    if ((Pointer == NULL) || (Pointer == (PVOID)~0)) {
+        return FALSE;
+    }
+    (void)Size;
+    return TRUE;
+}
+
 void detour_initialize_lock(_In_ RTL_SPIN_LOCK *pLock)
 {
     detour_zero_memory(pLock, sizeof(RTL_SPIN_LOCK));
@@ -76,54 +123,6 @@ void detour_delete_lock(_In_ RTL_SPIN_LOCK *pLock)
     DETOUR_ASSERT(!pLock->IsOwned, L"barrier.cpp - pLock->IsOwned");
 
     DeleteCriticalSection(&pLock->Lock);
-}
-
-void detour_sleep(_In_ DWORD milliSeconds)
-{
-    Sleep(milliSeconds);
-}
-
-void detour_copy_memory(_Out_writes_bytes_all_(Size) PVOID  Dest,
-                        _In_reads_bytes_(Size)       PVOID  Src,
-                        _In_                         size_t Size)
-{
-    memcpy(Dest, Src, Size);
-}
-
-void *detour_allocate_memory(_In_ BOOL   bZeroMemory,
-                             _In_ size_t size)
-{
-    void *result = HeapAlloc(hCoreHookHeap, 0, size);
-
-    if (bZeroMemory && (result != NULL)) {
-        detour_zero_memory(result, size);
-    }
-
-    return result;
-}
-
-
-void detour_zero_memory(_Out_writes_bytes_all_(Size) PVOID Dest,
-                        _In_                         size_t Size)
-{
-    memset(Dest, 0, Size);
-}
-
-void detour_free_memory(void * pMemory)
-{
-    DETOUR_ASSERT(pMemory != NULL, L"barrier.cpp - pMemory != NULL");
-
-    HeapFree(hCoreHookHeap, 0, pMemory);
-}
-
-BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,
-                             _In_     UINT_PTR    Size)
-{
-    if ((Pointer == NULL) || (Pointer == (PVOID)~0)) {
-        return FALSE;
-    }
-    (void)Size;
-    return TRUE;
 }
 
 // Error Handling
@@ -199,11 +198,14 @@ void detour_set_last_error(_In_ LONG lCode, _In_ LONG lStatus, _In_opt_ LPCWSTR 
                     MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                     lpMsgBuf,
                     0, NULL);
-                _snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", lpMessage, lpMsgBuf);
+
+                _snwprintf_s(msg, 1024,_TRUNCATE,
+                            L"%s (%s)\n", lpMessage, lpMsgBuf);
             }
             else
             {
-                _snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", lpMessage, detour_error_code_to_string(lStatus));
+                _snwprintf_s(msg, 1024,_TRUNCATE, L"%s (%s)\n",
+                            lpMessage, detour_error_code_to_string(lStatus));
             }
 
             DEBUGMSG(msg);
@@ -275,6 +277,7 @@ Description:
 
     return TRUE;
 }
+
 LONG detour_set_acl(_In_ HOOK_ACL *pAcl,
                     _In_ BOOL     bIsExclusive,
                     _In_ DWORD    *dwThreadIdList,

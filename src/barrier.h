@@ -129,13 +129,6 @@ void  detour_free_memory(void *pMemory);
 void* detour_allocate_memory(_In_ BOOL   bZeroMemory,
                              _In_ size_t size);
 
-void detour_copy_memory(_Out_writes_bytes_all_(Size) PVOID  Dest,
-                        _In_reads_bytes_(Size)       PVOID  Src,
-                        _In_                         size_t Size);
-
-void detour_zero_memory(_Out_writes_bytes_all_(Size) PVOID Dest,
-                        _In_                         size_t Size);
-
 
 //////////////////////////////////////////////////////// NTSTATUS definitions
 
