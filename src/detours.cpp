@@ -1720,9 +1720,9 @@ Description:
     thread deadlock barrier.
 */
 
-    PTHREAD_RUNTIME_INFO Info;
-    RUNTIME_INFO *Runtime;
-    BOOL Exists;
+    PTHREAD_RUNTIME_INFO pThreadRuntimeInfo;
+    RUNTIME_INFO *pRuntimeInfo;
+    BOOL bExists;
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
     pHandle = reinterpret_cast<PDETOUR_TRAMPOLINE>(
@@ -1747,9 +1747,9 @@ Description:
     }
 
     // open pointer table
-    Exists = TlsGetCurrentValue(&Unit.TLS, &Info);
+    bExists = TlsGetCurrentValue(&Unit.TLS, &pThreadRuntimeInfo);
 
-    if(!Exists)
+    if(!bExists)
     {
         if (!TlsAddCurrentThread(&Unit.TLS)) {
             return FALSE;
@@ -1772,28 +1772,28 @@ Description:
     }
     DETOUR_ASSERT(pHandle->HLSIndex < MAX_HOOK_COUNT, L"detours.cpp - pHandle->HLSIndex < MAX_HOOK_COUNT");
 
-    if(!Exists)
+    if(!bExists)
     {        
-        TlsGetCurrentValue(&Unit.TLS, &Info);
-        Info->Entries = static_cast<RUNTIME_INFO*>(detour_allocate_memory(TRUE, sizeof(RUNTIME_INFO) * MAX_HOOK_COUNT));
+        TlsGetCurrentValue(&Unit.TLS, &pThreadRuntimeInfo);
+        pThreadRuntimeInfo->Entries = static_cast<RUNTIME_INFO*>(detour_allocate_memory(TRUE, sizeof(RUNTIME_INFO) * MAX_HOOK_COUNT));
 
-        if (Info->Entries == NULL) {
+        if (pThreadRuntimeInfo->Entries == NULL) {
             goto DONT_INTERCEPT;
         }
     }
 
     // get hook runtime info...
-    Runtime = &Info->Entries[pHandle->HLSIndex];
+    pRuntimeInfo = &pThreadRuntimeInfo->Entries[pHandle->HLSIndex];
 
-    if(Runtime->HLSIdent != pHandle->HLSIdent)
+    if(pRuntimeInfo->HLSIdent != pHandle->HLSIdent)
     {
         // just reset execution information
-        Runtime->HLSIdent = pHandle->HLSIdent;
-        Runtime->IsExecuting = FALSE;
+        pRuntimeInfo->HLSIdent = pHandle->HLSIdent;
+        pRuntimeInfo->IsExecuting = FALSE;
     }
 
     // detect loops in hook execution hiearchy.
-    if(Runtime->IsExecuting)
+    if(pRuntimeInfo->IsExecuting)
     {
         /*
             This implies that actually the handler has invoked itself. Because of
@@ -1808,21 +1808,21 @@ Description:
         goto DONT_INTERCEPT;
     }
 
-    Info->Callback = pHandle->Callback;
-    Info->Current = Runtime;
+    pThreadRuntimeInfo->Callback = pHandle->Callback;
+    pThreadRuntimeInfo->Current = pRuntimeInfo;
 
     /*
         Now we will negotiate thread/process access based on global and local ACL...
     */
-    Runtime->IsExecuting = detour_is_thread_intercepted(&pHandle->LocalACL, GetCurrentThreadId());
+    pRuntimeInfo->IsExecuting = detour_is_thread_intercepted(&pHandle->LocalACL, GetCurrentThreadId());
 
-    if (!Runtime->IsExecuting) {
+    if (!pRuntimeInfo->IsExecuting) {
         goto DONT_INTERCEPT;
     }
 
     // save some context specific information
-    Runtime->RetAddress = pReturnAddr;
-    Runtime->AddrOfRetAddr = ppAddrOfReturnAddr;
+    pRuntimeInfo->RetAddress = pReturnAddr;
+    pRuntimeInfo->AddrOfRetAddr = ppAddrOfReturnAddr;
 
     detour_release_self_protection();
     return TRUE;
@@ -1830,10 +1830,10 @@ Description:
 DONT_INTERCEPT:
     /*  !!Note that the assembler code does not invoke UnmanagedHookOutro() in this case!! */
 
-    if(Info != NULL)
+    if(pThreadRuntimeInfo != NULL)
     {
-        Info->Current = NULL;
-        Info->Callback = NULL;
+        pThreadRuntimeInfo->Current = NULL;
+        pThreadRuntimeInfo->Callback = NULL;
 
         detour_release_self_protection();
     }
@@ -1856,8 +1856,8 @@ Description:
     save it in any efficient manner at this point of execution...
 */
 
-    RUNTIME_INFO *Runtime;
-    PTHREAD_RUNTIME_INFO Info;
+    RUNTIME_INFO *pRuntimeInfo;
+    PTHREAD_RUNTIME_INFO pThreadRuntimeInfo;
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
     pHandle = reinterpret_cast<PDETOUR_TRAMPOLINE>(
@@ -1866,24 +1866,24 @@ Description:
 
     DETOUR_ASSERT(detour_acquire_self_protection(), L"detours.cpp - detour_acquire_self_protection()");
 
-    DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL),
-        L"detours.cpp - TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL)");
+    DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &pThreadRuntimeInfo) && (pThreadRuntimeInfo != NULL),
+        L"detours.cpp - TlsGetCurrentValue(&Unit.TLS, &pThreadRuntimeInfo) && (pThreadRuntimeInfo != NULL)");
 
-    Runtime = &Info->Entries[pHandle->HLSIndex];
+    pRuntimeInfo = &pThreadRuntimeInfo->Entries[pHandle->HLSIndex];
 
     // leave handler context
-    Info->Current = NULL;
-    Info->Callback = NULL;
+    pThreadRuntimeInfo->Current = NULL;
+    pThreadRuntimeInfo->Callback = NULL;
 
-    DETOUR_ASSERT(Runtime != NULL, L"detours.cpp - Runtime != NULL");
+    DETOUR_ASSERT(pRuntimeInfo != NULL, L"detours.cpp - pRuntimeInfo != NULL");
 
-    DETOUR_ASSERT(Runtime->IsExecuting, L"detours.cpp - Runtime->IsExecuting");
+    DETOUR_ASSERT(pRuntimeInfo->IsExecuting, L"detours.cpp - pRuntimeInfo->IsExecuting");
 
-    Runtime->IsExecuting = FALSE;
+    pRuntimeInfo->IsExecuting = FALSE;
 
     DETOUR_ASSERT(*ppAddrOfReturnAddr == NULL, L"detours.cpp - *pAddrOfRetAddr == NULL");
 
-    *ppAddrOfReturnAddr = Runtime->RetAddress;
+    *ppAddrOfReturnAddr = pRuntimeInfo->RetAddress;
 
     detour_release_self_protection();
 
@@ -2690,7 +2690,7 @@ LONG WINAPI DetourAttachEx(_Inout_ PVOID *ppPointer,
         return ERROR_INVALID_PARAMETER;
     }
 
-    if (s_nPendingThreadId != (LONG)GetCurrentThreadId()) {
+    if (s_nPendingThreadId != static_cast<LONG>(GetCurrentThreadId())) {
         DETOUR_TRACE(("transaction conflict with thread id=%d\n", s_nPendingThreadId));
         return ERROR_INVALID_OPERATION;
     }
@@ -2714,7 +2714,7 @@ LONG WINAPI DetourAttachEx(_Inout_ PVOID *ppPointer,
         return error;
     }
 
-    PBYTE pbTarget = (PBYTE)*ppPointer;
+    PBYTE pbTarget = static_cast<PBYTE>(*ppPointer);
     PDETOUR_TRAMPOLINE pTrampoline = NULL;
     DetourOperation *o = NULL;
 
@@ -2731,7 +2731,7 @@ LONG WINAPI DetourAttachEx(_Inout_ PVOID *ppPointer,
     DETOUR_TRACE(("  ppldTarget=%p, code=%p [gp=%p]\n",
                   ppldTarget, pbTarget, pTargetGlobals));
 #else // DETOURS_IA64
-    pbTarget = (PBYTE)DetourCodeFromPointer(pbTarget, NULL);
+    pbTarget = static_cast<PBYTE>(DetourCodeFromPointer(pbTarget, NULL));
     pDetour = DetourCodeFromPointer(pDetour, NULL);
 #endif // !DETOURS_IA64
 
@@ -2839,12 +2839,12 @@ LONG WINAPI DetourAttachEx(_Inout_ PVOID *ppPointer,
 
         DETOUR_TRACE(("detours: DetourCopyInstruction(%p,%p)\n",
                       pbTrampoline, pbSrc));
-        pbSrc = (PBYTE)
-            DetourCopyInstruction(pbTrampoline, (PVOID*)&pbPool, pbSrc, NULL, &lExtra);
+        pbSrc = static_cast<PBYTE>(
+            DetourCopyInstruction(pbTrampoline, reinterpret_cast<PVOID*>(&pbPool), pbSrc, NULL, &lExtra));
         DETOUR_TRACE(("detours: DetourCopyInstruction() = %p (%d bytes)\n",
                       pbSrc, (int)(pbSrc - pbOp)));
         pbTrampoline += (pbSrc - pbOp) + lExtra;
-        cbTarget = (LONG)(pbSrc - pbTarget);
+        cbTarget = static_cast<LONG>(pbSrc - pbTarget);
         pTrampoline->rAlign[nAlign].obTarget = cbTarget;
         pTrampoline->rAlign[nAlign].obTrampoline = pbTrampoline - pTrampoline->rbCode;
         nAlign++;
@@ -2905,8 +2905,8 @@ LONG WINAPI DetourAttachEx(_Inout_ PVOID *ppPointer,
         __debugbreak();
     }
 
-    pTrampoline->cbCode = (BYTE)(pbTrampoline - pTrampoline->rbCode);
-    pTrampoline->cbRestore = (BYTE)cbTarget;
+    pTrampoline->cbCode = static_cast<BYTE>(pbTrampoline - pTrampoline->rbCode);
+    pTrampoline->cbRestore = static_cast<BYTE>(cbTarget);
     CopyMemory(pTrampoline->rbRestore, pbTarget, cbTarget);
 
 #if !defined(DETOURS_IA64)
