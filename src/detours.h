@@ -579,13 +579,13 @@ void detour_set_last_error(_In_ LONG lCode,
 //
 //
 
-void DetourBarrierThreadDetach();
+void WINAPI DetourBarrierThreadDetach();
 
-LONG DetourBarrierProcessAttach();
-void DetourBarrierProcessDetach();
+LONG WINAPI DetourBarrierProcessAttach();
+void WINAPI DetourBarrierProcessDetach();
 
-void DetourCriticalInitialize();
-void DetourCriticalFinalize();
+void WINAPI DetourCriticalInitialize();
+void WINAPI DetourCriticalFinalize();
 
 LONG DetourInstallHook(_Inout_ PVOID pEntryPoint,
                        _In_ PVOID pDetour,

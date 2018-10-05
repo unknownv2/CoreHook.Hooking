@@ -307,8 +307,6 @@ Parameters:
         MAX_ACE_COUNT! 
 */
 
-    ULONG Index;
-
     DETOUR_ASSERT(IsValidPointer(pAcl, sizeof(HOOK_ACL)), L"barrier.cpp - IsValidPointer(InAcl, sizeof(HOOK_ACL))");
 
     if (dwThreadCount > MAX_ACE_COUNT) {
@@ -319,10 +317,10 @@ Parameters:
         return STATUS_INVALID_PARAMETER_1;
     }
 
-    for (Index = 0; Index < dwThreadCount; Index++)
+    for (DWORD index = 0; index < dwThreadCount; index++)
     {
-        if (dwThreadIdList[Index] == 0) {
-            dwThreadIdList[Index] = GetCurrentThreadId();
+        if (dwThreadIdList[index] == 0) {
+            dwThreadIdList[index] = GetCurrentThreadId();
         }
     }
     DWORD dwOld;
@@ -350,29 +348,6 @@ HOOK_ACL *detour_barrier_get_acl()
     return &Unit.GlobalACL;
 }
 
-LONG DetourBarrierProcessAttach()
-{
-/*
-Description:
-
-    Will be called on DLL load and initializes all barrier structures.
-*/
-
-    detour_zero_memory(&Unit, sizeof(Unit));
-
-    // globally accept all threads...
-    Unit.GlobalACL.IsExclusive = TRUE;
-
-    // allocate private heap
-    detour_initialize_lock(&Unit.TLS.ThreadSafe);
-
-    Unit.IsInitialized = AuxUlibInitialize() ? TRUE : FALSE;
-
-    hCoreHookHeap = HeapCreate(0, 0, 0);
-
-    return STATUS_SUCCESS;
-}
-
 BOOL TlsGetCurrentValue(_In_  THREAD_LOCAL_STORAGE *pTls,
                         _Outptr_ THREAD_RUNTIME_INFO  **OutValue)
 {
@@ -398,14 +373,13 @@ Returns:
     FALSE if the caller was not registered in the storage, TRUE otherwise.
 */
 
-    DWORD CurrentId = GetCurrentThreadId();
-    LONG Index;
+    DWORD dwThreadId = GetCurrentThreadId();
 
-    for (Index = 0; Index < MAX_THREAD_COUNT; Index++)
+    for (auto index = 0; index < MAX_THREAD_COUNT; index++)
     {
-        if (pTls->IdList[Index] == CurrentId)
+        if (pTls->IdList[index] == dwThreadId)
         {
-            *OutValue = &pTls->Entries[Index];
+            *OutValue = &pTls->Entries[index];
 
             return TRUE;
         }
@@ -440,7 +414,7 @@ Returns:
     TRUE on success, FALSE otherwise.
 */
 
-    ULONG CurrentId = GetCurrentThreadId();
+    ULONG dwThreadId = GetCurrentThreadId();
     LONG Index = -1;
     LONG i;
 
@@ -453,7 +427,7 @@ Returns:
             Index = i;
         }
 
-        DETOUR_ASSERT(pTls->IdList[i] != CurrentId, L"barrier.cpp - pTls->IdList[i] != CurrentId");
+        DETOUR_ASSERT(pTls->IdList[i] != dwThreadId, L"barrier.cpp - pTls->IdList[i] != dwThreadId");
     }
 
     if (Index == -1)
@@ -463,7 +437,8 @@ Returns:
         return FALSE;
     }
 
-    pTls->IdList[Index] = CurrentId;
+    pTls->IdList[Index] = dwThreadId;
+
     detour_zero_memory(&pTls->Entries[Index], sizeof(THREAD_RUNTIME_INFO));
 
     detour_release_lock(&pTls->ThreadSafe);
@@ -471,7 +446,7 @@ Returns:
     return TRUE;
 }
 
-void TlsRemoveCurrentThread(THREAD_LOCAL_STORAGE *InTls)
+static void TlsRemoveCurrentThread(THREAD_LOCAL_STORAGE *InTls)
 {
 /*
 Description:
@@ -486,25 +461,47 @@ Parameters:
         The storage from which the caller should be removed.
 */
 
-    DWORD CurrentId = GetCurrentThreadId();
-    ULONG Index;
+    DWORD dwThreadId = GetCurrentThreadId();
 
     detour_acquire_lock(&InTls->ThreadSafe);
 
-    for (Index = 0; Index < MAX_THREAD_COUNT; Index++)
+    for (auto index = 0; index < MAX_THREAD_COUNT; index++)
     {
-        if (InTls->IdList[Index] == CurrentId)
+        if (InTls->IdList[index] == dwThreadId)
         {
-            InTls->IdList[Index] = 0;
+            InTls->IdList[index] = 0;
 
-            detour_zero_memory(&InTls->Entries[Index], sizeof(THREAD_RUNTIME_INFO));
+            detour_zero_memory(&InTls->Entries[index], sizeof(THREAD_RUNTIME_INFO));
         }
     }
 
     detour_release_lock(&InTls->ThreadSafe);
 }
 
-void DetourBarrierProcessDetach()
+LONG WINAPI DetourBarrierProcessAttach()
+{
+    /*
+    Description:
+
+        Will be called on DLL load and initializes all barrier structures.
+    */
+
+    detour_zero_memory(&Unit, sizeof(Unit));
+
+    // globally accept all threads...
+    Unit.GlobalACL.IsExclusive = TRUE;
+
+    // allocate private heap
+    detour_initialize_lock(&Unit.TLS.ThreadSafe);
+
+    Unit.IsInitialized = AuxUlibInitialize() ? TRUE : FALSE;
+
+    hCoreHookHeap = HeapCreate(0, 0, 0);
+
+    return STATUS_SUCCESS;
+}
+
+void WINAPI DetourBarrierProcessDetach()
 {
 /*
 Description:
@@ -512,16 +509,14 @@ Description:
     Will be called on DLL unload.
 */
 
-    ULONG Index;
-
     detour_delete_lock(&Unit.TLS.ThreadSafe);
 
     // release thread specific resources
-    for (Index = 0; Index < MAX_THREAD_COUNT; Index++)
+    for (auto index = 0; index < MAX_THREAD_COUNT; index++)
     {
-        if (Unit.TLS.Entries[Index].Entries != NULL)
+        if (Unit.TLS.Entries[index].Entries != NULL)
         {
-            detour_free_memory(Unit.TLS.Entries[Index].Entries);
+            detour_free_memory(Unit.TLS.Entries[index].Entries);
         }
     }
 
@@ -530,7 +525,7 @@ Description:
     HeapDestroy(hCoreHookHeap);
 }
 
-void DetourBarrierThreadDetach()
+void WINAPI DetourBarrierThreadDetach()
 {
 /*
 Description:
@@ -538,16 +533,16 @@ Description:
     Will be called on thread termination and cleans up the TLS.
 */
 
-    PTHREAD_RUNTIME_INFO Info;
+    PTHREAD_RUNTIME_INFO pThreadRuntime;
 
-    if (TlsGetCurrentValue(&Unit.TLS, &Info))
+    if (TlsGetCurrentValue(&Unit.TLS, &pThreadRuntime))
     {
-        if (Info->Entries != NULL)
+        if (pThreadRuntime->Entries != NULL)
         {
-            detour_free_memory(Info->Entries);
+            detour_free_memory(pThreadRuntime->Entries);
         }
 
-        Info->Entries = NULL;
+        pThreadRuntime->Entries = NULL;
     }
 
     TlsRemoveCurrentThread(&Unit.TLS);
@@ -555,7 +550,7 @@ Description:
 
 RTL_SPIN_LOCK GlobalHookLock;
 
-void DetourCriticalInitialize()
+void WINAPI DetourCriticalInitialize()
 {
 /*
 Description:
@@ -566,7 +561,7 @@ Description:
     detour_initialize_lock(&GlobalHookLock);
 }
 
-void DetourCriticalFinalize()
+void WINAPI DetourCriticalFinalize()
 {
 /*
 Description:
@@ -619,13 +614,13 @@ Returns:
 
 */
 
-    PTHREAD_RUNTIME_INFO Runtime = NULL;
+    PTHREAD_RUNTIME_INFO pThreadRuntimeInfo = NULL;
 
-    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime) || Runtime->IsProtected) {
+    if (!TlsGetCurrentValue(&Unit.TLS, &pThreadRuntimeInfo) || pThreadRuntimeInfo->IsProtected) {
         return FALSE;
     }
 
-    Runtime->IsProtected = TRUE;
+    pThreadRuntimeInfo->IsProtected = TRUE;
 
     return TRUE;
 }
@@ -641,17 +636,16 @@ Description:
     An assertion is raised if the caller has not owned the self protection.
 */
 
-    PTHREAD_RUNTIME_INFO pRuntime = NULL;
+    PTHREAD_RUNTIME_INFO pThreadRuntime = NULL;
 
-    DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &pRuntime) && pRuntime->IsProtected,
-        L"barrier.cpp - TlsGetCurrentValue(&Unit.TLS, &Runtime) && Runtime->IsProtected");
+    DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &pThreadRuntime) && pThreadRuntime->IsProtected,
+        L"barrier.cpp - TlsGetCurrentValue(&Unit.TLS, &Runtime) && pThreadRuntime->IsProtected");
 
-    pRuntime->IsProtected = FALSE;
+    pThreadRuntime->IsProtected = FALSE;
 }
 
-BOOL ACLContains(
-    HOOK_ACL *InACL,
-    ULONG InCheckID)
+static BOOL detour_acl_contains(_In_ HOOK_ACL *pACL,
+                                _In_ ULONG dwAcl)
 {
 /*
 Returns:
@@ -659,12 +653,10 @@ Returns:
     TRUE if the given ACL contains the given ID, FALSE otherwise.
 */
 
-    ULONG Index;
-
-    for (Index = 0; Index < InACL->Count; Index++)
-    {
-        if (InACL->Entries[Index] == InCheckID)
+    for (ULONG index = 0; index < pACL->Count; index++) {
+        if (pACL->Entries[index] == dwAcl) {
             return TRUE;
+        }
     }
 
     return FALSE;
@@ -695,9 +687,9 @@ Returns:
         checkId = dwThreadId;
     }
 
-    if (ACLContains(&Unit.GlobalACL, checkId))
+    if (detour_acl_contains(&Unit.GlobalACL, checkId))
     {
-        if (ACLContains(pLocalACL, checkId))
+        if (detour_acl_contains(pLocalACL, checkId))
         {
             if (pLocalACL->IsExclusive) {
                 return FALSE;
@@ -714,7 +706,7 @@ Returns:
     }
     else
     {
-        if (ACLContains(pLocalACL, checkId))
+        if (detour_acl_contains(pLocalACL, checkId))
         {
             if (pLocalACL->IsExclusive) {
                 return FALSE;
@@ -744,19 +736,19 @@ Description:
 */
 
     LONG NtStatus;
-    PTHREAD_RUNTIME_INFO Runtime;
+    PTHREAD_RUNTIME_INFO pThreadRuntime;
 
     if (!IsValidPointer(ppCallback, sizeof(PVOID)))
     {
         THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
     }
-    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) 
+    if (!TlsGetCurrentValue(&Unit.TLS, &pThreadRuntime)) 
     {
         THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
     }
-    if (Runtime->Current != NULL) 
+    if (pThreadRuntime->Current != NULL) 
     {
-        *ppCallback = Runtime->Callback;
+        *ppCallback = pThreadRuntime->Callback;
     }
     else 
     { 
@@ -785,18 +777,18 @@ Description:
 */
 
     LONG NtStatus;
-    PTHREAD_RUNTIME_INFO Runtime;
+    PTHREAD_RUNTIME_INFO pThreadRuntime;
 
     if (!IsValidPointer(ppReturnAddress, sizeof(PVOID))) {
         THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
     }
 
-    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
+    if (!TlsGetCurrentValue(&Unit.TLS, &pThreadRuntime)) {
         THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
     }
 
-    if (Runtime->Current != NULL) {
-        *ppReturnAddress = Runtime->Current->RetAddress;
+    if (pThreadRuntime->Current != NULL) {
+        *ppReturnAddress = pThreadRuntime->Current->RetAddress;
     }
     else {
         THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
@@ -820,19 +812,19 @@ Description:
     the address of the return address of the hook handler.
 */
 
-    PTHREAD_RUNTIME_INFO Runtime;
+    PTHREAD_RUNTIME_INFO pThreadRuntime;
     LONG NtStatus;
 
     if (pppAddressOfReturnAddress == NULL) {
         THROW(STATUS_INVALID_PARAMETER, L"Invalid storage specified.");
     }
 
-    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
+    if (!TlsGetCurrentValue(&Unit.TLS, &pThreadRuntime)) {
         THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
     }
 
-    if (Runtime->Current != NULL) {
-        *pppAddressOfReturnAddress = Runtime->Current->AddrOfRetAddr;
+    if (pThreadRuntime->Current != NULL) {
+        *pppAddressOfReturnAddress = pThreadRuntime->Current->AddrOfRetAddr;
     }
     else {
         THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
@@ -859,22 +851,22 @@ Description:
 */
 
     LONG NtStatus;
-    PTHREAD_RUNTIME_INFO Runtime;
+    PTHREAD_RUNTIME_INFO pThreadRuntime;
 
     if (ppBackup == NULL) {
         THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given backup storage is invalid.");
     }
 
-    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
+    if (!TlsGetCurrentValue(&Unit.TLS, &pThreadRuntime)) {
         THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
     }
 
-    if (Runtime->Current == NULL) {
+    if (pThreadRuntime->Current == NULL) {
         THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
     }
 
-    *ppBackup = *Runtime->Current->AddrOfRetAddr;
-    *Runtime->Current->AddrOfRetAddr = Runtime->Current->RetAddress;
+    *ppBackup = *pThreadRuntime->Current->AddrOfRetAddr;
+    *pThreadRuntime->Current->AddrOfRetAddr = pThreadRuntime->Current->RetAddress;
 
     RETURN;
 
