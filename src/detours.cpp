@@ -334,63 +334,62 @@ inline ULONG detour_is_code_filler(PBYTE pbCode)
 inline VOID detour_set_trampoline_functions(PDETOUR_TRAMPOLINE pTrampoline,
                                             ULONG trampolineSize)
 {
-    PBYTE Ptr = (PBYTE)pTrampoline->Trampoline;
+    PBYTE pbTrampoline = static_cast<PBYTE>(pTrampoline->Trampoline);
     for (ULONG Index = 0; Index < trampolineSize; Index++)
     {
 #pragma warning (disable:4311) // pointer truncation
-        switch (*((ULONG*)(Ptr)))
+        switch (*((ULONG*)(pbTrampoline)))
         {
             /*Handle*/
-        case 0x1A2B3C05:
-        {
-            *((ULONG*)Ptr) = (ULONG)pTrampoline;
-            break;
+            case 0x1A2B3C05:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)pTrampoline;
+                break;
+            }
+            /*UnmanagedIntro*/
+            case 0x1A2B3C03:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)pTrampoline->HookIntro;
+                break;
+            }
+            /*OldProc*/
+            case 0x1A2B3C01:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)pTrampoline->OldProc;
+                break;
+            }
+            /*NewProc*/
+            case 0x1A2B3C07:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)&pTrampoline->HookProc;
+                break;
+            }
+            /*NewProc*/
+            case 0x1A2B3C00:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)pTrampoline->HookProc;
+                break;
+            }
+            /*UnmanagedOutro*/
+            case 0x1A2B3C06:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)pTrampoline->HookOutro;
+                break;
+            }
+            /*IsExecuted*/
+            case 0x1A2B3C02:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)pTrampoline->IsExecutedPtr;
+                break;
+            }
+            /*RetAddr*/
+            case 0x1A2B3C04:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)((PBYTE)pTrampoline->Trampoline + 92);
+                break;
+            }
         }
-        /*UnmanagedIntro*/
-        case 0x1A2B3C03:
-        {
-            *((ULONG*)Ptr) = (ULONG)pTrampoline->HookIntro;
-            break;
-        }
-        /*OldProc*/
-        case 0x1A2B3C01:
-        {
-            *((ULONG*)Ptr) = (ULONG)pTrampoline->OldProc;
-            break;
-        }
-        /*Ptr:NewProc*/
-        case 0x1A2B3C07:
-        {
-            *((ULONG*)Ptr) = (ULONG)&pTrampoline->HookProc;
-            break;
-        }
-        /*NewProc*/
-        case 0x1A2B3C00:
-        {
-            *((ULONG*)Ptr) = (ULONG)pTrampoline->HookProc;
-            break;
-        }
-        /*UnmanagedOutro*/
-        case 0x1A2B3C06:
-        {
-            *((ULONG*)Ptr) = (ULONG)pTrampoline->HookOutro;
-            break;
-        }
-        /*IsExecuted*/
-        case 0x1A2B3C02:
-        {
-            *((ULONG*)Ptr) = (ULONG)pTrampoline->IsExecutedPtr;
-            break;
-        }
-        /*RetAddr*/
-        case 0x1A2B3C04:
-        {
-            *((ULONG*)Ptr) = (ULONG)((PBYTE)pTrampoline->Trampoline + 92);
-            break;
-        }
-        }
-
-        Ptr++;
+        pbTrampoline++;
     }
 }
 
