@@ -52,7 +52,6 @@ C_ASSERT(sizeof(_DETOUR_ALIGN) == 1);
 static PVOID    s_pSystemRegionLowerBound   = (PVOID)(ULONG_PTR)0x70000000;
 static PVOID    s_pSystemRegionUpperBound   = (PVOID)(ULONG_PTR)0x80000000;
 
-
 //////////////////////////////////////////////////////////////////////////////
 //
 // Hook Handle Slot List
@@ -1661,26 +1660,22 @@ static ULONG ___TrampolineSize = 0;
 
 PBYTE DetourGetTrampolinePtr()
 {
-    PBYTE Ptr = NULL;
+    PBYTE pbTrampoline = NULL;
 
 #if defined(DETOURS_X64)
-    Ptr = reinterpret_cast<PBYTE>(Trampoline_ASM_X64_CODE);
-
+    pbTrampoline = reinterpret_cast<PBYTE>(Trampoline_ASM_X64_CODE);
 #elif defined(DETOURS_X86)
-    Ptr = reinterpret_cast<PBYTE>(Trampoline_ASM_X86);
-
+    pbTrampoline = reinterpret_cast<PBYTE>(Trampoline_ASM_X86);
 #elif defined(DETOURS_ARM)
-    Ptr = reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_CODE);
-
+    pbTrampoline = reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_CODE);
 #elif defined(DETOURS_ARM64)
-    Ptr = reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_CODE);
-
+    pbTrampoline = reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_CODE);
 #endif
     // Find the real start of the function if we encounter a jmp instruction
-    if (*Ptr == 0xE9) {
-        Ptr += *((int*)(Ptr + 1)) + 5;
+    if (*pbTrampoline == 0xE9) {
+        pbTrampoline += *((int*)(pbTrampoline + 1)) + 5;
     }
-    return Ptr;
+    return pbTrampoline;
 }
 
 ULONG GetTrampolineSize()
@@ -1692,19 +1687,15 @@ ULONG GetTrampolineSize()
 #if defined(DETOURS_X64)
     ___TrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_X64_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_X64_CODE)));
-
 #elif defined(DETOURS_X86)  
     ___TrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_X86_DATA) - DetourGetTrampolinePtr()));
-
 #elif defined(DETOURS_ARM)
     ___TrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_CODE)));
-
 #elif defined(DETOURS_ARM64)
     ___TrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_CODE)));
-
 #endif
     return ___TrampolineSize;
 }
@@ -1914,11 +1905,11 @@ VOID detour_insert_trace_handle(PDETOUR_TRAMPOLINE pTrampoline)
     {
         memset(&pTrampoline->LocalACL, 0, sizeof(HOOK_ACL));
 
-        TRACED_HOOK_HANDLE OutHandle = new HOOK_TRACE_INFO();
+        const auto pTraceInfo = new HOOK_TRACE_INFO();
 
-        pTrampoline->OutHandle = OutHandle;
+        pTrampoline->OutHandle = pTraceInfo;
 
-        OutHandle->Link = pTrampoline;
+        pTraceInfo->Link = pTrampoline;
     }
 }
 
@@ -2071,9 +2062,9 @@ will still return STATUS_SUCCESS.
 */
 
     LONG error = -1;
-    PDETOUR_TRAMPOLINE Hook = NULL;
+    PDETOUR_TRAMPOLINE pHook = NULL;
     LONG NtStatus = -1;
-    BOOLEAN IsAllocated = FALSE;
+    BOOLEAN bIsAllocated = FALSE;
 
     if (!IsValidPointer(pHandle, sizeof(HOOK_TRACE_INFO))) {
         return FALSE;
@@ -2081,23 +2072,23 @@ will still return STATUS_SUCCESS.
 
     detour_acquire_lock(&GlobalHookLock);
     
-    if ((pHandle->Link != NULL) && detour_is_valid_handle(pHandle, &Hook))
+    if ((pHandle->Link != NULL) && detour_is_valid_handle(pHandle, &pHook))
     {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourDetach(&(PVOID&)Hook->OldProc, Hook->pbDetour);
+        DetourDetach(&(PVOID&)pHook->OldProc, pHook->pbDetour);
 
         pHandle->Link = NULL;
 
-        if (Hook->HookProc != NULL)
+        if (pHook->HookProc != NULL)
         {
-            Hook->HookProc = NULL;
+            pHook->HookProc = NULL;
 
-            IsAllocated = TRUE;
+            bIsAllocated = TRUE;
         }
         error = DetourTransactionCommit();
 
-        if (!IsAllocated)
+        if (!bIsAllocated)
         {
             detour_release_lock(&GlobalHookLock);
 
@@ -2358,11 +2349,15 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 #endif // DETOURS_IA64
 
 #ifdef DETOURS_X64
-            const PBYTE trampolinePtr = DetourGetTrampolinePtr();
-            const ULONG TrampolineSize = GetTrampolineSize();
-       
+            const PBYTE pbTrampoline = DetourGetTrampolinePtr();
+            const ULONG trampolineSize = GetTrampolineSize();
+            if (trampolineSize > DETOUR_TRAMPOLINE_CODE_SIZE) {
+                DETOUR_BREAK();
+                DetourTransactionAbort();
+                return ERROR_NOT_ENOUGH_MEMORY;
+            }
             const auto trampolineCode = &o->pTrampoline->rbTrampolineCode;
-            memcpy(trampolineCode, trampolinePtr, TrampolineSize);
+            memcpy(trampolineCode, pbTrampoline, trampolineSize);
             o->pTrampoline->HookIntro = BarrierIntro;
             o->pTrampoline->HookOutro = BarrierOutro;
             o->pTrampoline->Trampoline = trampolineCode;
@@ -2378,11 +2373,15 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 #endif // DETOURS_X64
 
 #ifdef DETOURS_X86
-            const PBYTE trampolinePtr = DetourGetTrampolinePtr();
-            const ULONG TrampolineSize = GetTrampolineSize();
-    
+            const PBYTE pbTrampoline = DetourGetTrampolinePtr();
+            const ULONG trampolineSize = GetTrampolineSize();
+            if (trampolineSize > DETOUR_TRAMPOLINE_CODE_SIZE) {
+                DETOUR_BREAK();
+                DetourTransactionAbort();
+                return ERROR_NOT_ENOUGH_MEMORY;
+            }
             const auto trampolineCode = &o->pTrampoline->rbTrampolineCode;
-            memcpy(trampolineCode, trampolinePtr, TrampolineSize);
+            memcpy(trampolineCode, pbTrampoline, trampolineSize);
             o->pTrampoline->HookIntro = BarrierIntro;
             o->pTrampoline->HookOutro = BarrierOutro;
             o->pTrampoline->Trampoline = trampolineCode;
@@ -2390,7 +2389,7 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
             o->pTrampoline->IsExecutedPtr = new int();
 
-            detour_set_trampoline_functions(o->pTrampoline, TrampolineSize);
+            detour_set_trampoline_functions(o->pTrampoline, trampolineSize);
 
             PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, static_cast<PBYTE>(o->pTrampoline->Trampoline));
             
@@ -2400,12 +2399,16 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 #endif // DETOURS_X86
 
 #ifdef DETOURS_ARM
-            const PBYTE trampolinePtr = DetourGetTrampolinePtr();
-            const ULONG TrampolineSize = GetTrampolineSize();
- 
+            const PBYTE pbTrampoline = DetourGetTrampolinePtr();
+            const ULONG trampolineSize = GetTrampolineSize();
+            if (trampolineSize > DETOUR_TRAMPOLINE_CODE_SIZE) {
+                DETOUR_BREAK();
+                DetourTransactionAbort();
+                return ERROR_NOT_ENOUGH_MEMORY;
+            }
             const auto trampolineCode = &o->pTrampoline->rbTrampolineCode;
-            const PBYTE trampolineStart = align4(trampolinePtr);
-            memcpy(trampolineCode, trampolineStart, TrampolineSize);
+            const PBYTE trampolineStart = align4(pbTrampoline);
+            memcpy(trampolineCode, trampolineStart, trampolineSize);
             o->pTrampoline->HookIntro = DETOURS_PBYTE_TO_PFUNC(BarrierIntro);
             o->pTrampoline->HookOutro = DETOURS_PBYTE_TO_PFUNC(BarrierOutro);
             o->pTrampoline->Trampoline = DETOURS_PBYTE_TO_PFUNC(trampolineCode);
@@ -2429,11 +2432,15 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 #endif // DETOURS_ARM
 
 #ifdef DETOURS_ARM64
-            const PBYTE trampolinePtr = DetourGetTrampolinePtr();
-            const ULONG TrampolineSize = GetTrampolineSize();
-
+            const PBYTE pbTrampoline = DetourGetTrampolinePtr();
+            const ULONG trampolineSize = GetTrampolineSize();
+            if (trampolineSize > DETOUR_TRAMPOLINE_CODE_SIZE) {
+                DETOUR_BREAK();
+                DetourTransactionAbort();
+                return ERROR_NOT_ENOUGH_MEMORY;
+            }
             const auto trampolineCode = &o->pTrampoline->rbTrampolineCode;
-            memcpy(trampolineCode, trampolinePtr, TrampolineSize);
+            memcpy(trampolineCode, pbTrampoline, trampolineSize);
             o->pTrampoline->HookIntro = BarrierIntro;
             o->pTrampoline->HookOutro = BarrierOutro;
             o->pTrampoline->Trampoline = trampolineCode;
@@ -3114,7 +3121,7 @@ LONG WINAPI DetourDetach(_Inout_ PVOID *ppPointer,
     DETOUR_TRACE(("\n"));
 #else // !DETOURS_IA64
     PDETOUR_TRAMPOLINE pTrampoline =
-        (PDETOUR_TRAMPOLINE)DetourCodeFromPointer(*ppPointer, NULL);
+        static_cast<PDETOUR_TRAMPOLINE>(DetourCodeFromPointer(*ppPointer, NULL));
     pDetour = DetourCodeFromPointer(pDetour, NULL);
 #endif // !DETOURS_IA64
 
@@ -3153,7 +3160,7 @@ LONG WINAPI DetourDetach(_Inout_ PVOID *ppPointer,
     }
 
     o->fIsRemove = TRUE;
-    o->ppbPointer = (PBYTE*)ppPointer;
+    o->ppbPointer = reinterpret_cast<PBYTE*>(ppPointer);
     o->pTrampoline = pTrampoline;
     o->pbTarget = pbTarget;
     o->dwPerm = dwOld;
