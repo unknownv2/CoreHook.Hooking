@@ -59,7 +59,7 @@ static void detour_copy_memory(_Out_writes_bytes_all_(Size) PVOID  Dest,
 }
 
 static void detour_zero_memory(_Out_writes_bytes_all_(Size) PVOID Dest,
-    _In_                         size_t Size)
+                               _In_                         size_t Size)
 {
     memset(Dest, 0, Size);
 }
@@ -255,7 +255,7 @@ Parameters:
 
 
 BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
-                            _Out_ PDETOUR_TRAMPOLINE   *pHandle)
+                            _Out_ PDETOUR_TRAMPOLINE *pHandle)
 {
 
 /*
@@ -446,7 +446,7 @@ Returns:
     return TRUE;
 }
 
-static void TlsRemoveCurrentThread(THREAD_LOCAL_STORAGE *InTls)
+static void TlsRemoveCurrentThread(_In_ THREAD_LOCAL_STORAGE *pTls)
 {
 /*
 Description:
@@ -463,19 +463,19 @@ Parameters:
 
     DWORD dwThreadId = GetCurrentThreadId();
 
-    detour_acquire_lock(&InTls->ThreadSafe);
+    detour_acquire_lock(&pTls->ThreadSafe);
 
     for (auto index = 0; index < MAX_THREAD_COUNT; index++)
     {
-        if (InTls->IdList[index] == dwThreadId)
+        if (pTls->IdList[index] == dwThreadId)
         {
-            InTls->IdList[index] = 0;
+            pTls->IdList[index] = 0;
 
-            detour_zero_memory(&InTls->Entries[index], sizeof(THREAD_RUNTIME_INFO));
+            detour_zero_memory(&pTls->Entries[index], sizeof(THREAD_RUNTIME_INFO));
         }
     }
 
-    detour_release_lock(&InTls->ThreadSafe);
+    detour_release_lock(&pTls->ThreadSafe);
 }
 
 LONG WINAPI DetourBarrierProcessAttach()
@@ -905,10 +905,9 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG WINAPI DetourBarrierCallStackTrace(
-    _Outptr_ PVOID *ppMethodArray,
-    _In_ DWORD dwFramesToCapture,
-    _Inout_ DWORD *pCapturedFramesCount)
+LONG WINAPI DetourBarrierCallStackTrace(_Outptr_ PVOID *ppMethodArray,
+                                        _In_ DWORD dwFramesToCapture,
+                                        _Inout_ DWORD *pCapturedFramesCount)
 {
 /*
 Description:

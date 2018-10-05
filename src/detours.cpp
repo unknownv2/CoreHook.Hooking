@@ -1881,7 +1881,7 @@ Description:
     return pHandle;
 }
 
-TRACED_HOOK_HANDLE WINAPI DetourGetHookHandleForFunction(PDETOUR_TRAMPOLINE pTrampoline)
+TRACED_HOOK_HANDLE WINAPI DetourGetHookHandleForFunction(_In_ PDETOUR_TRAMPOLINE pTrampoline)
 {
     if(pTrampoline != NULL) {
         return pTrampoline->OutHandle;
@@ -1889,7 +1889,8 @@ TRACED_HOOK_HANDLE WINAPI DetourGetHookHandleForFunction(PDETOUR_TRAMPOLINE pTra
     return NULL;
 }
 
-LONG WINAPI DetourSetCallbackForLocalHook(PDETOUR_TRAMPOLINE pTrampoline, PVOID pCallback)
+LONG WINAPI DetourSetCallbackForLocalHook(_In_ PDETOUR_TRAMPOLINE pTrampoline,
+                                          _In_ PVOID pCallback)
 {
     if(pTrampoline != NULL) {
         pTrampoline->Callback = pCallback;
