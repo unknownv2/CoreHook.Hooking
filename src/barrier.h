@@ -12,7 +12,7 @@ void detour_release_self_protection();
 
 void detour_sleep(_In_ DWORD milliSeconds);
 
-//////////////////////////////////////////////// dotnet trampoline barrier definitions
+/////////////////////////////////////////// trampoline thread barrier definitions
 //
 
 #define MAX_HOOK_COUNT              1024
@@ -109,16 +109,12 @@ void detour_set_last_error(_In_ LONG lCode,
 #define WIDE1(x) WIDE2(x)
 #define WFILE WIDE1(__FILE__)
 
-#define XX(st) L##st
-#define X(str) XX(str)
-
 #define ASSERT_ALWAYS(expression)   \
     do {                                                                 \
     if (!(expression)) {                                                 \
             detour_assert(#expression, WFILE, __LINE__);                    \
     }                                                                    \
     } while (0)
-
 
 
 #define DETOUR_ASSERT(expr)         ASSERT(expr)
