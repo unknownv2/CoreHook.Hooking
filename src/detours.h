@@ -559,18 +559,6 @@ LONG WINAPI DetourBarrierCallStackTrace(_Outptr_ PVOID *ppMethodArray,
                                         _Inout_ DWORD *pCapturedFramesCount);
 
 
-////////////////////////////////////////////////////////////
-//
-//  Exception and error handling
-//
-//
-
-void detour_assert(_In_ BOOL bAssert,
-                   _In_ LPCWSTR lpMessageText);
-
-void detour_set_last_error(_In_ LONG lCode,
-                           _In_ LONG lStatus,
-                           _In_opt_ LPCWSTR lpMessage);
 
 ////////////////////////////////////////////////////////////
 //

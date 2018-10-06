@@ -56,8 +56,8 @@ static PVOID    s_pSystemRegionUpperBound   = (PVOID)(ULONG_PTR)0x80000000;
 //
 // Hook Handle Slot List
 //
-ULONG                       GlobalSlotList[MAX_HOOK_COUNT];
-static LONG                 UniqueIDCounter = 0x10000000;
+ULONG                       g_SlotList[MAX_HOOK_COUNT];
+static LONG                 s_UniqueIDCounter = 0x10000000;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -1420,9 +1420,9 @@ static void detour_free_trampoline(PDETOUR_TRAMPOLINE pTrampoline)
         delete pTrampoline->OutHandle;
     }
     if (pTrampoline->HLSIndex != -1) {
-        if (GlobalSlotList[pTrampoline->HLSIndex] == pTrampoline->HLSIdent)
+        if (g_SlotList[pTrampoline->HLSIndex] == pTrampoline->HLSIdent)
         {
-            GlobalSlotList[pTrampoline->HLSIndex] = 0;
+            g_SlotList[pTrampoline->HLSIndex] = 0;
         }
     }
 
@@ -1737,11 +1737,11 @@ Description:
     }
 
     // open pointer table
-    bExists = TlsGetCurrentValue(&Unit.TLS, &pThreadRuntimeInfo);
+    bExists = TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntimeInfo);
 
     if(!bExists)
     {
-        if (!TlsAddCurrentThread(&Unit.TLS)) {
+        if (!TlsAddCurrentThread(&g_BarrierUnit.TLS)) {
             return FALSE;
         }
     }
@@ -1760,11 +1760,11 @@ Description:
 
         return FALSE;
     }
-    DETOUR_ASSERT(pHandle->HLSIndex < MAX_HOOK_COUNT, L"detours.cpp - pHandle->HLSIndex < MAX_HOOK_COUNT");
+    DETOUR_ASSERT(pHandle->HLSIndex < MAX_HOOK_COUNT);
 
     if(!bExists)
     {        
-        TlsGetCurrentValue(&Unit.TLS, &pThreadRuntimeInfo);
+        TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntimeInfo);
         pThreadRuntimeInfo->Entries = static_cast<RUNTIME_INFO*>(detour_allocate_memory(TRUE, sizeof(RUNTIME_INFO) * MAX_HOOK_COUNT));
 
         if (pThreadRuntimeInfo->Entries == NULL) {
@@ -1846,18 +1846,17 @@ Description:
     save it in any efficient manner at this point of execution...
 */
 
-    RUNTIME_INFO *pRuntimeInfo;
-    PTHREAD_RUNTIME_INFO pThreadRuntimeInfo;
+    RUNTIME_INFO *pRuntimeInfo = NULL;
+    PTHREAD_RUNTIME_INFO pThreadRuntimeInfo = NULL;
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
     pHandle = reinterpret_cast<PDETOUR_TRAMPOLINE>(
         (reinterpret_cast<PBYTE>(pHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE)));
 #endif
 
-    DETOUR_ASSERT(detour_acquire_self_protection(), L"detours.cpp - detour_acquire_self_protection()");
+    DETOUR_ASSERT(detour_acquire_self_protection());
 
-    DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &pThreadRuntimeInfo) && (pThreadRuntimeInfo != NULL),
-        L"detours.cpp - TlsGetCurrentValue(&Unit.TLS, &pThreadRuntimeInfo) && (pThreadRuntimeInfo != NULL)");
+    DETOUR_ASSERT(TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntimeInfo) && (pThreadRuntimeInfo != NULL));
 
     pRuntimeInfo = &pThreadRuntimeInfo->Entries[pHandle->HLSIndex];
 
@@ -1865,13 +1864,13 @@ Description:
     pThreadRuntimeInfo->Current = NULL;
     pThreadRuntimeInfo->Callback = NULL;
 
-    DETOUR_ASSERT(pRuntimeInfo != NULL, L"detours.cpp - pRuntimeInfo != NULL");
+    DETOUR_ASSERT(pRuntimeInfo != NULL);
 
-    DETOUR_ASSERT(pRuntimeInfo->IsExecuting, L"detours.cpp - pRuntimeInfo->IsExecuting");
+    DETOUR_ASSERT(pRuntimeInfo->IsExecuting);
 
     pRuntimeInfo->IsExecuting = FALSE;
 
-    DETOUR_ASSERT(*ppAddrOfReturnAddr == NULL, L"detours.cpp - *pAddrOfRetAddr == NULL");
+    DETOUR_ASSERT(*ppAddrOfReturnAddr == NULL);
 
     *ppAddrOfReturnAddr = pRuntimeInfo->RetAddress;
 
@@ -1919,17 +1918,17 @@ LONG detour_add_trampoline_to_global_list(PDETOUR_TRAMPOLINE pTrampoline)
     BOOL bExists;
 
     // register in global HLS list
-    detour_acquire_lock(&GlobalHookLock);
+    detour_acquire_lock(&g_HookLock);
     
-    pTrampoline->HLSIdent = UniqueIDCounter++;
+    pTrampoline->HLSIdent = s_UniqueIDCounter++;
 
     bExists = FALSE;
 
     for(dwIndex = 0; dwIndex < MAX_HOOK_COUNT; dwIndex++)
     {
-        if(GlobalSlotList[dwIndex] == 0)
+        if(g_SlotList[dwIndex] == 0)
         {
-            GlobalSlotList[dwIndex] = pTrampoline->HLSIdent;
+            g_SlotList[dwIndex] = pTrampoline->HLSIdent;
 
             pTrampoline->HLSIndex = dwIndex;
 
@@ -1939,7 +1938,7 @@ LONG detour_add_trampoline_to_global_list(PDETOUR_TRAMPOLINE pTrampoline)
         }
     }
     
-    detour_release_lock(&GlobalHookLock);
+    detour_release_lock(&g_HookLock);
 
     return bExists;
 }
@@ -2070,7 +2069,7 @@ will still return STATUS_SUCCESS.
         return FALSE;
     }
 
-    detour_acquire_lock(&GlobalHookLock);
+    detour_acquire_lock(&g_HookLock);
     
     if ((pHandle->Link != NULL) && detour_is_valid_handle(pHandle, &pHook))
     {
@@ -2090,13 +2089,13 @@ will still return STATUS_SUCCESS.
 
         if (!bIsAllocated)
         {
-            detour_release_lock(&GlobalHookLock);
+            detour_release_lock(&g_HookLock);
 
             RETURN;
         }
     }
     
-    detour_release_lock(&GlobalHookLock);
+    detour_release_lock(&g_HookLock);
 
     RETURN(STATUS_SUCCESS);
 
