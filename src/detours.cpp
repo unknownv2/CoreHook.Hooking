@@ -1846,7 +1846,7 @@ Description:
     save it in any efficient manner at this point of execution...
 */
 
-    RUNTIME_INFO *pRuntimeInfo;
+    RUNTIME_INFO *pRuntimeInfo = NULL;
     PTHREAD_RUNTIME_INFO pThreadRuntimeInfo;
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)

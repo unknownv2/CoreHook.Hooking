@@ -88,10 +88,8 @@ HOOK_ACL* detour_barrier_get_acl();
 extern BARRIER_UNIT         g_BarrierUnit;
 extern DETOUR_SPIN_LOCK     g_HookLock;
 
-
 //////////////////////////////////////////////// Exception handling code
 //
-
 
 VOID detour_assert(const char* pszMsg, LPCWSTR pszFile, ULONG nLine);
 
@@ -112,7 +110,7 @@ void detour_set_last_error(_In_ LONG lCode,
 #define ASSERT_ALWAYS(expression)   \
     do {                                                                 \
     if (!(expression)) {                                                 \
-            detour_assert(#expression, WFILE, __LINE__);                    \
+            detour_assert(#expression, WFILE, __LINE__);                 \
     }                                                                    \
     } while (0)
 
@@ -180,4 +178,3 @@ void* detour_allocate_memory(_In_ BOOL   bZeroMemory,
 #define STATUS_INVALID_PARAMETER_6       ((LONG)0xC00000F4L)
 #define STATUS_INVALID_PARAMETER_7       ((LONG)0xC00000F5L)
 #define STATUS_INVALID_PARAMETER_8       ((LONG)0xC00000F6L)
-
