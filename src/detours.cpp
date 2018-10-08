@@ -1416,7 +1416,7 @@ static void detour_free_trampoline(PDETOUR_TRAMPOLINE pTrampoline)
     if( pTrampoline->IsExecutedPtr != NULL) {
         delete pTrampoline->IsExecutedPtr;
     }
-    if( pTrampoline->OutHandle != NULL) {    
+    if( pTrampoline->OutHandle != NULL) {
         delete pTrampoline->OutHandle;
     }
     if (pTrampoline->HLSIndex != -1) {
@@ -2347,6 +2347,13 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             *o->ppbPointer = (PBYTE)&o->pTrampoline->pldTrampoline;
 #endif // DETOURS_IA64
 
+            // before patching the target function, check whether we have
+            // an open slot in our global array for the hook handle
+            if (!detour_add_trampoline_to_global_list(o->pTrampoline))
+            {
+                return ERROR_INVALID_HANDLE;
+            }
+
 #ifdef DETOURS_X64
             const PBYTE pbTrampoline = detour_get_trampoline_ptr();
             const ULONG trampolineSize = detour_get_trampoline_size();
@@ -2506,10 +2513,6 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             DETOUR_TRACE(("\n"));
 #endif // DETOURS_IA64
 
-            if (!detour_add_trampoline_to_global_list(o->pTrampoline))
-            {
-                return ERROR_INVALID_HANDLE;
-            }
         }
     }
 
