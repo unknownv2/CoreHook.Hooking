@@ -1912,7 +1912,7 @@ VOID detour_insert_trace_handle(PDETOUR_TRAMPOLINE pTrampoline)
     }
 }
 
-LONG detour_add_trampoline_to_global_list(PDETOUR_TRAMPOLINE pTrampoline)
+BOOL detour_add_trampoline_to_global_list(PDETOUR_TRAMPOLINE pTrampoline)
 {
     DWORD dwIndex;
     BOOL bExists;
@@ -2506,7 +2506,10 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             DETOUR_TRACE(("\n"));
 #endif // DETOURS_IA64
 
-            detour_add_trampoline_to_global_list(o->pTrampoline);
+            if (!detour_add_trampoline_to_global_list(o->pTrampoline))
+            {
+                return ERROR_INVALID_HANDLE;
+            }
         }
     }
 
