@@ -1944,11 +1944,10 @@ BOOL detour_add_trampoline_to_global_list(PDETOUR_TRAMPOLINE pTrampoline)
 }
 
 
-LONG DetourInstallHook(
-    _Inout_ PVOID pEntryPoint,
-    _In_ PVOID pDetour,
-    _In_ PVOID pCallback,
-    _In_ TRACED_HOOK_HANDLE pReturnedHandle)
+LONG DetourInstallHook(_Inout_ PVOID pEntryPoint,
+                       _In_ PVOID pDetour,
+                       _In_ PVOID pCallback,
+                       _In_ TRACED_HOOK_HANDLE pReturnedHandle)
 {
 /*
 Description:
@@ -2138,7 +2137,7 @@ FINALLY_OUTRO:
 }
 
 LONG WINAPI DetourSetGlobalExclusiveACL(_In_ DWORD *dwThreadIdList,
-    _In_ DWORD dwThreadCount)
+                                        _In_ DWORD dwThreadCount)
 {
     /*
     Description:
@@ -2183,13 +2182,13 @@ Parameters:
     The hook handle whose local ACL is going to be set.
 */
 
-    PDETOUR_TRAMPOLINE Handle;
+    PDETOUR_TRAMPOLINE pTrampoline;
 
-    if (!detour_is_valid_handle(pHandle, &Handle)) {
+    if (!detour_is_valid_handle(pHandle, &pTrampoline)) {
         return STATUS_INVALID_PARAMETER_3;
     }
 
-    return detour_set_acl(&Handle->LocalACL, FALSE, pThreadIdList, dwThreadCount);
+    return detour_set_acl(&pTrampoline->LocalACL, FALSE, pThreadIdList, dwThreadCount);
 }
 LONG WINAPI DetourGetHookBypassAddress(_In_ TRACED_HOOK_HANDLE pHook,
                                        _Outptr_ PVOID **pppOutAddress)
@@ -2512,7 +2511,6 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
                           o->pTrampoline->pbDetour));
             DETOUR_TRACE(("\n"));
 #endif // DETOURS_IA64
-
         }
     }
 
