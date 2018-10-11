@@ -52,13 +52,12 @@ C_ASSERT(sizeof(_DETOUR_ALIGN) == 1);
 static PVOID    s_pSystemRegionLowerBound   = (PVOID)(ULONG_PTR)0x70000000;
 static PVOID    s_pSystemRegionUpperBound   = (PVOID)(ULONG_PTR)0x80000000;
 
-
 //////////////////////////////////////////////////////////////////////////////
 //
 // Hook Handle Slot List
 //
-ULONG                       GlobalSlotList[MAX_HOOK_COUNT];
-static LONG                 UniqueIDCounter = 0x10000000;
+ULONG                       g_SlotList[MAX_HOOK_COUNT];
+static LONG                 s_UniqueIDCounter = 0x10000000;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -335,63 +334,62 @@ inline ULONG detour_is_code_filler(PBYTE pbCode)
 inline VOID detour_set_trampoline_functions(PDETOUR_TRAMPOLINE pTrampoline,
                                             ULONG trampolineSize)
 {
-    PBYTE Ptr = (PBYTE)pTrampoline->Trampoline;
+    PBYTE pbTrampoline = static_cast<PBYTE>(pTrampoline->Trampoline);
     for (ULONG Index = 0; Index < trampolineSize; Index++)
     {
 #pragma warning (disable:4311) // pointer truncation
-        switch (*((ULONG*)(Ptr)))
+        switch (*((ULONG*)(pbTrampoline)))
         {
             /*Handle*/
-        case 0x1A2B3C05:
-        {
-            *((ULONG*)Ptr) = (ULONG)pTrampoline;
-            break;
+            case 0x1A2B3C05:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)pTrampoline;
+                break;
+            }
+            /*UnmanagedIntro*/
+            case 0x1A2B3C03:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)pTrampoline->HookIntro;
+                break;
+            }
+            /*OldProc*/
+            case 0x1A2B3C01:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)pTrampoline->OldProc;
+                break;
+            }
+            /*NewProc*/
+            case 0x1A2B3C07:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)&pTrampoline->HookProc;
+                break;
+            }
+            /*NewProc*/
+            case 0x1A2B3C00:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)pTrampoline->HookProc;
+                break;
+            }
+            /*UnmanagedOutro*/
+            case 0x1A2B3C06:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)pTrampoline->HookOutro;
+                break;
+            }
+            /*IsExecuted*/
+            case 0x1A2B3C02:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)pTrampoline->IsExecutedPtr;
+                break;
+            }
+            /*RetAddr*/
+            case 0x1A2B3C04:
+            {
+                *((ULONG*)pbTrampoline) = (ULONG)((PBYTE)pTrampoline->Trampoline + 92);
+                break;
+            }
         }
-        /*UnmanagedIntro*/
-        case 0x1A2B3C03:
-        {
-            *((ULONG*)Ptr) = (ULONG)pTrampoline->HookIntro;
-            break;
-        }
-        /*OldProc*/
-        case 0x1A2B3C01:
-        {
-            *((ULONG*)Ptr) = (ULONG)pTrampoline->OldProc;
-            break;
-        }
-        /*Ptr:NewProc*/
-        case 0x1A2B3C07:
-        {
-            *((ULONG*)Ptr) = (ULONG)&pTrampoline->HookProc;
-            break;
-        }
-        /*NewProc*/
-        case 0x1A2B3C00:
-        {
-            *((ULONG*)Ptr) = (ULONG)pTrampoline->HookProc;
-            break;
-        }
-        /*UnmanagedOutro*/
-        case 0x1A2B3C06:
-        {
-            *((ULONG*)Ptr) = (ULONG)pTrampoline->HookOutro;
-            break;
-        }
-        /*IsExecuted*/
-        case 0x1A2B3C02:
-        {
-            *((ULONG*)Ptr) = (ULONG)pTrampoline->IsExecutedPtr;
-            break;
-        }
-        /*RetAddr*/
-        case 0x1A2B3C04:
-        {
-            *((ULONG*)Ptr) = (ULONG)((PBYTE)pTrampoline->Trampoline + 92);
-            break;
-        }
-        }
-
-        Ptr++;
+        pbTrampoline++;
     }
 }
 
@@ -1418,13 +1416,13 @@ static void detour_free_trampoline(PDETOUR_TRAMPOLINE pTrampoline)
     if( pTrampoline->IsExecutedPtr != NULL) {
         delete pTrampoline->IsExecutedPtr;
     }
-    if( pTrampoline->OutHandle != NULL) {    
+    if( pTrampoline->OutHandle != NULL) {
         delete pTrampoline->OutHandle;
     }
     if (pTrampoline->HLSIndex != -1) {
-        if (GlobalSlotList[pTrampoline->HLSIndex] == pTrampoline->HLSIdent)
+        if (g_SlotList[pTrampoline->HLSIndex] == pTrampoline->HLSIdent)
         {
-            GlobalSlotList[pTrampoline->HLSIndex] = 0;
+            g_SlotList[pTrampoline->HLSIndex] = 0;
         }
     }
 
@@ -1659,31 +1657,27 @@ static ULONG ___TrampolineSize = 0;
     extern "C" void*          Trampoline_ASM_ARM64_DATA();
 #endif
 
-PBYTE DetourGetTrampolinePtr()
+PBYTE detour_get_trampoline_ptr()
 {
-    PBYTE Ptr = NULL;
+    PBYTE pbTrampoline = NULL;
 
 #if defined(DETOURS_X64)
-    Ptr = reinterpret_cast<PBYTE>(Trampoline_ASM_X64_CODE);
-
+    pbTrampoline = reinterpret_cast<PBYTE>(Trampoline_ASM_X64_CODE);
 #elif defined(DETOURS_X86)
-    Ptr = reinterpret_cast<PBYTE>(Trampoline_ASM_X86);
-
+    pbTrampoline = reinterpret_cast<PBYTE>(Trampoline_ASM_X86);
 #elif defined(DETOURS_ARM)
-    Ptr = reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_CODE);
-
+    pbTrampoline = reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_CODE);
 #elif defined(DETOURS_ARM64)
-    Ptr = reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_CODE);
-
+    pbTrampoline = reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_CODE);
 #endif
     // Find the real start of the function if we encounter a jmp instruction
-    if (*Ptr == 0xE9) {
-        Ptr += *((int*)(Ptr + 1)) + 5;
+    if (*pbTrampoline == 0xE9) {
+        pbTrampoline += *((int*)(pbTrampoline + 1)) + 5;
     }
-    return Ptr;
+    return pbTrampoline;
 }
 
-ULONG GetTrampolineSize()
+ULONG detour_get_trampoline_size()
 {
     if (___TrampolineSize != 0) {
         return ___TrampolineSize;
@@ -1692,26 +1686,22 @@ ULONG GetTrampolineSize()
 #if defined(DETOURS_X64)
     ___TrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_X64_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_X64_CODE)));
-
 #elif defined(DETOURS_X86)  
     ___TrampolineSize = static_cast<ULONG>(
-        (reinterpret_cast<PBYTE>(Trampoline_ASM_X86_DATA) - DetourGetTrampolinePtr()));
-
+        (reinterpret_cast<PBYTE>(Trampoline_ASM_X86_DATA) - detour_get_trampoline_ptr()));
 #elif defined(DETOURS_ARM)
     ___TrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_CODE)));
-
 #elif defined(DETOURS_ARM64)
     ___TrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_CODE)));
-
 #endif
     return ___TrampolineSize;
 }
 
-UINT WINAPI BarrierIntro(_In_ DETOUR_TRAMPOLINE *pHandle,
-                         _In_ void *pReturnAddr,
-                         _Inout_ void **ppAddrOfReturnAddr)
+static UINT WINAPI detour_barrier_intro(_In_ DETOUR_TRAMPOLINE *pHandle,
+                                        _In_ void *pReturnAddr,
+                                        _Inout_ void **ppAddrOfReturnAddr)
 {
 /*
 Description:
@@ -1720,16 +1710,16 @@ Description:
     thread deadlock barrier.
 */
 
-    PTHREAD_RUNTIME_INFO Info;
-    RUNTIME_INFO *Runtime;
-    BOOL Exists;
+    PTHREAD_RUNTIME_INFO pThreadRuntimeInfo;
+    RUNTIME_INFO *pRuntimeInfo;
+    BOOL bExists;
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
     pHandle = reinterpret_cast<PDETOUR_TRAMPOLINE>(
         (reinterpret_cast<PBYTE>(pHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE)));
 #endif
 
-    DETOUR_TRACE(("detours: BarrierIntro() Handle=%p, ReturnAddr=%p, AddrOfReturnAddr=%p \n",
+    DETOUR_TRACE(("detours: detour_barrier_intro() Handle=%p, ReturnAddr=%p, AddrOfReturnAddr=%p \n",
         pHandle, pReturnAddr, ppAddrOfReturnAddr) );
 
     // are we in OS loader lock?
@@ -1741,17 +1731,17 @@ Description:
             execute without intercepting the call...
         */
 
-        /*  !!Note that the assembler code does not invoke BarrierOutro() in this case!! */
+        /*  !!Note that the assembler code does not invoke detour_barrier_outro() in this case!! */
 
         return FALSE;
     }
 
     // open pointer table
-    Exists = TlsGetCurrentValue(&Unit.TLS, &Info);
+    bExists = TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntimeInfo);
 
-    if(!Exists)
+    if(!bExists)
     {
-        if (!TlsAddCurrentThread(&Unit.TLS)) {
+        if (!TlsAddCurrentThread(&g_BarrierUnit.TLS)) {
             return FALSE;
         }
     }
@@ -1766,34 +1756,34 @@ Description:
     */
     if(!detour_acquire_self_protection())
     {
-        /*  !!Note that the assembler code does not invoke BarrierOutro() in this case!! */
+        /*  !!Note that the assembler code does not invoke detour_barrier_outro() in this case!! */
 
         return FALSE;
     }
-    DETOUR_ASSERT(pHandle->HLSIndex < MAX_HOOK_COUNT, L"detours.cpp - pHandle->HLSIndex < MAX_HOOK_COUNT");
+    DETOUR_ASSERT(pHandle->HLSIndex < MAX_HOOK_COUNT);
 
-    if(!Exists)
+    if(!bExists)
     {        
-        TlsGetCurrentValue(&Unit.TLS, &Info);
-        Info->Entries = static_cast<RUNTIME_INFO*>(detour_allocate_memory(TRUE, sizeof(RUNTIME_INFO) * MAX_HOOK_COUNT));
+        TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntimeInfo);
+        pThreadRuntimeInfo->Entries = static_cast<RUNTIME_INFO*>(detour_allocate_memory(TRUE, sizeof(RUNTIME_INFO) * MAX_HOOK_COUNT));
 
-        if (Info->Entries == NULL) {
+        if (pThreadRuntimeInfo->Entries == NULL) {
             goto DONT_INTERCEPT;
         }
     }
 
     // get hook runtime info...
-    Runtime = &Info->Entries[pHandle->HLSIndex];
+    pRuntimeInfo = &pThreadRuntimeInfo->Entries[pHandle->HLSIndex];
 
-    if(Runtime->HLSIdent != pHandle->HLSIdent)
+    if(pRuntimeInfo->HLSIdent != pHandle->HLSIdent)
     {
         // just reset execution information
-        Runtime->HLSIdent = pHandle->HLSIdent;
-        Runtime->IsExecuting = FALSE;
+        pRuntimeInfo->HLSIdent = pHandle->HLSIdent;
+        pRuntimeInfo->IsExecuting = FALSE;
     }
 
     // detect loops in hook execution hiearchy.
-    if(Runtime->IsExecuting)
+    if(pRuntimeInfo->IsExecuting)
     {
         /*
             This implies that actually the handler has invoked itself. Because of
@@ -1802,27 +1792,27 @@ Description:
 
             I call this the "Thread deadlock barrier".
 
-            !!Note that the assembler code does not invoke BarrierOutro() in this case!!
+            !!Note that the assembler code does not invoke detour_barrier_outro() in this case!!
         */
 
         goto DONT_INTERCEPT;
     }
 
-    Info->Callback = pHandle->Callback;
-    Info->Current = Runtime;
+    pThreadRuntimeInfo->Callback = pHandle->Callback;
+    pThreadRuntimeInfo->Current = pRuntimeInfo;
 
     /*
         Now we will negotiate thread/process access based on global and local ACL...
     */
-    Runtime->IsExecuting = detour_is_thread_intercepted(&pHandle->LocalACL, GetCurrentThreadId());
+    pRuntimeInfo->IsExecuting = detour_is_thread_intercepted(&pHandle->LocalACL, GetCurrentThreadId());
 
-    if (!Runtime->IsExecuting) {
+    if (!pRuntimeInfo->IsExecuting) {
         goto DONT_INTERCEPT;
     }
 
     // save some context specific information
-    Runtime->RetAddress = pReturnAddr;
-    Runtime->AddrOfRetAddr = ppAddrOfReturnAddr;
+    pRuntimeInfo->RetAddress = pReturnAddr;
+    pRuntimeInfo->AddrOfRetAddr = ppAddrOfReturnAddr;
 
     detour_release_self_protection();
     return TRUE;
@@ -1830,20 +1820,20 @@ Description:
 DONT_INTERCEPT:
     /*  !!Note that the assembler code does not invoke UnmanagedHookOutro() in this case!! */
 
-    if(Info != NULL)
+    if(pThreadRuntimeInfo != NULL)
     {
-        Info->Current = NULL;
-        Info->Callback = NULL;
+        pThreadRuntimeInfo->Current = NULL;
+        pThreadRuntimeInfo->Callback = NULL;
 
         detour_release_self_protection();
     }
 
     return FALSE;
 }
-void* WINAPI BarrierOutro(_In_ DETOUR_TRAMPOLINE *pHandle,
-                          _Inout_ void **ppAddrOfReturnAddr)
+static void* WINAPI detour_barrier_outro(_In_ DETOUR_TRAMPOLINE *pHandle,
+                                         _Inout_ void **ppAddrOfReturnAddr)
 {
-    DETOUR_TRACE(("detours: BarrierOutro() Handle=%p, AddrOfReturnAddr=%p \n",
+    DETOUR_TRACE(("detours: detour_barrier_outro() Handle=%p, AddrOfReturnAddr=%p \n",
         pHandle, ppAddrOfReturnAddr));
 
 /*
@@ -1856,41 +1846,40 @@ Description:
     save it in any efficient manner at this point of execution...
 */
 
-    RUNTIME_INFO *Runtime;
-    PTHREAD_RUNTIME_INFO Info;
+    RUNTIME_INFO *pRuntimeInfo = NULL;
+    PTHREAD_RUNTIME_INFO pThreadRuntimeInfo;
 
 #if defined(DETOURS_X64) || defined(DETOURS_ARM) || defined(DETOURS_ARM64)
     pHandle = reinterpret_cast<PDETOUR_TRAMPOLINE>(
         (reinterpret_cast<PBYTE>(pHandle)-(sizeof(DETOUR_TRAMPOLINE) - DETOUR_TRAMPOLINE_CODE_SIZE)));
 #endif
 
-    DETOUR_ASSERT(detour_acquire_self_protection(), L"detours.cpp - detour_acquire_self_protection()");
+    DETOUR_ASSERT(detour_acquire_self_protection());
 
-    DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL),
-        L"detours.cpp - TlsGetCurrentValue(&Unit.TLS, &Info) && (Info != NULL)");
+    DETOUR_ASSERT(TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntimeInfo) && (pThreadRuntimeInfo != NULL));
 
-    Runtime = &Info->Entries[pHandle->HLSIndex];
+    pRuntimeInfo = &pThreadRuntimeInfo->Entries[pHandle->HLSIndex];
 
     // leave handler context
-    Info->Current = NULL;
-    Info->Callback = NULL;
+    pThreadRuntimeInfo->Current = NULL;
+    pThreadRuntimeInfo->Callback = NULL;
 
-    DETOUR_ASSERT(Runtime != NULL, L"detours.cpp - Runtime != NULL");
+    DETOUR_ASSERT(pRuntimeInfo != NULL);
 
-    DETOUR_ASSERT(Runtime->IsExecuting, L"detours.cpp - Runtime->IsExecuting");
+    DETOUR_ASSERT(pRuntimeInfo->IsExecuting);
 
-    Runtime->IsExecuting = FALSE;
+    pRuntimeInfo->IsExecuting = FALSE;
 
-    DETOUR_ASSERT(*ppAddrOfReturnAddr == NULL, L"detours.cpp - *pAddrOfRetAddr == NULL");
+    DETOUR_ASSERT(*ppAddrOfReturnAddr == NULL);
 
-    *ppAddrOfReturnAddr = Runtime->RetAddress;
+    *ppAddrOfReturnAddr = pRuntimeInfo->RetAddress;
 
     detour_release_self_protection();
 
     return pHandle;
 }
 
-TRACED_HOOK_HANDLE WINAPI DetourGetHookHandleForFunction(PDETOUR_TRAMPOLINE pTrampoline)
+TRACED_HOOK_HANDLE WINAPI DetourGetHookHandleForFunction(_In_ PDETOUR_TRAMPOLINE pTrampoline)
 {
     if(pTrampoline != NULL) {
         return pTrampoline->OutHandle;
@@ -1898,7 +1887,8 @@ TRACED_HOOK_HANDLE WINAPI DetourGetHookHandleForFunction(PDETOUR_TRAMPOLINE pTra
     return NULL;
 }
 
-LONG WINAPI DetourSetCallbackForLocalHook(PDETOUR_TRAMPOLINE pTrampoline, PVOID pCallback)
+LONG WINAPI DetourSetCallbackForLocalHook(_In_ PDETOUR_TRAMPOLINE pTrampoline,
+                                          _In_ PVOID pCallback)
 {
     if(pTrampoline != NULL) {
         pTrampoline->Callback = pCallback;
@@ -1914,31 +1904,31 @@ VOID detour_insert_trace_handle(PDETOUR_TRAMPOLINE pTrampoline)
     {
         memset(&pTrampoline->LocalACL, 0, sizeof(HOOK_ACL));
 
-        TRACED_HOOK_HANDLE OutHandle = new HOOK_TRACE_INFO();
+        const auto pTraceInfo = new HOOK_TRACE_INFO();
 
-        pTrampoline->OutHandle = OutHandle;
+        pTrampoline->OutHandle = pTraceInfo;
 
-        OutHandle->Link = pTrampoline;
+        pTraceInfo->Link = pTrampoline;
     }
 }
 
-LONG detour_add_trampoline_to_global_list(PDETOUR_TRAMPOLINE pTrampoline)
+BOOL detour_add_trampoline_to_global_list(PDETOUR_TRAMPOLINE pTrampoline)
 {
     DWORD dwIndex;
     BOOL bExists;
 
     // register in global HLS list
-    detour_acquire_lock(&GlobalHookLock);
+    detour_acquire_lock(&g_HookLock);
     
-    pTrampoline->HLSIdent = UniqueIDCounter++;
+    pTrampoline->HLSIdent = s_UniqueIDCounter++;
 
     bExists = FALSE;
 
     for(dwIndex = 0; dwIndex < MAX_HOOK_COUNT; dwIndex++)
     {
-        if(GlobalSlotList[dwIndex] == 0)
+        if(g_SlotList[dwIndex] == 0)
         {
-            GlobalSlotList[dwIndex] = pTrampoline->HLSIdent;
+            g_SlotList[dwIndex] = pTrampoline->HLSIdent;
 
             pTrampoline->HLSIndex = dwIndex;
 
@@ -1948,17 +1938,16 @@ LONG detour_add_trampoline_to_global_list(PDETOUR_TRAMPOLINE pTrampoline)
         }
     }
     
-    detour_release_lock(&GlobalHookLock);
+    detour_release_lock(&g_HookLock);
 
     return bExists;
 }
 
 
-LONG DetourInstallHook(
-    _Inout_ PVOID pEntryPoint,
-    _In_ PVOID pDetour,
-    _In_ PVOID pCallback,
-    _In_ TRACED_HOOK_HANDLE pReturnedHandle)
+LONG DetourInstallHook(_Inout_ PVOID pEntryPoint,
+                       _In_ PVOID pDetour,
+                       _In_ PVOID pCallback,
+                       _In_ TRACED_HOOK_HANDLE pReturnedHandle)
 {
 /*
 Description:
@@ -2071,41 +2060,41 @@ will still return STATUS_SUCCESS.
 */
 
     LONG error = -1;
-    PDETOUR_TRAMPOLINE Hook = NULL;
+    PDETOUR_TRAMPOLINE pHook = NULL;
     LONG NtStatus = -1;
-    BOOLEAN IsAllocated = FALSE;
+    BOOLEAN bIsAllocated = FALSE;
 
     if (!IsValidPointer(pHandle, sizeof(HOOK_TRACE_INFO))) {
         return FALSE;
     }
 
-    detour_acquire_lock(&GlobalHookLock);
+    detour_acquire_lock(&g_HookLock);
     
-    if ((pHandle->Link != NULL) && detour_is_valid_handle(pHandle, &Hook))
+    if ((pHandle->Link != NULL) && detour_is_valid_handle(pHandle, &pHook))
     {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourDetach(&(PVOID&)Hook->OldProc, Hook->pbDetour);
+        DetourDetach(&(PVOID&)pHook->OldProc, pHook->pbDetour);
 
         pHandle->Link = NULL;
 
-        if (Hook->HookProc != NULL)
+        if (pHook->HookProc != NULL)
         {
-            Hook->HookProc = NULL;
+            pHook->HookProc = NULL;
 
-            IsAllocated = TRUE;
+            bIsAllocated = TRUE;
         }
         error = DetourTransactionCommit();
 
-        if (!IsAllocated)
+        if (!bIsAllocated)
         {
-            detour_release_lock(&GlobalHookLock);
+            detour_release_lock(&g_HookLock);
 
             RETURN;
         }
     }
     
-    detour_release_lock(&GlobalHookLock);
+    detour_release_lock(&g_HookLock);
 
     RETURN(STATUS_SUCCESS);
 
@@ -2148,7 +2137,7 @@ FINALLY_OUTRO:
 }
 
 LONG WINAPI DetourSetGlobalExclusiveACL(_In_ DWORD *dwThreadIdList,
-    _In_ DWORD dwThreadCount)
+                                        _In_ DWORD dwThreadCount)
 {
     /*
     Description:
@@ -2193,13 +2182,13 @@ Parameters:
     The hook handle whose local ACL is going to be set.
 */
 
-    PDETOUR_TRAMPOLINE Handle;
+    PDETOUR_TRAMPOLINE pTrampoline;
 
-    if (!detour_is_valid_handle(pHandle, &Handle)) {
+    if (!detour_is_valid_handle(pHandle, &pTrampoline)) {
         return STATUS_INVALID_PARAMETER_3;
     }
 
-    return detour_set_acl(&Handle->LocalACL, FALSE, pThreadIdList, dwThreadCount);
+    return detour_set_acl(&pTrampoline->LocalACL, FALSE, pThreadIdList, dwThreadCount);
 }
 LONG WINAPI DetourGetHookBypassAddress(_In_ TRACED_HOOK_HANDLE pHook,
                                        _Outptr_ PVOID **pppOutAddress)
@@ -2357,14 +2346,25 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
             *o->ppbPointer = (PBYTE)&o->pTrampoline->pldTrampoline;
 #endif // DETOURS_IA64
 
+            // before patching the target function, check whether we have
+            // an open slot in our global array for the hook handle
+            if (!detour_add_trampoline_to_global_list(o->pTrampoline))
+            {
+                return ERROR_INVALID_HANDLE;
+            }
+
 #ifdef DETOURS_X64
-            const PBYTE trampolinePtr = DetourGetTrampolinePtr();
-            const ULONG TrampolineSize = GetTrampolineSize();
-       
+            const PBYTE pbTrampoline = detour_get_trampoline_ptr();
+            const ULONG trampolineSize = detour_get_trampoline_size();
+            if (trampolineSize > DETOUR_TRAMPOLINE_CODE_SIZE) {
+                DETOUR_BREAK();
+                DetourTransactionAbort();
+                return ERROR_NOT_ENOUGH_MEMORY;
+            }
             const auto trampolineCode = &o->pTrampoline->rbTrampolineCode;
-            memcpy(trampolineCode, trampolinePtr, TrampolineSize);
-            o->pTrampoline->HookIntro = BarrierIntro;
-            o->pTrampoline->HookOutro = BarrierOutro;
+            memcpy(trampolineCode, pbTrampoline, trampolineSize);
+            o->pTrampoline->HookIntro = detour_barrier_intro;
+            o->pTrampoline->HookOutro = detour_barrier_outro;
             o->pTrampoline->Trampoline = trampolineCode;
             o->pTrampoline->OldProc = o->pTrampoline->rbCode;
             o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
@@ -2378,19 +2378,23 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 #endif // DETOURS_X64
 
 #ifdef DETOURS_X86
-            const PBYTE trampolinePtr = DetourGetTrampolinePtr();
-            const ULONG TrampolineSize = GetTrampolineSize();
-    
+            const PBYTE pbTrampoline = detour_get_trampoline_ptr();
+            const ULONG trampolineSize = detour_get_trampoline_size();
+            if (trampolineSize > DETOUR_TRAMPOLINE_CODE_SIZE) {
+                DETOUR_BREAK();
+                DetourTransactionAbort();
+                return ERROR_NOT_ENOUGH_MEMORY;
+            }
             const auto trampolineCode = &o->pTrampoline->rbTrampolineCode;
-            memcpy(trampolineCode, trampolinePtr, TrampolineSize);
-            o->pTrampoline->HookIntro = BarrierIntro;
-            o->pTrampoline->HookOutro = BarrierOutro;
+            memcpy(trampolineCode, pbTrampoline, trampolineSize);
+            o->pTrampoline->HookIntro = detour_barrier_intro;
+            o->pTrampoline->HookOutro = detour_barrier_outro;
             o->pTrampoline->Trampoline = trampolineCode;
             o->pTrampoline->OldProc = o->pTrampoline->rbCode;
             o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
             o->pTrampoline->IsExecutedPtr = new int();
 
-            detour_set_trampoline_functions(o->pTrampoline, TrampolineSize);
+            detour_set_trampoline_functions(o->pTrampoline, trampolineSize);
 
             PBYTE pbCode = detour_gen_jmp_immediate(o->pbTarget, static_cast<PBYTE>(o->pTrampoline->Trampoline));
             
@@ -2400,14 +2404,18 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 #endif // DETOURS_X86
 
 #ifdef DETOURS_ARM
-            const PBYTE trampolinePtr = DetourGetTrampolinePtr();
-            const ULONG TrampolineSize = GetTrampolineSize();
- 
+            const PBYTE pbTrampoline = detour_get_trampoline_ptr();
+            const ULONG trampolineSize = detour_get_trampoline_size();
+            if (trampolineSize > DETOUR_TRAMPOLINE_CODE_SIZE) {
+                DETOUR_BREAK();
+                DetourTransactionAbort();
+                return ERROR_NOT_ENOUGH_MEMORY;
+            }
             const auto trampolineCode = &o->pTrampoline->rbTrampolineCode;
-            const PBYTE trampolineStart = align4(trampolinePtr);
-            memcpy(trampolineCode, trampolineStart, TrampolineSize);
-            o->pTrampoline->HookIntro = DETOURS_PBYTE_TO_PFUNC(BarrierIntro);
-            o->pTrampoline->HookOutro = DETOURS_PBYTE_TO_PFUNC(BarrierOutro);
+            const PBYTE trampolineStart = align4(pbTrampoline);
+            memcpy(trampolineCode, trampolineStart, trampolineSize);
+            o->pTrampoline->HookIntro = DETOURS_PBYTE_TO_PFUNC(detour_barrier_intro);
+            o->pTrampoline->HookOutro = DETOURS_PBYTE_TO_PFUNC(detour_barrier_outro);
             o->pTrampoline->Trampoline = DETOURS_PBYTE_TO_PFUNC(trampolineCode);
             o->pTrampoline->OldProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->rbCode);
             o->pTrampoline->HookProc = DETOURS_PBYTE_TO_PFUNC(o->pTrampoline->pbDetour);
@@ -2429,13 +2437,17 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
 #endif // DETOURS_ARM
 
 #ifdef DETOURS_ARM64
-            const PBYTE trampolinePtr = DetourGetTrampolinePtr();
-            const ULONG TrampolineSize = GetTrampolineSize();
-
+            const PBYTE pbTrampoline = detour_get_trampoline_ptr();
+            const ULONG trampolineSize = detour_get_trampoline_size();
+            if (trampolineSize > DETOUR_TRAMPOLINE_CODE_SIZE) {
+                DETOUR_BREAK();
+                DetourTransactionAbort();
+                return ERROR_NOT_ENOUGH_MEMORY;
+            }
             const auto trampolineCode = &o->pTrampoline->rbTrampolineCode;
-            memcpy(trampolineCode, trampolinePtr, TrampolineSize);
-            o->pTrampoline->HookIntro = BarrierIntro;
-            o->pTrampoline->HookOutro = BarrierOutro;
+            memcpy(trampolineCode, pbTrampoline, trampolineSize);
+            o->pTrampoline->HookIntro = detour_barrier_intro;
+            o->pTrampoline->HookOutro = detour_barrier_outro;
             o->pTrampoline->Trampoline = trampolineCode;
             o->pTrampoline->OldProc = o->pTrampoline->rbCode;
             o->pTrampoline->HookProc = o->pTrampoline->pbDetour;
@@ -2499,8 +2511,6 @@ LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
                           o->pTrampoline->pbDetour));
             DETOUR_TRACE(("\n"));
 #endif // DETOURS_IA64
-
-            detour_add_trampoline_to_global_list(o->pTrampoline);
         }
     }
 
@@ -2690,7 +2700,7 @@ LONG WINAPI DetourAttachEx(_Inout_ PVOID *ppPointer,
         return ERROR_INVALID_PARAMETER;
     }
 
-    if (s_nPendingThreadId != (LONG)GetCurrentThreadId()) {
+    if (s_nPendingThreadId != static_cast<LONG>(GetCurrentThreadId())) {
         DETOUR_TRACE(("transaction conflict with thread id=%d\n", s_nPendingThreadId));
         return ERROR_INVALID_OPERATION;
     }
@@ -2714,7 +2724,7 @@ LONG WINAPI DetourAttachEx(_Inout_ PVOID *ppPointer,
         return error;
     }
 
-    PBYTE pbTarget = (PBYTE)*ppPointer;
+    PBYTE pbTarget = static_cast<PBYTE>(*ppPointer);
     PDETOUR_TRAMPOLINE pTrampoline = NULL;
     DetourOperation *o = NULL;
 
@@ -2731,7 +2741,7 @@ LONG WINAPI DetourAttachEx(_Inout_ PVOID *ppPointer,
     DETOUR_TRACE(("  ppldTarget=%p, code=%p [gp=%p]\n",
                   ppldTarget, pbTarget, pTargetGlobals));
 #else // DETOURS_IA64
-    pbTarget = (PBYTE)DetourCodeFromPointer(pbTarget, NULL);
+    pbTarget = static_cast<PBYTE>(DetourCodeFromPointer(pbTarget, NULL));
     pDetour = DetourCodeFromPointer(pDetour, NULL);
 #endif // !DETOURS_IA64
 
@@ -2839,12 +2849,12 @@ LONG WINAPI DetourAttachEx(_Inout_ PVOID *ppPointer,
 
         DETOUR_TRACE(("detours: DetourCopyInstruction(%p,%p)\n",
                       pbTrampoline, pbSrc));
-        pbSrc = (PBYTE)
-            DetourCopyInstruction(pbTrampoline, (PVOID*)&pbPool, pbSrc, NULL, &lExtra);
+        pbSrc = static_cast<PBYTE>(
+            DetourCopyInstruction(pbTrampoline, reinterpret_cast<PVOID*>(&pbPool), pbSrc, NULL, &lExtra));
         DETOUR_TRACE(("detours: DetourCopyInstruction() = %p (%d bytes)\n",
                       pbSrc, (int)(pbSrc - pbOp)));
         pbTrampoline += (pbSrc - pbOp) + lExtra;
-        cbTarget = (LONG)(pbSrc - pbTarget);
+        cbTarget = static_cast<LONG>(pbSrc - pbTarget);
         pTrampoline->rAlign[nAlign].obTarget = cbTarget;
         pTrampoline->rAlign[nAlign].obTrampoline = pbTrampoline - pTrampoline->rbCode;
         nAlign++;
@@ -2905,8 +2915,8 @@ LONG WINAPI DetourAttachEx(_Inout_ PVOID *ppPointer,
         __debugbreak();
     }
 
-    pTrampoline->cbCode = (BYTE)(pbTrampoline - pTrampoline->rbCode);
-    pTrampoline->cbRestore = (BYTE)cbTarget;
+    pTrampoline->cbCode = static_cast<BYTE>(pbTrampoline - pTrampoline->rbCode);
+    pTrampoline->cbRestore = static_cast<BYTE>(cbTarget);
     CopyMemory(pTrampoline->rbRestore, pbTarget, cbTarget);
 
 #if !defined(DETOURS_IA64)
@@ -3114,7 +3124,7 @@ LONG WINAPI DetourDetach(_Inout_ PVOID *ppPointer,
     DETOUR_TRACE(("\n"));
 #else // !DETOURS_IA64
     PDETOUR_TRAMPOLINE pTrampoline =
-        (PDETOUR_TRAMPOLINE)DetourCodeFromPointer(*ppPointer, NULL);
+        static_cast<PDETOUR_TRAMPOLINE>(DetourCodeFromPointer(*ppPointer, NULL));
     pDetour = DetourCodeFromPointer(pDetour, NULL);
 #endif // !DETOURS_IA64
 
@@ -3153,7 +3163,7 @@ LONG WINAPI DetourDetach(_Inout_ PVOID *ppPointer,
     }
 
     o->fIsRemove = TRUE;
-    o->ppbPointer = (PBYTE*)ppPointer;
+    o->ppbPointer = reinterpret_cast<PBYTE*>(ppPointer);
     o->pTrampoline = pTrampoline;
     o->pbTarget = pbTarget;
     o->dwPerm = dwOld;

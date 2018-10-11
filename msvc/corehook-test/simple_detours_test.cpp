@@ -183,3 +183,22 @@ LONG Detours::DetourMoveFileWithUserFunction() {
 
     return error;
 }
+
+// Installs a detour for a function 
+LONG Detours::DetourInstallDetourFunction() {
+    LONG callback = 0;
+    HOOK_TRACE_INFO hookHandle = { 0 };
+
+    ULONG threadIdList = 0;
+    const LONG threadCount = 1;
+
+    LONG error = ERROR_SUCCESS;
+
+    error = DetourInstallHook(
+        MoveFile,
+        MoveFile_Detour,
+        &callback,
+        &hookHandle);
+
+    return error;
+}

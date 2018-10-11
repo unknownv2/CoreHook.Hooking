@@ -69,3 +69,14 @@ TEST_F(DetoursTest, DetourExportedFunctionWithUserFunctionTest) {
 
     EXPECT_NE(FALSE, _dt.DetourMoveFileWithUserFunction());
 }
+
+TEST_F(DetoursTest, ShouldFailWhenInstallingMaxHookCount) {
+    LONG error = ERROR_SUCCESS;
+    const auto maxHookCount = 1024;
+    for (int x = 0; x < maxHookCount + 1; x++) {
+        error = _dt.DetourInstallDetourFunction();
+        if (error != ERROR_SUCCESS) {
+            EXPECT_EQ(x, maxHookCount);
+        }
+    }
+}

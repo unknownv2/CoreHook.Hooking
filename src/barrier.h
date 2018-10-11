@@ -12,7 +12,7 @@ void detour_release_self_protection();
 
 void detour_sleep(_In_ DWORD milliSeconds);
 
-//////////////////////////////////////////////// dotnet trampoline barrier definitions
+/////////////////////////////////////////// trampoline thread barrier definitions
 //
 
 #define MAX_HOOK_COUNT              1024
@@ -26,12 +26,6 @@ typedef struct _HOOK_ACL_
     BOOL                    IsExclusive;
     ULONG                   Entries[MAX_ACE_COUNT];
 } HOOK_ACL;
-
-typedef struct _RTL_SPIN_LOCK_
-{
-    CRITICAL_SECTION        Lock;
-    BOOL                    IsOwned;
-} RTL_SPIN_LOCK;
 
 typedef struct _RUNTIME_INFO_
 {
@@ -53,11 +47,17 @@ typedef struct _THREAD_RUNTIME_INFO_
     BOOL                 IsProtected;
 } THREAD_RUNTIME_INFO, *PTHREAD_RUNTIME_INFO;
 
+typedef struct _RTL_SPIN_LOCK_
+{
+    CRITICAL_SECTION         Lock;
+    BOOL                     IsOwned;
+} DETOUR_SPIN_LOCK;
+
 typedef struct _THREAD_LOCAL_STORAGE_
 {
     THREAD_RUNTIME_INFO      Entries[MAX_THREAD_COUNT];
     DWORD                    IdList[MAX_THREAD_COUNT];
-    RTL_SPIN_LOCK            ThreadSafe;
+    DETOUR_SPIN_LOCK         ThreadSafe;
 } THREAD_LOCAL_STORAGE;
 
 typedef struct _BARRIER_UNIT_
@@ -67,13 +67,13 @@ typedef struct _BARRIER_UNIT_
     THREAD_LOCAL_STORAGE    TLS;
 } BARRIER_UNIT;
 
-void detour_initialize_lock(_In_ RTL_SPIN_LOCK *pLock);
+static void detour_initialize_lock(_In_ DETOUR_SPIN_LOCK *pLock);
 
-void detour_acquire_lock(_In_ RTL_SPIN_LOCK *pLock);
+static void detour_delete_lock(_In_ DETOUR_SPIN_LOCK *pLock);
 
-void detour_release_lock(_In_ RTL_SPIN_LOCK *pLock);
+void detour_acquire_lock(_In_ DETOUR_SPIN_LOCK *pLock);
 
-void detour_delete_lock(_In_ RTL_SPIN_LOCK *pLock);
+void detour_release_lock(_In_ DETOUR_SPIN_LOCK *pLock);
 
 BOOL detour_is_thread_intercepted(_In_ HOOK_ACL *pLocalACL,
                                   _In_ DWORD    dwThreadId);
@@ -85,14 +85,37 @@ LONG detour_set_acl(_In_ HOOK_ACL *pAcl,
 
 HOOK_ACL* detour_barrier_get_acl();
 
-extern BARRIER_UNIT         Unit;
-extern RTL_SPIN_LOCK        GlobalHookLock;
-
+extern BARRIER_UNIT         g_BarrierUnit;
+extern DETOUR_SPIN_LOCK     g_HookLock;
 
 //////////////////////////////////////////////// Exception handling code
 //
 
-#define DETOUR_ASSERT(expr, Msg)    detour_assert(expr, Msg);
+VOID detour_assert(PCSTR pszMsg, LPCWSTR pszFile, ULONG nLine);
+
+void detour_set_last_error(_In_ LONG lCode,
+                           _In_ LONG lStatus,
+                           _In_opt_ LPCWSTR lpMessage);
+
+#ifndef NDEBUG
+#define ASSERT(expr)           ASSERT_ALWAYS(expr)
+#else
+#define ASSERT(expr)
+#endif
+
+#define WIDE2(x) L ##x
+#define WIDE1(x) WIDE2(x)
+#define WFILE WIDE1(__FILE__)
+
+#define ASSERT_ALWAYS(expression)   \
+    do {                                                                 \
+    if (!(expression)) {                                                 \
+            detour_assert(#expression, WFILE, __LINE__);                 \
+    }                                                                    \
+    } while (0)
+
+
+#define DETOUR_ASSERT(expr)         ASSERT(expr)
 #define THROW(code, Msg)            { NtStatus = (code); detour_set_last_error(GetLastError(), NtStatus, Msg); goto THROW_OUTRO; }
 
 #define DETOUR_SUCCESS(ntstatus)    SUCCEEDED(ntstatus)
@@ -107,7 +130,7 @@ extern RTL_SPIN_LOCK        GlobalHookLock;
 #define IsValidPointer              detour_is_valid_pointer
 
 BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,
-    _In_     UINT_PTR    Size);
+                             _In_     UINT_PTR    Size);
 
 /////////////////////////////////////////////////////////////
 //
@@ -128,13 +151,6 @@ void  detour_free_memory(void *pMemory);
 
 void* detour_allocate_memory(_In_ BOOL   bZeroMemory,
                              _In_ size_t size);
-
-void detour_copy_memory(_Out_writes_bytes_all_(Size) PVOID  Dest,
-                        _In_reads_bytes_(Size)       PVOID  Src,
-                        _In_                         size_t Size);
-
-void detour_zero_memory(_Out_writes_bytes_all_(Size) PVOID Dest,
-                        _In_                         size_t Size);
 
 
 //////////////////////////////////////////////////////// NTSTATUS definitions
@@ -162,4 +178,3 @@ void detour_zero_memory(_Out_writes_bytes_all_(Size) PVOID Dest,
 #define STATUS_INVALID_PARAMETER_6       ((LONG)0xC00000F4L)
 #define STATUS_INVALID_PARAMETER_7       ((LONG)0xC00000F5L)
 #define STATUS_INVALID_PARAMETER_8       ((LONG)0xC00000F6L)
-

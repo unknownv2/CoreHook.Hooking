@@ -42,58 +42,32 @@
 #endif
 
 // allocate at DLL Entry
-HANDLE hCoreHookHeap = NULL;
+HANDLE g_hCoreHookHeap = NULL;
 
-BARRIER_UNIT Unit;
-
-void detour_initialize_lock(_In_ RTL_SPIN_LOCK *pLock)
-{
-    detour_zero_memory(pLock, sizeof(RTL_SPIN_LOCK));
-
-    InitializeCriticalSection(&pLock->Lock);
-}
-
-void detour_acquire_lock(_In_ RTL_SPIN_LOCK *pLock)
-{
-    EnterCriticalSection(&pLock->Lock);
-
-    DETOUR_ASSERT(!pLock->IsOwned, L"barrier.cpp - !pLock->IsOwned");
-
-    pLock->IsOwned = TRUE;
-}
-
-void detour_release_lock(_In_ RTL_SPIN_LOCK *pLock)
-{
-    DETOUR_ASSERT(pLock->IsOwned, L"barrier.cpp - pLock->IsOwned");
-
-    pLock->IsOwned = FALSE;
-
-    LeaveCriticalSection(&pLock->Lock);
-}
-
-void detour_delete_lock(_In_ RTL_SPIN_LOCK *pLock)
-{
-    DETOUR_ASSERT(!pLock->IsOwned, L"barrier.cpp - pLock->IsOwned");
-
-    DeleteCriticalSection(&pLock->Lock);
-}
+BARRIER_UNIT g_BarrierUnit;
 
 void detour_sleep(_In_ DWORD milliSeconds)
 {
     Sleep(milliSeconds);
 }
 
-void detour_copy_memory(_Out_writes_bytes_all_(Size) PVOID  Dest,
-                        _In_reads_bytes_(Size)       PVOID  Src,
-                        _In_                         size_t Size)
+static void detour_copy_memory(_Out_writes_bytes_all_(Size) PVOID  Dest,
+                               _In_reads_bytes_(Size)       PVOID  Src,
+                               _In_                         size_t Size)
 {
     memcpy(Dest, Src, Size);
+}
+
+static void detour_zero_memory(_Out_writes_bytes_all_(Size) PVOID Dest,
+                               _In_                         size_t Size)
+{
+    memset(Dest, 0, Size);
 }
 
 void *detour_allocate_memory(_In_ BOOL   bZeroMemory,
                              _In_ size_t size)
 {
-    void *result = HeapAlloc(hCoreHookHeap, 0, size);
+    void *result = HeapAlloc(g_hCoreHookHeap, 0, size);
 
     if (bZeroMemory && (result != NULL)) {
         detour_zero_memory(result, size);
@@ -102,18 +76,11 @@ void *detour_allocate_memory(_In_ BOOL   bZeroMemory,
     return result;
 }
 
-
-void detour_zero_memory(_Out_writes_bytes_all_(Size) PVOID Dest,
-                        _In_                         size_t Size)
-{
-    memset(Dest, 0, Size);
-}
-
 void detour_free_memory(void * pMemory)
 {
-    DETOUR_ASSERT(pMemory != NULL, L"barrier.cpp - pMemory != NULL");
+    DETOUR_ASSERT(pMemory != NULL);
 
-    HeapFree(hCoreHookHeap, 0, pMemory);
+    HeapFree(g_hCoreHookHeap, 0, pMemory);
 }
 
 BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,
@@ -124,6 +91,38 @@ BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,
     }
     (void)Size;
     return TRUE;
+}
+
+static void detour_initialize_lock(_In_ DETOUR_SPIN_LOCK *pLock)
+{
+    detour_zero_memory(pLock, sizeof(DETOUR_SPIN_LOCK));
+
+    InitializeCriticalSection(&pLock->Lock);
+}
+
+void detour_delete_lock(_In_ DETOUR_SPIN_LOCK *pLock)
+{
+    DETOUR_ASSERT(!pLock->IsOwned);
+
+    DeleteCriticalSection(&pLock->Lock);
+}
+
+void detour_acquire_lock(_In_ DETOUR_SPIN_LOCK *pLock)
+{
+    EnterCriticalSection(&pLock->Lock);
+
+    DETOUR_ASSERT(!pLock->IsOwned);
+
+    pLock->IsOwned = TRUE;
+}
+
+void detour_release_lock(_In_ DETOUR_SPIN_LOCK *pLock)
+{
+    DETOUR_ASSERT(pLock->IsOwned);
+
+    pLock->IsOwned = FALSE;
+
+    LeaveCriticalSection(&pLock->Lock);
 }
 
 // Error Handling
@@ -199,11 +198,14 @@ void detour_set_last_error(_In_ LONG lCode, _In_ LONG lStatus, _In_opt_ LPCWSTR 
                     MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                     lpMsgBuf,
                     0, NULL);
-                _snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", lpMessage, lpMsgBuf);
+
+                _snwprintf_s(msg, 1024,_TRUNCATE,
+                            L"%s (%s)\n", lpMessage, lpMsgBuf);
             }
             else
             {
-                _snwprintf_s(msg, 1024, _TRUNCATE, L"%s (%s)\n", lpMessage, detour_error_code_to_string(lStatus));
+                _snwprintf_s(msg, 1024,_TRUNCATE, L"%s (%s)\n",
+                            lpMessage, detour_error_code_to_string(lStatus));
             }
 
             DEBUGMSG(msg);
@@ -218,16 +220,13 @@ void detour_set_last_error(_In_ LONG lCode, _In_ LONG lStatus, _In_opt_ LPCWSTR 
     }
 }
 
-void detour_assert(_In_ BOOL bAssert, _In_ LPCWSTR lpMessageText)
+VOID detour_assert(PCSTR pszMsg, LPCWSTR pszFile, ULONG nLine)
 {
-    if (bAssert) {
-        return;
-    }
-
+    DETOUR_TRACE(("DETOUR_ASSERT(%s) failed in %ws, line %d.\n", pszMsg, pszFile, nLine));
 #ifdef _DEBUG
-    DebugBreak();
+    DETOUR_BREAK();
 #endif
-    FatalAppExitW(0, lpMessageText);
+    FatalAppExit(0, pszFile);
 }
 
 LONG WINAPI DetourSetGlobalInclusiveACL(_In_ DWORD *dwThreadIdList,
@@ -253,7 +252,7 @@ Parameters:
 
 
 BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
-                            _Out_ PDETOUR_TRAMPOLINE   *pHandle)
+                            _Out_ PDETOUR_TRAMPOLINE *pHandle)
 {
 
 /*
@@ -275,6 +274,7 @@ Description:
 
     return TRUE;
 }
+
 LONG detour_set_acl(_In_ HOOK_ACL *pAcl,
                     _In_ BOOL     bIsExclusive,
                     _In_ DWORD    *dwThreadIdList,
@@ -304,9 +304,7 @@ Parameters:
         MAX_ACE_COUNT! 
 */
 
-    ULONG Index;
-
-    DETOUR_ASSERT(IsValidPointer(pAcl, sizeof(HOOK_ACL)), L"barrier.cpp - IsValidPointer(InAcl, sizeof(HOOK_ACL))");
+    ASSERT(IsValidPointer(pAcl, sizeof(HOOK_ACL)));
 
     if (dwThreadCount > MAX_ACE_COUNT) {
         return STATUS_INVALID_PARAMETER_2;
@@ -316,10 +314,10 @@ Parameters:
         return STATUS_INVALID_PARAMETER_1;
     }
 
-    for (Index = 0; Index < dwThreadCount; Index++)
+    for (DWORD index = 0; index < dwThreadCount; index++)
     {
-        if (dwThreadIdList[Index] == 0) {
-            dwThreadIdList[Index] = GetCurrentThreadId();
+        if (dwThreadIdList[index] == 0) {
+            dwThreadIdList[index] = GetCurrentThreadId();
         }
     }
     DWORD dwOld;
@@ -344,30 +342,7 @@ Parameters:
 
 HOOK_ACL *detour_barrier_get_acl()
 {
-    return &Unit.GlobalACL;
-}
-
-LONG DetourBarrierProcessAttach()
-{
-/*
-Description:
-
-    Will be called on DLL load and initializes all barrier structures.
-*/
-
-    detour_zero_memory(&Unit, sizeof(Unit));
-
-    // globally accept all threads...
-    Unit.GlobalACL.IsExclusive = TRUE;
-
-    // allocate private heap
-    detour_initialize_lock(&Unit.TLS.ThreadSafe);
-
-    Unit.IsInitialized = AuxUlibInitialize() ? TRUE : FALSE;
-
-    hCoreHookHeap = HeapCreate(0, 0, 0);
-
-    return STATUS_SUCCESS;
+    return &g_BarrierUnit.GlobalACL;
 }
 
 BOOL TlsGetCurrentValue(_In_  THREAD_LOCAL_STORAGE *pTls,
@@ -395,14 +370,13 @@ Returns:
     FALSE if the caller was not registered in the storage, TRUE otherwise.
 */
 
-    DWORD CurrentId = GetCurrentThreadId();
-    LONG Index;
+    DWORD dwThreadId = GetCurrentThreadId();
 
-    for (Index = 0; Index < MAX_THREAD_COUNT; Index++)
+    for (auto index = 0; index < MAX_THREAD_COUNT; index++)
     {
-        if (pTls->IdList[Index] == CurrentId)
+        if (pTls->IdList[index] == dwThreadId)
         {
-            *OutValue = &pTls->Entries[Index];
+            *OutValue = &pTls->Entries[index];
 
             return TRUE;
         }
@@ -437,7 +411,7 @@ Returns:
     TRUE on success, FALSE otherwise.
 */
 
-    ULONG CurrentId = GetCurrentThreadId();
+    ULONG dwThreadId = GetCurrentThreadId();
     LONG Index = -1;
     LONG i;
 
@@ -450,7 +424,7 @@ Returns:
             Index = i;
         }
 
-        DETOUR_ASSERT(pTls->IdList[i] != CurrentId, L"barrier.cpp - pTls->IdList[i] != CurrentId");
+        DETOUR_ASSERT(pTls->IdList[i] != dwThreadId);
     }
 
     if (Index == -1)
@@ -460,7 +434,8 @@ Returns:
         return FALSE;
     }
 
-    pTls->IdList[Index] = CurrentId;
+    pTls->IdList[Index] = dwThreadId;
+
     detour_zero_memory(&pTls->Entries[Index], sizeof(THREAD_RUNTIME_INFO));
 
     detour_release_lock(&pTls->ThreadSafe);
@@ -468,7 +443,7 @@ Returns:
     return TRUE;
 }
 
-void TlsRemoveCurrentThread(THREAD_LOCAL_STORAGE *InTls)
+static void TlsRemoveCurrentThread(_In_ THREAD_LOCAL_STORAGE *pTls)
 {
 /*
 Description:
@@ -483,25 +458,47 @@ Parameters:
         The storage from which the caller should be removed.
 */
 
-    DWORD CurrentId = GetCurrentThreadId();
-    ULONG Index;
+    DWORD dwThreadId = GetCurrentThreadId();
 
-    detour_acquire_lock(&InTls->ThreadSafe);
+    detour_acquire_lock(&pTls->ThreadSafe);
 
-    for (Index = 0; Index < MAX_THREAD_COUNT; Index++)
+    for (auto index = 0; index < MAX_THREAD_COUNT; index++)
     {
-        if (InTls->IdList[Index] == CurrentId)
+        if (pTls->IdList[index] == dwThreadId)
         {
-            InTls->IdList[Index] = 0;
+            pTls->IdList[index] = 0;
 
-            detour_zero_memory(&InTls->Entries[Index], sizeof(THREAD_RUNTIME_INFO));
+            detour_zero_memory(&pTls->Entries[index], sizeof(THREAD_RUNTIME_INFO));
         }
     }
 
-    detour_release_lock(&InTls->ThreadSafe);
+    detour_release_lock(&pTls->ThreadSafe);
 }
 
-void DetourBarrierProcessDetach()
+LONG WINAPI DetourBarrierProcessAttach()
+{
+    /*
+    Description:
+
+        Will be called on DLL load and initializes all barrier structures.
+    */
+
+    detour_zero_memory(&g_BarrierUnit, sizeof(g_BarrierUnit));
+
+    // globally accept all threads...
+    g_BarrierUnit.GlobalACL.IsExclusive = TRUE;
+
+    // allocate private heap
+    detour_initialize_lock(&g_BarrierUnit.TLS.ThreadSafe);
+
+    g_BarrierUnit.IsInitialized = AuxUlibInitialize() ? TRUE : FALSE;
+
+    g_hCoreHookHeap = HeapCreate(0, 0, 0);
+
+    return STATUS_SUCCESS;
+}
+
+void WINAPI DetourBarrierProcessDetach()
 {
 /*
 Description:
@@ -509,25 +506,23 @@ Description:
     Will be called on DLL unload.
 */
 
-    ULONG Index;
-
-    detour_delete_lock(&Unit.TLS.ThreadSafe);
+    detour_delete_lock(&g_BarrierUnit.TLS.ThreadSafe);
 
     // release thread specific resources
-    for (Index = 0; Index < MAX_THREAD_COUNT; Index++)
+    for (auto index = 0; index < MAX_THREAD_COUNT; index++)
     {
-        if (Unit.TLS.Entries[Index].Entries != NULL)
+        if (g_BarrierUnit.TLS.Entries[index].Entries != NULL)
         {
-            detour_free_memory(Unit.TLS.Entries[Index].Entries);
+            detour_free_memory(g_BarrierUnit.TLS.Entries[index].Entries);
         }
     }
 
-    detour_zero_memory(&Unit, sizeof(Unit));
+    detour_zero_memory(&g_BarrierUnit, sizeof(g_BarrierUnit));
 
-    HeapDestroy(hCoreHookHeap);
+    HeapDestroy(g_hCoreHookHeap);
 }
 
-void DetourBarrierThreadDetach()
+void WINAPI DetourBarrierThreadDetach()
 {
 /*
 Description:
@@ -535,24 +530,24 @@ Description:
     Will be called on thread termination and cleans up the TLS.
 */
 
-    PTHREAD_RUNTIME_INFO Info;
+    PTHREAD_RUNTIME_INFO pThreadRuntime;
 
-    if (TlsGetCurrentValue(&Unit.TLS, &Info))
+    if (TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntime))
     {
-        if (Info->Entries != NULL)
+        if (pThreadRuntime->Entries != NULL)
         {
-            detour_free_memory(Info->Entries);
+            detour_free_memory(pThreadRuntime->Entries);
         }
 
-        Info->Entries = NULL;
+        pThreadRuntime->Entries = NULL;
     }
 
-    TlsRemoveCurrentThread(&Unit.TLS);
+    TlsRemoveCurrentThread(&g_BarrierUnit.TLS);
 }
 
-RTL_SPIN_LOCK GlobalHookLock;
+DETOUR_SPIN_LOCK g_HookLock;
 
-void DetourCriticalInitialize()
+void WINAPI DetourCriticalInitialize()
 {
 /*
 Description:
@@ -560,10 +555,10 @@ Description:
     Fail safe initialization of global hooking structures...
 */
 
-    detour_initialize_lock(&GlobalHookLock);
+    detour_initialize_lock(&g_HookLock);
 }
 
-void DetourCriticalFinalize()
+void WINAPI DetourCriticalFinalize()
 {
 /*
 Description:
@@ -572,7 +567,7 @@ Description:
     all hooks. If it is possible also their memory is released. 
 */
 
-    detour_delete_lock(&GlobalHookLock);
+    detour_delete_lock(&g_HookLock);
 }
 
 BOOL detour_is_loader_lock()
@@ -592,7 +587,7 @@ Returns:
     return (
            !AuxUlibIsDLLSynchronizationHeld(&bDetourIsLoaderLock)
            || bDetourIsLoaderLock
-           || !Unit.IsInitialized
+           || !g_BarrierUnit.IsInitialized
            );
 }
 
@@ -616,13 +611,13 @@ Returns:
 
 */
 
-    PTHREAD_RUNTIME_INFO Runtime = NULL;
+    PTHREAD_RUNTIME_INFO pThreadRuntimeInfo = NULL;
 
-    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime) || Runtime->IsProtected) {
+    if (!TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntimeInfo) || pThreadRuntimeInfo->IsProtected) {
         return FALSE;
     }
 
-    Runtime->IsProtected = TRUE;
+    pThreadRuntimeInfo->IsProtected = TRUE;
 
     return TRUE;
 }
@@ -638,17 +633,15 @@ Description:
     An assertion is raised if the caller has not owned the self protection.
 */
 
-    PTHREAD_RUNTIME_INFO pRuntime = NULL;
+    PTHREAD_RUNTIME_INFO pThreadRuntime = NULL;
 
-    DETOUR_ASSERT(TlsGetCurrentValue(&Unit.TLS, &pRuntime) && pRuntime->IsProtected,
-        L"barrier.cpp - TlsGetCurrentValue(&Unit.TLS, &Runtime) && Runtime->IsProtected");
+    DETOUR_ASSERT(TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntime) && pThreadRuntime->IsProtected);
 
-    pRuntime->IsProtected = FALSE;
+    pThreadRuntime->IsProtected = FALSE;
 }
 
-BOOL ACLContains(
-    HOOK_ACL *InACL,
-    ULONG InCheckID)
+static BOOL detour_acl_contains(_In_ HOOK_ACL *pACL,
+                                _In_ ULONG dwAcl)
 {
 /*
 Returns:
@@ -656,12 +649,10 @@ Returns:
     TRUE if the given ACL contains the given ID, FALSE otherwise.
 */
 
-    ULONG Index;
-
-    for (Index = 0; Index < InACL->Count; Index++)
-    {
-        if (InACL->Entries[Index] == InCheckID)
+    for (ULONG index = 0; index < pACL->Count; index++) {
+        if (pACL->Entries[index] == dwAcl) {
             return TRUE;
+        }
     }
 
     return FALSE;
@@ -692,9 +683,9 @@ Returns:
         checkId = dwThreadId;
     }
 
-    if (ACLContains(&Unit.GlobalACL, checkId))
+    if (detour_acl_contains(&g_BarrierUnit.GlobalACL, checkId))
     {
-        if (ACLContains(pLocalACL, checkId))
+        if (detour_acl_contains(pLocalACL, checkId))
         {
             if (pLocalACL->IsExclusive) {
                 return FALSE;
@@ -707,11 +698,11 @@ Returns:
             }
         }
 
-        return !Unit.GlobalACL.IsExclusive;
+        return !g_BarrierUnit.GlobalACL.IsExclusive;
     }
     else
     {
-        if (ACLContains(pLocalACL, checkId))
+        if (detour_acl_contains(pLocalACL, checkId))
         {
             if (pLocalACL->IsExclusive) {
                 return FALSE;
@@ -724,7 +715,7 @@ Returns:
             }
         }
 
-        return Unit.GlobalACL.IsExclusive;
+        return g_BarrierUnit.GlobalACL.IsExclusive;
     }
 }
 
@@ -739,21 +730,21 @@ Description:
     call.
 
 */
-
+    
     LONG NtStatus;
-    PTHREAD_RUNTIME_INFO Runtime;
+    PTHREAD_RUNTIME_INFO pThreadRuntime;
 
     if (!IsValidPointer(ppCallback, sizeof(PVOID)))
     {
         THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
     }
-    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) 
+    if (!TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntime)) 
     {
         THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
     }
-    if (Runtime->Current != NULL) 
+    if (pThreadRuntime->Current != NULL) 
     {
-        *ppCallback = Runtime->Callback;
+        *ppCallback = pThreadRuntime->Callback;
     }
     else 
     { 
@@ -782,18 +773,18 @@ Description:
 */
 
     LONG NtStatus;
-    PTHREAD_RUNTIME_INFO Runtime;
+    PTHREAD_RUNTIME_INFO pThreadRuntime;
 
     if (!IsValidPointer(ppReturnAddress, sizeof(PVOID))) {
         THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
     }
 
-    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
+    if (!TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntime)) {
         THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
     }
 
-    if (Runtime->Current != NULL) {
-        *ppReturnAddress = Runtime->Current->RetAddress;
+    if (pThreadRuntime->Current != NULL) {
+        *ppReturnAddress = pThreadRuntime->Current->RetAddress;
     }
     else {
         THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
@@ -817,19 +808,19 @@ Description:
     the address of the return address of the hook handler.
 */
 
-    PTHREAD_RUNTIME_INFO Runtime;
+    PTHREAD_RUNTIME_INFO pThreadRuntime;
     LONG NtStatus;
 
     if (pppAddressOfReturnAddress == NULL) {
         THROW(STATUS_INVALID_PARAMETER, L"Invalid storage specified.");
     }
 
-    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
+    if (!TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntime)) {
         THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
     }
 
-    if (Runtime->Current != NULL) {
-        *pppAddressOfReturnAddress = Runtime->Current->AddrOfRetAddr;
+    if (pThreadRuntime->Current != NULL) {
+        *pppAddressOfReturnAddress = pThreadRuntime->Current->AddrOfRetAddr;
     }
     else {
         THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
@@ -856,22 +847,22 @@ Description:
 */
 
     LONG NtStatus;
-    PTHREAD_RUNTIME_INFO Runtime;
+    PTHREAD_RUNTIME_INFO pThreadRuntime;
 
     if (ppBackup == NULL) {
         THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given backup storage is invalid.");
     }
 
-    if (!TlsGetCurrentValue(&Unit.TLS, &Runtime)) {
+    if (!TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntime)) {
         THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
     }
 
-    if (Runtime->Current == NULL) {
+    if (pThreadRuntime->Current == NULL) {
         THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
     }
 
-    *ppBackup = *Runtime->Current->AddrOfRetAddr;
-    *Runtime->Current->AddrOfRetAddr = Runtime->Current->RetAddress;
+    *ppBackup = *pThreadRuntime->Current->AddrOfRetAddr;
+    *pThreadRuntime->Current->AddrOfRetAddr = pThreadRuntime->Current->RetAddress;
 
     RETURN;
 
@@ -910,10 +901,9 @@ FINALLY_OUTRO:
     return NtStatus;
 }
 
-LONG WINAPI DetourBarrierCallStackTrace(
-    _Outptr_ PVOID *ppMethodArray,
-    _In_ DWORD dwFramesToCapture,
-    _Inout_ DWORD *pCapturedFramesCount)
+LONG WINAPI DetourBarrierCallStackTrace(_Outptr_ PVOID *ppMethodArray,
+                                        _In_ DWORD dwFramesToCapture,
+                                        _Inout_ DWORD *pCapturedFramesCount)
 {
 /*
 Description:

@@ -10,6 +10,7 @@ public:
     int ShouldBypassDetourFunction();
     PVOID FindFunction(_In_ LPCSTR pszModule, _In_ LPCSTR pszFunction);
     LONG DetourMoveFileWithUserFunction();
+    LONG DetourInstallDetourFunction();
 };
 
 class DetoursTest : public testing::Test {
@@ -26,4 +27,3 @@ protected:
 
     Detours _dt;
 };
-

@@ -559,18 +559,6 @@ LONG WINAPI DetourBarrierCallStackTrace(_Outptr_ PVOID *ppMethodArray,
                                         _Inout_ DWORD *pCapturedFramesCount);
 
 
-////////////////////////////////////////////////////////////
-//
-//  Exception and error handling
-//
-//
-
-void detour_assert(_In_ BOOL bAssert,
-                   _In_ LPCWSTR lpMessageText);
-
-void detour_set_last_error(_In_ LONG lCode,
-                           _In_ LONG lStatus,
-                           _In_opt_ LPCWSTR lpMessage);
 
 ////////////////////////////////////////////////////////////
 //
@@ -579,13 +567,27 @@ void detour_set_last_error(_In_ LONG lCode,
 //
 //
 
-void DetourBarrierThreadDetach();
+void WINAPI DetourBarrierThreadDetach();
 
-LONG DetourBarrierProcessAttach();
-void DetourBarrierProcessDetach();
+LONG WINAPI DetourBarrierProcessAttach();
+void WINAPI DetourBarrierProcessDetach();
 
-void DetourCriticalInitialize();
-void DetourCriticalFinalize();
+void WINAPI DetourCriticalInitialize();
+void WINAPI DetourCriticalFinalize();
+
+////////////////////////////////////////////////////////////
+//
+//  Functions for accessing a handle for a detour allocation.
+//  Each detour allocation can hold a context structure,
+//  named a 'callback', that can then be accessed inside the 
+//  detour function handler
+//
+//
+
+TRACED_HOOK_HANDLE WINAPI DetourGetHookHandleForFunction(_In_ PDETOUR_TRAMPOLINE pTrampoline);
+
+LONG WINAPI DetourSetCallbackForLocalHook(_In_ PDETOUR_TRAMPOLINE pTrampoline,
+                                          _In_ PVOID pCallback);
 
 LONG DetourInstallHook(_Inout_ PVOID pEntryPoint,
                        _In_ PVOID pDetour,
@@ -595,7 +597,7 @@ LONG DetourInstallHook(_Inout_ PVOID pEntryPoint,
 LONG WINAPI DetourUninstallHook(_In_ TRACED_HOOK_HANDLE InHandle);
 
 BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
-                            _Out_ PDETOUR_TRAMPOLINE   *pHandle);
+                            _Out_ PDETOUR_TRAMPOLINE *pHandle);
 
 
 ////////////////////////////////////////////////////////////// Code Functions.
