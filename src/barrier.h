@@ -91,11 +91,11 @@ extern DETOUR_SPIN_LOCK     g_HookLock;
 //////////////////////////////////////////////// Exception handling code
 //
 
-VOID detour_assert(const char* pszMsg, LPCWSTR pszFile, ULONG nLine);
+VOID detour_assert(PCSTR pszMsg, LPCWSTR pszFile, ULONG nLine);
 
 void detour_set_last_error(_In_ LONG lCode,
-    _In_ LONG lStatus,
-    _In_opt_ LPCWSTR lpMessage);
+                           _In_ LONG lStatus,
+                           _In_opt_ LPCWSTR lpMessage);
 
 #ifndef NDEBUG
 #define ASSERT(expr)           ASSERT_ALWAYS(expr)

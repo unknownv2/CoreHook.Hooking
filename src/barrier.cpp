@@ -220,7 +220,7 @@ void detour_set_last_error(_In_ LONG lCode, _In_ LONG lStatus, _In_opt_ LPCWSTR 
     }
 }
 
-VOID detour_assert(const char* pszMsg, LPCWSTR pszFile, ULONG nLine)
+VOID detour_assert(PCSTR pszMsg, LPCWSTR pszFile, ULONG nLine)
 {
     DETOUR_TRACE(("DETOUR_ASSERT(%s) failed in %ws, line %d.\n", pszMsg, pszFile, nLine));
 #ifdef _DEBUG
@@ -229,7 +229,6 @@ VOID detour_assert(const char* pszMsg, LPCWSTR pszFile, ULONG nLine)
     FatalAppExit(0, pszFile);
 }
 
-//         detour_assert(#expression, WFILE, WFILE);            
 LONG WINAPI DetourSetGlobalInclusiveACL(_In_ DWORD *dwThreadIdList,
                                         _In_ DWORD dwThreadCount)
 {
@@ -731,7 +730,7 @@ Description:
     call.
 
 */
-
+    
     LONG NtStatus;
     PTHREAD_RUNTIME_INFO pThreadRuntime;
 
