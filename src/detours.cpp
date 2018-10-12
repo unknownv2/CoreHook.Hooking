@@ -2190,6 +2190,7 @@ Parameters:
 
     return detour_set_acl(&pTrampoline->LocalACL, FALSE, pThreadIdList, dwThreadCount);
 }
+
 LONG WINAPI DetourGetHookBypassAddress(_In_ TRACED_HOOK_HANDLE pHook,
                                        _Outptr_ PVOID **pppOutAddress)
 {
@@ -2227,24 +2228,20 @@ Returns:
 
 */
 
-    LONG NtStatus;
     PDETOUR_TRAMPOLINE Handle;
 
     if (!detour_is_valid_handle(pHook, &Handle)) {
-        THROW(STATUS_INVALID_PARAMETER_1, L"The given hook handle is invalid or already disposed.");
+        return ERROR_INVALID_HANDLE;
     }
     if (!IsValidPointer(pppOutAddress, sizeof(PVOID*))) {
-        THROW(STATUS_INVALID_PARAMETER_3, L"Invalid pointer for result storage.");
+        return ERROR_INVALID_PARAMETER;
     }
 
     *pppOutAddress = reinterpret_cast<PVOID*>(Handle->OldProc);
 
-    RETURN;
-
-THROW_OUTRO:
-FINALLY_OUTRO:
-    return NtStatus;
+    return NO_ERROR;
 }
+
 
 LONG WINAPI DetourSetExclusiveACL(_In_ DWORD *pThreadIdList,
                                   _In_ DWORD dwThreadCount,
