@@ -185,10 +185,11 @@ void detour_set_last_error(_In_ LONG lCode, _In_ LONG lStatus, _In_opt_ LPCWSTR 
         if (lstrlenW(lpMessage) > 0)
         {
             WCHAR msg[1024] = { 0 };
-            WCHAR* lpMsgBuf = NULL;
 
             if (lStatus == STATUS_SUCCESS)
             {
+                WCHAR* lpMsgBuf = NULL;
+
                 FormatMessage(
                     FORMAT_MESSAGE_ALLOCATE_BUFFER |
                     FORMAT_MESSAGE_FROM_SYSTEM |
@@ -201,6 +202,8 @@ void detour_set_last_error(_In_ LONG lCode, _In_ LONG lStatus, _In_opt_ LPCWSTR 
 
                 _snwprintf_s(msg, 1024,_TRUNCATE,
                             L"%s (%s)\n", lpMessage, lpMsgBuf);
+
+                LocalFree(lpMsgBuf);
             }
             else
             {
@@ -209,11 +212,6 @@ void detour_set_last_error(_In_ LONG lCode, _In_ LONG lStatus, _In_opt_ LPCWSTR 
             }
 
             DEBUGMSG(msg);
-
-            if (lpMsgBuf != NULL)
-            {
-                LocalFree(lpMsgBuf);
-            }
         }
 #endif
         LastError = lpMessage;
