@@ -87,3 +87,6 @@ TEST_F(DetoursTest, GetHookBypassAddress_Should_Return_Invalid_Handle_With_Bad_O
     HOOK_TRACE_INFO pHandle;
     EXPECT_EQ(ERROR_INVALID_PARAMETER, DetourGetHookBypassAddress(&pHandle, nullptr));
 }
+TEST_F(DetoursTest, GetHookBypassAddress_Should_Return_Invalid_Handle_With_Bad_Hook_Handle_and_Output_Address) {
+    EXPECT_EQ(ERROR_INVALID_HANDLE, DetourGetHookBypassAddress(nullptr, nullptr));
+}
