@@ -97,7 +97,7 @@
   <ItemGroup>
     <ClInclude Include="hook.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="simple_detours.h" />
+    <ClInclude Include="DetoursTest.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="detours_test.cpp" />
@@ -111,7 +111,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="simple_detours_test.cpp" />
+    <ClCompile Include="DetoursTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

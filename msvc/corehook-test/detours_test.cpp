@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "simple_detours.h"
+#include "DetoursTest.h"
 
 // Detour a user-created function by setting a boolean value from false to true in our _Detour method
 TEST_F(DetoursTest, SimpleDetoursUserFunctionTest) { 
