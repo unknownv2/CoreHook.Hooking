@@ -743,7 +743,6 @@ Description:
     the application will be left in an unstable state!
 */
 
-    LONG NtStatus;
     PTHREAD_RUNTIME_INFO pThreadRuntime;
 
     if (ppBackup == NULL) {

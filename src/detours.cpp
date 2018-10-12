@@ -1998,7 +1998,6 @@ Returns:
 
 */
 
-    LONG NtStatus = STATUS_INTERNAL_ERROR;
     LONG error = -1;
     PDETOUR_TRAMPOLINE pTrampoline = NULL;
 
@@ -2058,7 +2057,6 @@ will still return STATUS_SUCCESS.
 
     LONG error = -1;
     PDETOUR_TRAMPOLINE pHook = NULL;
-    LONG NtStatus = -1;
     BOOLEAN bIsAllocated = FALSE;
 
     if (!IsValidPointer(pHandle, sizeof(HOOK_TRACE_INFO))) {
