@@ -93,10 +93,6 @@ extern DETOUR_SPIN_LOCK     g_HookLock;
 
 VOID detour_assert(PCSTR pszMsg, LPCWSTR pszFile, ULONG nLine);
 
-void detour_set_last_error(_In_ LONG lCode,
-                           _In_ LONG lStatus,
-                           _In_opt_ LPCWSTR lpMessage);
-
 #ifndef NDEBUG
 #define ASSERT(expr)           ASSERT_ALWAYS(expr)
 #else
@@ -116,13 +112,6 @@ void detour_set_last_error(_In_ LONG lCode,
 
 
 #define DETOUR_ASSERT(expr)         ASSERT(expr)
-#define THROW(code, Msg)            { NtStatus = (code); detour_set_last_error(GetLastError(), NtStatus, Msg); goto THROW_OUTRO; }
-
-#define DETOUR_SUCCESS(ntstatus)    SUCCEEDED(ntstatus)
-
-#define RETURN                      { detour_set_last_error(STATUS_SUCCESS, STATUS_SUCCESS, L""); NtStatus = STATUS_SUCCESS; goto FINALLY_OUTRO; }
-#define FORCE(expr)                 { if(!DETOUR_SUCCESS(NtStatus = (expr))) goto THROW_OUTRO; }
-
 
 //////////////////////////////////////////////// Memory validation code
 //
