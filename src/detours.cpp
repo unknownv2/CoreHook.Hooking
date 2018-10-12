@@ -2087,16 +2087,13 @@ will still return STATUS_SUCCESS.
         {
             detour_release_lock(&g_HookLock);
 
-            RETURN;
+            return NO_ERROR;
         }
     }
     
     detour_release_lock(&g_HookLock);
 
-    RETURN(STATUS_SUCCESS);
-
-FINALLY_OUTRO:
-    return NtStatus;
+    return NO_ERROR;
 }
 
 LONG WINAPI DetourIsThreadIntercepted(_In_  TRACED_HOOK_HANDLE pHook,
