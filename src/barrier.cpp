@@ -335,7 +335,7 @@ Parameters:
         return STATUS_ACCESS_DENIED;
     }
 
-    return STATUS_SUCCESS;
+    return NO_ERROR;
 }
 
 HOOK_ACL *detour_barrier_get_acl()
@@ -493,7 +493,7 @@ LONG WINAPI DetourBarrierProcessAttach()
 
     g_hCoreHookHeap = HeapCreate(0, 0, 0);
 
-    return STATUS_SUCCESS;
+    return NO_ERROR;
 }
 
 void WINAPI DetourBarrierProcessDetach()
@@ -743,7 +743,7 @@ Description:
         return ERROR_NOT_SUPPORTED;
     }
 
-    return ERROR_SUCCESS;
+    return NO_ERROR;
 }
 
 LONG WINAPI DetourBarrierGetReturnAddress(_Outptr_ PVOID *ppReturnAddress)
@@ -777,7 +777,7 @@ Description:
         return ERROR_NOT_SUPPORTED;
     }
 
-    return ERROR_SUCCESS;
+    return NO_ERROR;
 }
 
 
@@ -807,7 +807,7 @@ Description:
     else {
         return ERROR_NOT_SUPPORTED;
     }
-    return ERROR_SUCCESS;
+    return NO_ERROR;
 }
 
 LONG WINAPI DetourBarrierBeginStackTrace(_Outptr_ PVOID* ppBackup)
@@ -857,22 +857,17 @@ Description:
     DetourBarrierBeginStackTrace().
 */
 
-    LONG NtStatus;
     PVOID *AddrOfRetAddr;
 
     if (!IsValidPointer(pBackup, 1)) {
-        THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given stack backup pointer is invalid.");
+        return ERROR_INVALID_PARAMETER;
     }
 
-    FORCE(DetourBarrierGetAddressOfReturnAddress(&AddrOfRetAddr));
+    LONG status = DetourBarrierGetAddressOfReturnAddress(&AddrOfRetAddr);
 
     *AddrOfRetAddr = pBackup;
 
-    RETURN;
-
-THROW_OUTRO:
-FINALLY_OUTRO:
-    return NtStatus;
+    return status;
 }
 
 LONG WINAPI DetourBarrierCallStackTrace(_Outptr_ PVOID *ppMethodArray,
@@ -907,37 +902,29 @@ Returns:
         Only supported since Windows XP.
 */
     
-    LONG NtStatus;
     PVOID Backup = NULL;
 
     if (dwFramesToCapture > 64) {
-        THROW(STATUS_INVALID_PARAMETER_2, L"barrier.cpp - At maximum 64 modules are supported.");
+        return ERROR_INVALID_PARAMETER;
     }
     if (!IsValidPointer(ppMethodArray, dwFramesToCapture * sizeof(PVOID))) {
-        THROW(STATUS_INVALID_PARAMETER_1, L"barrier.cpp - The given module buffer is invalid.");
+        return ERROR_INVALID_PARAMETER;
     }
 
     if (!IsValidPointer(pCapturedFramesCount, sizeof(ULONG))) {
-        THROW(STATUS_INVALID_PARAMETER_3, L"barrier.cpp - Invalid module count storage.");
+        return ERROR_INVALID_PARAMETER;
     }
 
-    
-    FORCE(DetourBarrierBeginStackTrace(&Backup));
+    auto status = DetourBarrierBeginStackTrace(&Backup);
     
     if (CaptureStackBackTrace == NULL) {
-        THROW(STATUS_NOT_IMPLEMENTED, L"barrier.cpp - This method requires Windows XP or later.");
+        return ERROR_INVALID_FUNCTION;
     }
 
     *pCapturedFramesCount = CaptureStackBackTrace(1, 32, ppMethodArray, NULL);
 
-    RETURN;
-    
-THROW_OUTRO:
-FINALLY_OUTRO:
-    {
-        if (Backup != NULL) {
-            DetourBarrierEndStackTrace(Backup);
-        }
-        return NtStatus;
+    if (Backup != NULL) {
+        DetourBarrierEndStackTrace(Backup);
     }
+    return status;
 }

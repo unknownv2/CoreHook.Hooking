@@ -1892,7 +1892,7 @@ LONG WINAPI DetourSetCallbackForLocalHook(_In_ PDETOUR_TRAMPOLINE pTrampoline,
 {
     if(pTrampoline != NULL) {
         pTrampoline->Callback = pCallback;
-        return STATUS_SUCCESS;
+        return NO_ERROR;
     }
 
     return STATUS_INVALID_PARAMETER_1;
@@ -2035,9 +2035,6 @@ Returns:
         }
     }
     return error;
-THROW_OUTRO:
-
-    return NtStatus;
 }
 
 
@@ -2116,7 +2113,6 @@ about the implementation.
 
 */
 
-    LONG NtStatus;
     PDETOUR_TRAMPOLINE Handle;
 
     if (!detour_is_valid_handle(pHook, &Handle)) {
@@ -2129,11 +2125,7 @@ about the implementation.
 
     *pResult = detour_is_thread_intercepted(&Handle->LocalACL, dwThreadId);
 
-    RETURN;
-
-THROW_OUTRO:
-FINALLY_OUTRO:
-    return NtStatus;
+    return NO_ERROR;
 }
 
 LONG WINAPI DetourSetGlobalExclusiveACL(_In_ DWORD *dwThreadIdList,
