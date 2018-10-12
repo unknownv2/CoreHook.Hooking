@@ -133,7 +133,7 @@ struct _DETOUR_TRAMPOLINE
     ULONG               HLSIdent;
     TRACED_HOOK_HANDLE  OutHandle;      // handle returned to user
     void*               Trampoline;
-    void*               HookIntro;      // NET Intro function
+    void*               HookIntro;      // .NET Intro function
     UCHAR*              OldProc;        // old target function
     void*               HookProc;       // function we detour to
     void*               HookOutro;      // .NET Outro function
@@ -1720,7 +1720,7 @@ Description:
 #endif
 
     DETOUR_TRACE(("detours: detour_barrier_intro() Handle=%p, ReturnAddr=%p, AddrOfReturnAddr=%p \n",
-        pHandle, pReturnAddr, ppAddrOfReturnAddr) );
+        pHandle, pReturnAddr, ppAddrOfReturnAddr));
 
     // are we in OS loader lock?
     if(detour_is_loader_lock())
