@@ -1895,7 +1895,7 @@ LONG WINAPI DetourSetCallbackForLocalHook(_In_ PDETOUR_TRAMPOLINE pTrampoline,
         return NO_ERROR;
     }
 
-    return STATUS_INVALID_PARAMETER_1;
+    return ERROR_INVALID_PARAMETER;
 }
 
 VOID detour_insert_trace_handle(PDETOUR_TRAMPOLINE pTrampoline)

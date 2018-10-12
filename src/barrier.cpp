@@ -224,11 +224,11 @@ Parameters:
     ASSERT(IsValidPointer(pAcl, sizeof(HOOK_ACL)));
 
     if (dwThreadCount > MAX_ACE_COUNT) {
-        return STATUS_INVALID_PARAMETER_2;
+        return ERROR_INVALID_PARAMETER;
     }
 
     if (!IsValidPointer(dwThreadIdList, dwThreadCount * sizeof(ULONG))) {
-        return STATUS_INVALID_PARAMETER_1;
+        return ERROR_INVALID_PARAMETER;
     }
 
     for (DWORD index = 0; index < dwThreadCount; index++)
@@ -237,6 +237,7 @@ Parameters:
             dwThreadIdList[index] = GetCurrentThreadId();
         }
     }
+
     DWORD dwOld;
     if (VirtualProtect(pAcl, sizeof(HOOK_ACL), PAGE_READWRITE, &dwOld))
     {
@@ -251,7 +252,7 @@ Parameters:
     }
     else
     {
-        return STATUS_ACCESS_DENIED;
+        return ERROR_ACCESS_DENIED;
     }
 
     return NO_ERROR;
