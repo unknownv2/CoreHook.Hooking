@@ -728,32 +728,22 @@ Description:
     call.
 
 */
-    
-    LONG NtStatus;
     PTHREAD_RUNTIME_INFO pThreadRuntime;
 
-    if (!IsValidPointer(ppCallback, sizeof(PVOID)))
-    {
-        THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
+    if (!IsValidPointer(ppCallback, sizeof(PVOID))){
+        return ERROR_INVALID_PARAMETER;
     }
-    if (!TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntime)) 
-    {
-        THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+    if (!TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntime)) {
+        return ERROR_NOT_SUPPORTED;
     }
-    if (pThreadRuntime->Current != NULL) 
-    {
+    if (pThreadRuntime->Current != NULL){
         *ppCallback = pThreadRuntime->Callback;
     }
-    else 
-    { 
-        THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+    else { 
+        return ERROR_NOT_SUPPORTED;
     }
 
-    RETURN;
-
-THROW_OUTRO:
-FINALLY_OUTRO:
-    return NtStatus;
+    return ERROR_SUCCESS;
 }
 
 LONG WINAPI DetourBarrierGetReturnAddress(_Outptr_ PVOID *ppReturnAddress)
@@ -770,29 +760,24 @@ Description:
 
 */
 
-    LONG NtStatus;
     PTHREAD_RUNTIME_INFO pThreadRuntime;
 
     if (!IsValidPointer(ppReturnAddress, sizeof(PVOID))) {
-        THROW(STATUS_INVALID_PARAMETER, L"Invalid result storage specified.");
+        return ERROR_INVALID_PARAMETER;
     }
 
     if (!TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntime)) {
-        THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+        return ERROR_NOT_SUPPORTED;
     }
 
     if (pThreadRuntime->Current != NULL) {
         *ppReturnAddress = pThreadRuntime->Current->RetAddress;
     }
     else {
-        THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+        return ERROR_NOT_SUPPORTED;
     }
 
-    RETURN;
-
-THROW_OUTRO:
-FINALLY_OUTRO:
-    return NtStatus;
+    return ERROR_SUCCESS;
 }
 
 
@@ -807,27 +792,22 @@ Description:
 */
 
     PTHREAD_RUNTIME_INFO pThreadRuntime;
-    LONG NtStatus;
 
     if (pppAddressOfReturnAddress == NULL) {
-        THROW(STATUS_INVALID_PARAMETER, L"Invalid storage specified.");
+        return ERROR_INVALID_PARAMETER;
     }
 
     if (!TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntime)) {
-        THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+        return ERROR_NOT_SUPPORTED;
     }
 
     if (pThreadRuntime->Current != NULL) {
         *pppAddressOfReturnAddress = pThreadRuntime->Current->AddrOfRetAddr;
     }
     else {
-        THROW(STATUS_NOT_SUPPORTED, L"The caller is not inside a hook handler.");
+        return ERROR_NOT_SUPPORTED;
     }
-    RETURN;
-
-THROW_OUTRO:
-FINALLY_OUTRO:
-    return NtStatus;
+    return ERROR_SUCCESS;
 }
 
 LONG WINAPI DetourBarrierBeginStackTrace(_Outptr_ PVOID* ppBackup)
@@ -848,25 +828,21 @@ Description:
     PTHREAD_RUNTIME_INFO pThreadRuntime;
 
     if (ppBackup == NULL) {
-        THROW(STATUS_INVALID_PARAMETER, L"barrier.cpp - The given backup storage is invalid.");
+        return ERROR_INVALID_PARAMETER;
     }
 
     if (!TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntime)) {
-        THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
+        return ERROR_NOT_SUPPORTED;
     }
 
     if (pThreadRuntime->Current == NULL) {
-        THROW(STATUS_NOT_SUPPORTED, L"barrier.cpp - The caller is not inside a hook handler.");
+        return ERROR_NOT_SUPPORTED;
     }
 
     *ppBackup = *pThreadRuntime->Current->AddrOfRetAddr;
     *pThreadRuntime->Current->AddrOfRetAddr = pThreadRuntime->Current->RetAddress;
 
-    RETURN;
-
-THROW_OUTRO:
-FINALLY_OUTRO:
-    return NtStatus;
+    return ERROR_SUCCESS;
 }
 
 LONG WINAPI DetourBarrierEndStackTrace(_In_ PVOID pBackup)

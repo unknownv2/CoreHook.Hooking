@@ -2004,16 +2004,16 @@ Returns:
 
     // validate parameters
     if (!IsValidPointer(pEntryPoint, 1)) {
-        THROW(STATUS_INVALID_PARAMETER_1, L"Invalid entry point.");
+        return ERROR_INVALID_PARAMETER;
     }
     if (!IsValidPointer(pDetour, 1)) {
-        THROW(STATUS_INVALID_PARAMETER_2, L"Invalid hook procedure.");
+        return ERROR_INVALID_PARAMETER;
     }
     if (!IsValidPointer(pReturnedHandle, sizeof(HOOK_TRACE_INFO))) {
-        THROW(STATUS_INVALID_PARAMETER_3, L"The hook handle storage is expected to be allocated by the caller.");
+        return ERROR_INVALID_PARAMETER;
     }
     if (pReturnedHandle->Link != NULL) {
-        THROW(STATUS_INVALID_PARAMETER_4, L"The given trace handle seems to already be associated with a hook.");
+        return ERROR_INVALID_PARAMETER;
     }
 
     error = DetourTransactionBegin();
@@ -2120,11 +2120,11 @@ about the implementation.
     PDETOUR_TRAMPOLINE Handle;
 
     if (!detour_is_valid_handle(pHook, &Handle)) {
-        THROW(STATUS_INVALID_PARAMETER_1, L"The given hook handle is invalid or already disposed.");
+        return ERROR_INVALID_PARAMETER;
     }
 
     if (!IsValidPointer(pResult, sizeof(BOOL))) {
-        THROW(STATUS_INVALID_PARAMETER_3, L"Invalid pointer for result storage.");
+        return ERROR_INVALID_PARAMETER;
     }
 
     *pResult = detour_is_thread_intercepted(&Handle->LocalACL, dwThreadId);
@@ -2185,7 +2185,7 @@ Parameters:
     PDETOUR_TRAMPOLINE pTrampoline;
 
     if (!detour_is_valid_handle(pHandle, &pTrampoline)) {
-        return STATUS_INVALID_PARAMETER_3;
+        return ERROR_INVALID_PARAMETER;
     }
 
     return detour_set_acl(&pTrampoline->LocalACL, FALSE, pThreadIdList, dwThreadCount);
@@ -2242,7 +2242,6 @@ Returns:
     return NO_ERROR;
 }
 
-
 LONG WINAPI DetourSetExclusiveACL(_In_ DWORD *pThreadIdList,
                                   _In_ DWORD dwThreadCount,
                                   _In_ TRACED_HOOK_HANDLE pHandle)
@@ -2268,7 +2267,7 @@ Parameters:
     PDETOUR_TRAMPOLINE Handle;
 
     if (!detour_is_valid_handle(pHandle, &Handle)) {
-        return STATUS_INVALID_PARAMETER_3;
+        return ERROR_INVALID_HANDLE;
     }
     return detour_set_acl(&Handle->LocalACL, TRUE, pThreadIdList, dwThreadCount);
 }
