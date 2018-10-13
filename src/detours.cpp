@@ -1703,13 +1703,6 @@ static UINT WINAPI detour_barrier_intro(_In_ DETOUR_TRAMPOLINE *pHandle,
                                         _In_ void *pReturnAddr,
                                         _Inout_ void **ppAddrOfReturnAddr)
 {
-/*
-Description:
-
-    Will be called from assembler code and enters the 
-    thread deadlock barrier.
-*/
-
     PTHREAD_RUNTIME_INFO pThreadRuntimeInfo;
     RUNTIME_INFO *pRuntimeInfo;
     BOOL bExists;
@@ -1722,7 +1715,7 @@ Description:
     DETOUR_TRACE(("detours: detour_barrier_intro() Handle=%p, ReturnAddr=%p, AddrOfReturnAddr=%p \n",
         pHandle, pReturnAddr, ppAddrOfReturnAddr));
 
-    // are we in OS loader lock?
+    // Are we in OS loader lock?
     if(detour_is_loader_lock())
     {
         /*
@@ -1736,7 +1729,7 @@ Description:
         return FALSE;
     }
 
-    // open pointer table
+    // Open pointer table.
     bExists = TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntimeInfo);
 
     if(!bExists)
@@ -1752,7 +1745,7 @@ Description:
         self protection.
 
         Self protection prevents any further hook interception for the current fiber,
-        while setting up the "Thread Deadlock Barrier"...
+        while setting up the "Thread Deadlock Barrier".
     */
     if(!detour_acquire_self_protection())
     {
@@ -1772,17 +1765,17 @@ Description:
         }
     }
 
-    // get hook runtime info...
+    // Get the hook runtime info.
     pRuntimeInfo = &pThreadRuntimeInfo->Entries[pHandle->HLSIndex];
 
     if(pRuntimeInfo->HLSIdent != pHandle->HLSIdent)
     {
-        // just reset execution information
+        // Just reset execution information.
         pRuntimeInfo->HLSIdent = pHandle->HLSIdent;
         pRuntimeInfo->IsExecuting = FALSE;
     }
 
-    // detect loops in hook execution hiearchy.
+    // Detect loops in hook execution hiearchy.
     if(pRuntimeInfo->IsExecuting)
     {
         /*
@@ -1802,7 +1795,7 @@ Description:
     pThreadRuntimeInfo->Current = pRuntimeInfo;
 
     /*
-        Now we will negotiate thread/process access based on global and local ACL...
+        Now we will negotiate thread/process access based on global and local ACL.
     */
     pRuntimeInfo->IsExecuting = detour_is_thread_intercepted(&pHandle->LocalACL, GetCurrentThreadId());
 
@@ -1810,7 +1803,7 @@ Description:
         goto DONT_INTERCEPT;
     }
 
-    // save some context specific information
+    // Save some context specific information.
     pRuntimeInfo->RetAddress = pReturnAddr;
     pRuntimeInfo->AddrOfRetAddr = ppAddrOfReturnAddr;
 
@@ -1836,16 +1829,6 @@ static void* WINAPI detour_barrier_outro(_In_ DETOUR_TRAMPOLINE *pHandle,
     DETOUR_TRACE(("detours: detour_barrier_outro() Handle=%p, AddrOfReturnAddr=%p \n",
         pHandle, ppAddrOfReturnAddr));
 
-/*
-Description:
-    
-    Will just reset the "thread deadlock barrier" for the current hook handler and provides
-    some important integrity checks. 
-
-    The hook handle is just passed through, because the assembler code has no chance to
-    save it in any efficient manner at this point of execution...
-*/
-
     RUNTIME_INFO *pRuntimeInfo = NULL;
     PTHREAD_RUNTIME_INFO pThreadRuntimeInfo;
 
@@ -1860,7 +1843,7 @@ Description:
 
     pRuntimeInfo = &pThreadRuntimeInfo->Entries[pHandle->HLSIndex];
 
-    // leave handler context
+    // Leave handler context.
     pThreadRuntimeInfo->Current = NULL;
     pThreadRuntimeInfo->Callback = NULL;
 
@@ -1917,7 +1900,7 @@ BOOL detour_add_trampoline_to_global_list(PDETOUR_TRAMPOLINE pTrampoline)
     DWORD dwIndex;
     BOOL bExists;
 
-    // register in global HLS list
+    // Register in global HLS list.
     detour_acquire_lock(&g_HookLock);
     
     pTrampoline->HLSIdent = s_UniqueIDCounter++;
@@ -1943,65 +1926,14 @@ BOOL detour_add_trampoline_to_global_list(PDETOUR_TRAMPOLINE pTrampoline)
     return bExists;
 }
 
-
 LONG DetourInstallHook(_Inout_ PVOID pEntryPoint,
                        _In_ PVOID pDetour,
                        _In_ PVOID pCallback,
                        _In_ TRACED_HOOK_HANDLE pReturnedHandle)
 {
-/*
-Description:
-
-    Installs a hook at the given entry point, redirecting all
-    calls to the given hooking method. The returned handle will
-    either be released on library unloading or explicitly through
-    DetourUninstallHook() or DetourUninstallAllHooks().
-
-Parameters:
-
-    - pEntryPoint
-
-    An entry point to hook. Not all entry points are hookable. In such
-    a case STATUS_NOT_SUPPORTED will be returned.
-
-    - pHookProc
-
-    The method that should be called instead of the given entry point.
-    Please note that calling convention, parameter count and return value
-    shall match EXACTLY!
-
-    - pCallback
-
-    An uninterpreted callback later available through
-    DetourBarrierGetCallback().
-
-    - pReturnedHandle
-
-    The memory portion supplied by *pReturnedHandle is expected to be preallocated
-    by the caller. This structure is then filled by the method on success and
-    must stay valid for hook-life time. Only if you explicitly call one of
-    the hook uninstallation APIs, you can safely release the handle memory.
-
-Returns:
-
-    STATUS_NO_MEMORY
-
-    Unable to allocate memory around the target entry point.
-
-    STATUS_NOT_SUPPORTED
-
-    The target entry point contains unsupported instructions.
-
-    STATUS_INSUFFICIENT_RESOURCES
-
-    The limit of MAX_HOOK_COUNT simultaneous hooks was reached.
-
-*/
-
     LONG error = -1;
     PDETOUR_TRAMPOLINE pTrampoline = NULL;
 
-    // validate parameters
     if (!IsValidPointer(pEntryPoint, 1)) {
         return ERROR_INVALID_PARAMETER;
     }
@@ -2036,25 +1968,8 @@ Returns:
     return error;
 }
 
-
 LONG WINAPI DetourUninstallHook(_In_ TRACED_HOOK_HANDLE pHandle)
 {
-/*
-Description:
-
-Removes the given hook. To also release associated resources,
-you will have to call DetourWaitForPendingRemovals(). In any case
-your hook handler will never be executed again, after calling this
-method.
-
-Parameters:
-
-- pHandle
-
-A traced hook handle. If the hook is already removed, this method
-will still return STATUS_SUCCESS.
-*/
-
     LONG error = -1;
     PDETOUR_TRAMPOLINE pHook = NULL;
     BOOLEAN bIsAllocated = FALSE;
@@ -2098,16 +2013,6 @@ LONG WINAPI DetourIsThreadIntercepted(_In_  TRACED_HOOK_HANDLE pHook,
                                       _In_  DWORD dwThreadId,
                                       _Out_ BOOL *pResult)
 {
-/*
-Description:
-
-This method will negotiate whether a given thread passes
-the ACLs and would invoke the related hook handler. Refer
-to the source code of Is[Thread/Process]Intercepted() for more information
-about the implementation.
-
-*/
-
     PDETOUR_TRAMPOLINE Handle;
 
     if (!detour_is_valid_handle(pHook, &Handle)) {
@@ -2126,21 +2031,6 @@ about the implementation.
 LONG WINAPI DetourSetGlobalExclusiveACL(_In_ DWORD *dwThreadIdList,
                                         _In_ DWORD dwThreadCount)
 {
-    /*
-    Description:
-
-        Sets an exclusive global ACL based on the given thread ID list.
-
-    Parameters:
-        - dwThreadIdList
-            An array of thread IDs. If you specific zero for an entry in this array,
-            it will be automatically replaced with the calling thread ID.
-
-        - dwThreadCount
-            The count of entries listed in the thread ID list. This value must not exceed
-            MAX_ACE_COUNT!
-    */
-
     return detour_set_acl(detour_barrier_get_acl(), TRUE, dwThreadIdList, dwThreadCount);
 }
 
@@ -2148,27 +2038,6 @@ LONG WINAPI DetourSetInclusiveACL(_In_ DWORD *pThreadIdList,
                                   _In_ DWORD dwThreadCount,
                                   _In_ TRACED_HOOK_HANDLE pHandle)
 {
-/*
-Description:
-
-    Sets an inclusive hook local ACL based on the given thread ID list.
-    Only threads in this list will be intercepted by the hook. If the
-    global ACL also is inclusive, then all threads stated there are
-    intercepted too.
-
-Parameters:
-    - pThreadIdList
-    An array of thread IDs. If you specific zero for an entry in this array,
-    it will be automatically replaced with the calling thread ID.
-
-    - dwThreadCount
-    The count of entries listed in the thread ID list. This value must not exceed
-    MAX_ACE_COUNT!
-
-    - pHandle
-    The hook handle whose local ACL is going to be set.
-*/
-
     PDETOUR_TRAMPOLINE pTrampoline;
 
     if (!detour_is_valid_handle(pHandle, &pTrampoline)) {
@@ -2181,40 +2050,6 @@ Parameters:
 LONG WINAPI DetourGetHookBypassAddress(_In_ TRACED_HOOK_HANDLE pHook,
                                        _Outptr_ PVOID **pppOutAddress)
 {
-/*
-Description:
-
-    Retrieves the address to bypass the hook. Using the returned value to call the original
-    function bypasses all thread safety measures and must be used with care.
-    This function should be called each time the address is required to ensure the hook  and
-    associated memory is still valid at the time of use.
-    CAUTION:
-    This must be used with extreme caution. If the hook is uninstalled and pending hooks
-    removed, the address returned by this function will no longer point to valid memory and
-    attempting to use the address will result in unexpected behaviour, most likely crashing
-    the process.
-
-Parameters:
-
-    - pHook
-
-        The hook to retrieve the relocated entry point for.
-
-    - pppOutAddress
-
-        Upon successfully retrieving the hook details this will contain
-        the address of the relocated function entry point. This address
-        can be used to call the original function from outside of a hook
-        while still bypassing the hook.
-
-Returns:
-
-    STATUS_SUCCESS             - pppOutAddress will contain the result
-    STATUS_INVALID_PARAMETER_1 - the hook is invalid
-    STATUS_INVALID_PARAMETER_3 - the target pointer is invalid
-
-*/
-
     PDETOUR_TRAMPOLINE Handle;
 
     if (!detour_is_valid_handle(pHook, &Handle)) {
@@ -2233,24 +2068,6 @@ LONG WINAPI DetourSetExclusiveACL(_In_ DWORD *pThreadIdList,
                                   _In_ DWORD dwThreadCount,
                                   _In_ TRACED_HOOK_HANDLE pHandle)
 {
-/*
-Description:
-
-    Sets an exclusive hook local ACL based on the given thread ID list.
-    
-Parameters:
-    - pThreadIdList
-        An array of thread IDs. If you specific zero for an entry in this array,
-        it will be automatically replaced with the calling thread ID.
-
-    - dwThreadCount
-        The count of entries listed in the thread ID list. This value must not exceed
-        MAX_ACE_COUNT! 
-
-    - pHandle
-        The hook handle whose local ACL is going to be set.
-*/
-
     PDETOUR_TRAMPOLINE Handle;
 
     if (!detour_is_valid_handle(pHandle, &Handle)) {

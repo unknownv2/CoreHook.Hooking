@@ -41,7 +41,7 @@
 #pragma warning(pop)
 #endif
 
-// allocate at DLL Entry
+// Allocate the Heap handle at DLL entry point
 HANDLE g_hCoreHookHeap = NULL;
 
 BARRIER_UNIT g_BarrierUnit;
@@ -149,21 +149,6 @@ VOID detour_assert(PCSTR pszMsg, LPCWSTR pszFile, ULONG nLine)
 LONG WINAPI DetourSetGlobalInclusiveACL(_In_ DWORD *dwThreadIdList,
                                         _In_ DWORD dwThreadCount)
 {
-/*
-Description:
-
-    Sets an inclusive global ACL based on the given thread ID list.
-    
-Parameters:
-    - dwThreadIdList
-        An array of thread IDs. If you specific zero for an entry in this array,
-        it will be automatically replaced with the calling thread ID.
-
-    - dwThreadCount
-        The count of entries listed in the thread ID list. This value must not exceed
-        MAX_ACE_COUNT! 
-*/
-
     return detour_set_acl(detour_barrier_get_acl(), FALSE, dwThreadIdList, dwThreadCount);
 }
 
@@ -171,16 +156,6 @@ Parameters:
 BOOL detour_is_valid_handle(_In_  TRACED_HOOK_HANDLE pTracedHandle,
                             _Out_ PDETOUR_TRAMPOLINE *pHandle)
 {
-
-/*
-Description:
-
-    A handle is considered to be valid, if the whole structure
-    points to valid memory AND the signature is valid AND the
-    hook is installed!
-
-*/
-
     if (!IsValidPointer(pTracedHandle, sizeof(HOOK_TRACE_INFO))) {
         return FALSE;
     }
@@ -197,30 +172,6 @@ LONG detour_set_acl(_In_ HOOK_ACL *pAcl,
                     _In_ DWORD    *dwThreadIdList,
                     _In_ DWORD    dwThreadCount)
 {
-/*
-Description:
-
-    This method is used internally to provide a generic interface to
-    either the global or local hook ACLs.
-    
-Parameters:
-    - pAcl
-        NULL if you want to set the global ACL.
-        Any LOCAL_HOOK_INFO::LocalACL to set the hook specific ACL.
-
-    - bIsExclusive
-        TRUE if all listed thread shall be excluded from interception,
-        FALSE otherwise
-
-    - dwThreadIdList
-        An array of thread IDs. If you specific zero for an entry in this array,
-        it will be automatically replaced with the calling thread ID.
-
-    - dwThreadCount
-        The count of entries listed in the thread ID list. This value must not exceed
-        MAX_ACE_COUNT! 
-*/
-
     ASSERT(IsValidPointer(pAcl, sizeof(HOOK_ACL)));
 
     if (dwThreadCount > MAX_ACE_COUNT) {
@@ -241,7 +192,7 @@ Parameters:
     DWORD dwOld;
     if (VirtualProtect(pAcl, sizeof(HOOK_ACL), PAGE_READWRITE, &dwOld))
     {
-        // set ACL...
+        // Set ACL.
         pAcl->IsExclusive = bIsExclusive;
         pAcl->Count = dwThreadCount;
 
@@ -266,28 +217,6 @@ HOOK_ACL *detour_barrier_get_acl()
 BOOL TlsGetCurrentValue(_In_  THREAD_LOCAL_STORAGE *pTls,
                         _Outptr_ THREAD_RUNTIME_INFO  **OutValue)
 {
-/*
-Description:
-
-    Queries the THREAD_RUNTIME_INFO for the calling thread.
-    The caller shall previously be added to the storage by
-    using TlsAddCurrentThread().
-
-Parameters:
-
-    - pTls
-
-        The storage where the caller is registered.
-
-    - OutValue
-
-        Is filled with a pointer to the caller's private storage entry.
-
-Returns:
-
-    FALSE if the caller was not registered in the storage, TRUE otherwise.
-*/
-
     DWORD dwThreadId = GetCurrentThreadId();
 
     for (auto index = 0; index < MAX_THREAD_COUNT; index++)
@@ -304,38 +233,13 @@ Returns:
 }
 BOOL TlsAddCurrentThread(_In_ THREAD_LOCAL_STORAGE *pTls)
 {
-/*
-Description:
-
-    Tries to reserve a THREAD_RUNTIME_INFO entry for the calling thread.
-    On success it may call TlsGetCurrentValue() to query a pointer to
-    its private entry.
-
-    This is a replacement for the Windows Thread Local Storage which seems
-    to cause trouble when using it in Explorer.EXE for example.
-
-    No parameter validation (for performance reasons).
-
-    This method will raise an assertion if the thread was already added
-    to the storage!
-
-Parameters:
-    - pTls
-
-        The thread local storage to allocate from.
-
-Returns:
-
-    TRUE on success, FALSE otherwise.
-*/
-
     ULONG dwThreadId = GetCurrentThreadId();
     LONG Index = -1;
     LONG i;
 
     detour_acquire_lock(&pTls->ThreadSafe);
 
-    // select Index AND check whether thread is already registered.
+    // Select the index and check whether thread is already registered.
     for (i = 0; i < MAX_THREAD_COUNT; i++)
     {
         if ((pTls->IdList[i] == 0) && (Index == -1)) {
@@ -363,19 +267,6 @@ Returns:
 
 static void TlsRemoveCurrentThread(_In_ THREAD_LOCAL_STORAGE *pTls)
 {
-/*
-Description:
-
-    Removes the caller from the local storage. If the caller
-    is already removed, the method will do nothing.
-
-Parameters:
-
-    - pTls
-
-        The storage from which the caller should be removed.
-*/
-
     DWORD dwThreadId = GetCurrentThreadId();
 
     detour_acquire_lock(&pTls->ThreadSafe);
@@ -395,18 +286,12 @@ Parameters:
 
 LONG WINAPI DetourBarrierProcessAttach()
 {
-    /*
-    Description:
-
-        Will be called on DLL load and initializes all barrier structures.
-    */
-
     detour_zero_memory(&g_BarrierUnit, sizeof(g_BarrierUnit));
 
-    // globally accept all threads...
+    // Globally accept all threads.
     g_BarrierUnit.GlobalACL.IsExclusive = TRUE;
 
-    // allocate private heap
+    // Allocate private heap.
     detour_initialize_lock(&g_BarrierUnit.TLS.ThreadSafe);
 
     g_BarrierUnit.IsInitialized = AuxUlibInitialize() ? TRUE : FALSE;
@@ -418,15 +303,9 @@ LONG WINAPI DetourBarrierProcessAttach()
 
 void WINAPI DetourBarrierProcessDetach()
 {
-/*
-Description:
-
-    Will be called on DLL unload.
-*/
-
     detour_delete_lock(&g_BarrierUnit.TLS.ThreadSafe);
 
-    // release thread specific resources
+    // Release thread specific resources.
     for (auto index = 0; index < MAX_THREAD_COUNT; index++)
     {
         if (g_BarrierUnit.TLS.Entries[index].Entries != NULL)
@@ -442,12 +321,6 @@ Description:
 
 void WINAPI DetourBarrierThreadDetach()
 {
-/*
-Description:
-
-    Will be called on thread termination and cleans up the TLS.
-*/
-
     PTHREAD_RUNTIME_INFO pThreadRuntime;
 
     if (TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntime))
@@ -467,39 +340,16 @@ DETOUR_SPIN_LOCK g_HookLock;
 
 void WINAPI DetourCriticalInitialize()
 {
-/*
-Description:
-    
-    Fail safe initialization of global hooking structures...
-*/
-
     detour_initialize_lock(&g_HookLock);
 }
 
 void WINAPI DetourCriticalFinalize()
 {
-/*
-Description:
-
-    Will be called in the DLL_PROCESS_DETACH event and just uninstalls
-    all hooks. If it is possible also their memory is released. 
-*/
-
     detour_delete_lock(&g_HookLock);
 }
 
 BOOL detour_is_loader_lock()
 {
-/*
-Returns:
-
-    TRUE if the current thread hols the OS loader lock, or the library was not initialized
-    properly. In both cases a hook handler should not be executed!
-
-    FALSE if it is safe to execute the hook handler.
-
-*/
-
     BOOL bDetourIsLoaderLock = FALSE;
 
     return (
@@ -511,24 +361,6 @@ Returns:
 
 BOOL detour_acquire_self_protection()
 {
-/*
-Description:
-
-    To provide more convenience for writing the TDB, this self protection
-    will disable ALL hooks for the current thread until detour_release_self_protection() 
-    is called. This allows one to call any API during TDB initialization
-    without being intercepted...
-
-Returns:
-
-    TRUE if the caller's runtime info has been locked down.
-
-    FALSE if the caller's runtime info already has been locked down
-    or is not available. The hook handler should not be executed in
-    this case!
-
-*/
-
     PTHREAD_RUNTIME_INFO pThreadRuntimeInfo = NULL;
 
     if (!TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntimeInfo) || pThreadRuntimeInfo->IsProtected) {
@@ -542,15 +374,6 @@ Returns:
 
 void detour_release_self_protection()
 {
-/*
-Description:
-
-    Exists the TDB self protection. Refer to detour_acquire_self_protection() for more
-    information.
-
-    An assertion is raised if the caller has not owned the self protection.
-*/
-
     PTHREAD_RUNTIME_INFO pThreadRuntime = NULL;
 
     DETOUR_ASSERT(TlsGetCurrentValue(&g_BarrierUnit.TLS, &pThreadRuntime) && pThreadRuntime->IsProtected);
@@ -561,12 +384,6 @@ Description:
 static BOOL detour_acl_contains(_In_ HOOK_ACL *pACL,
                                 _In_ ULONG dwAcl)
 {
-/*
-Returns:
-
-    TRUE if the given ACL contains the given ID, FALSE otherwise.
-*/
-
     for (ULONG index = 0; index < pACL->Count; index++) {
         if (pACL->Entries[index] == dwAcl) {
             return TRUE;
@@ -579,17 +396,6 @@ Returns:
 BOOL detour_is_thread_intercepted(_In_ HOOK_ACL *pLocalACL,
                                   _In_ DWORD    dwThreadId)
 {
-/*
-Description:
-
-    Please refer to DetourIsThreadIntercepted() for more information.
-
-Returns:
-
-    TRUE if the given thread is intercepted by the global AND local ACL,
-    FALSE otherwise.
-*/
-
     DWORD checkId;
 
     if (dwThreadId == 0)
@@ -639,15 +445,6 @@ Returns:
 
 LONG WINAPI DetourBarrierGetCallback(_Outptr_ PVOID *ppCallback)
 {
-/*
-Description:
-
-    Is expected to be called inside a hook handler. Otherwise it
-    will fail with STATUS_NOT_SUPPORTED. The method retrieves
-    the callback initially passed to the related DetourInstallHook()
-    call.
-
-*/
     PTHREAD_RUNTIME_INFO pThreadRuntime;
 
     if (!IsValidPointer(ppCallback, sizeof(PVOID))){
@@ -668,18 +465,6 @@ Description:
 
 LONG WINAPI DetourBarrierGetReturnAddress(_Outptr_ PVOID *ppReturnAddress)
 {
-/*
-Description:
-
-    Is expected to be called inside a hook handler. Otherwise it
-    will fail with STATUS_NOT_SUPPORTED. The method retrieves
-    the return address of the hook handler. This is usually the
-    instruction behind the "CALL" which invoked the hook.
-
-    The calling module determination is based on this method.
-
-*/
-
     PTHREAD_RUNTIME_INFO pThreadRuntime;
 
     if (!IsValidPointer(ppReturnAddress, sizeof(PVOID))) {
@@ -703,14 +488,6 @@ Description:
 
 LONG WINAPI DetourBarrierGetAddressOfReturnAddress(_Outptr_ PVOID **pppAddressOfReturnAddress)
 {
-/*
-Description:
-
-    Is expected to be called inside a hook handler. Otherwise it
-    will fail with STATUS_NOT_SUPPORTED. The method retrieves
-    the address of the return address of the hook handler.
-*/
-
     PTHREAD_RUNTIME_INFO pThreadRuntime;
 
     if (pppAddressOfReturnAddress == NULL) {
@@ -732,18 +509,6 @@ Description:
 
 LONG WINAPI DetourBarrierBeginStackTrace(_Outptr_ PVOID* ppBackup)
 {
-/*
-Description:
-
-    Is expected to be called inside a hook handler. Otherwise it
-    will fail with STATUS_NOT_SUPPORTED.
-    Temporarily restores the call stack to allow stack traces.
-
-    You have to pass the stored backup pointer to
-    DetourBarrierEndStackTrace() BEFORE leaving the handler, otherwise
-    the application will be left in an unstable state!
-*/
-
     PTHREAD_RUNTIME_INFO pThreadRuntime;
 
     if (ppBackup == NULL) {
@@ -766,16 +531,6 @@ Description:
 
 LONG WINAPI DetourBarrierEndStackTrace(_In_ PVOID pBackup)
 {
-/*
-Description:
-
-    Is expected to be called inside a hook handler. Otherwise it
-    will fail with STATUS_NOT_SUPPORTED.
-
-    You have to pass the backup pointer obtained with
-    DetourBarrierBeginStackTrace().
-*/
-
     PVOID *AddrOfRetAddr;
 
     if (!IsValidPointer(pBackup, 1)) {
@@ -793,34 +548,6 @@ LONG WINAPI DetourBarrierCallStackTrace(_Outptr_ PVOID *ppMethodArray,
                                         _In_ DWORD dwFramesToCapture,
                                         _Inout_ DWORD *pCapturedFramesCount)
 {
-/*
-Description:
-
-    Creates a call stack trace and translates all method entries
-    back into their owning modules.
-
-Parameters:
-
-    - ppMethodArray
-
-        An array receiving the methods on the call stack.
-
-    - dwFramesToCapture
-
-        The length of the method array.
-
-    - pCapturedFramesCount
-
-        The actual count of methods on the call stack. This will never
-        be greater than 64.
-
-Returns:
-
-    STATUS_NOT_IMPLEMENTED
-
-        Only supported since Windows XP.
-*/
-    
     PVOID Backup = NULL;
 
     if (dwFramesToCapture > 64) {

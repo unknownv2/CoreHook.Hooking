@@ -12,7 +12,7 @@ void detour_release_self_protection();
 
 void detour_sleep(_In_ DWORD milliSeconds);
 
-/////////////////////////////////////////// trampoline thread barrier definitions
+/////////////////////////////////////////// Trampoline thread barrier definitions
 //
 
 #define MAX_HOOK_COUNT              1024
@@ -29,13 +29,13 @@ typedef struct _HOOK_ACL_
 
 typedef struct _RUNTIME_INFO_
 {
-    // "true" if the current thread is within the related hook handler
+    // Set to "true" if the current thread is within the related hook handler.
     BOOL            IsExecuting;
-    // the hook this information entry belongs to... This allows a per thread and hook storage!
+    // The hook this information entry belongs to. This allows a per thread and hook storage!
     DWORD           HLSIdent;
-    // the return address of the current thread's hook handler...
+    // The return address of the current thread's hook handler.
     void*           RetAddress;
-    // the address of the return address of the current thread's hook handler...
+    // The address of the return address of the current thread's hook handler.
     void**          AddrOfRetAddr;
 } RUNTIME_INFO;
 
@@ -125,7 +125,7 @@ BOOL detour_is_valid_pointer(_In_opt_ CONST VOID *Pointer,
 //
 //  Thread Local Storage functions re-implemented to avoid
 //  possible problems with native TLS functions when
-//  detouring processes like explorer.exe
+//  detouring processes like explorer.exe.
 //
 
 BOOL TlsGetCurrentValue(_In_  THREAD_LOCAL_STORAGE *pTls,
