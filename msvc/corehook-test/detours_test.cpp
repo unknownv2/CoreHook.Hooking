@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "simple_detours.h"
+#include "DetoursTest.h"
 
 // Detour a user-created function by setting a boolean value from false to true in our _Detour method
 TEST_F(DetoursTest, SimpleDetoursUserFunctionTest) { 
@@ -79,4 +79,14 @@ TEST_F(DetoursTest, ShouldFailWhenInstallingMaxHookCount) {
             EXPECT_EQ(x, maxHookCount);
         }
     }
+}
+TEST_F(DetoursTest, GetHookBypassAddress_Should_Return_Invalid_Handle_With_Bad_Hook_Handle) {
+    EXPECT_EQ(ERROR_INVALID_HANDLE, DetourGetHookBypassAddress(nullptr, nullptr));
+}
+TEST_F(DetoursTest, GetHookBypassAddress_Should_Return_Invalid_Handle_With_Bad_Output_Address) {
+    HOOK_TRACE_INFO pHandle;
+    EXPECT_EQ(ERROR_INVALID_PARAMETER, DetourGetHookBypassAddress(&pHandle, nullptr));
+}
+TEST_F(DetoursTest, GetHookBypassAddress_Should_Return_Invalid_Handle_With_Bad_Hook_Handle_and_Output_Address) {
+    EXPECT_EQ(ERROR_INVALID_HANDLE, DetourGetHookBypassAddress(nullptr, nullptr));
 }

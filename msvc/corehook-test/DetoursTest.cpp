@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "simple_detours.h"
+#include "DetoursTest.h"
 
 bool detoured_test = false;
 
