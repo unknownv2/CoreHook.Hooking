@@ -52,6 +52,13 @@ You can find the build environments for your Visual Studio installation normally
  nmake DETOURS_TARGET_PROCESSOR=ARM64
  ```
 
+### Binary Releases 
+ You can also download the pre-built Windows binaries [here](https://github.com/unknownv2/CoreHook.Hooking/releases).
+ 
+ For `x86, x64`, extract the zip corresponding to your target architecture, then place the `corehook32.dll` and/or `corehook64.dll` in the build output directory of your program.
+ 
+ For `ARM, ARM64`,  extract the zip corresponding to your target architecture, then place the `corehook32.dll` and/or `corehook64.dll` in the output directory of your published program, created either from using the [Publishing Script](https://github.com/unknownv2/CoreHook#publishing-script) or the `dotnet publish` command.
+
 ## Usage
 
 * For X86, the output directory is `bin.X86` and the output file is `corehook32.dll`.
@@ -62,7 +69,7 @@ You can find the build environments for your Visual Studio installation normally
 Copy the desired file for your target architecture to the output directory of the program that uses [CoreHook](https://github.com/unknownv2/CoreHook/).
 
 
-## Original Licenses
+## Credits
 
-* [Microsoft Detours - MIT](https://github.com/Microsoft/Detours/blob/master/LICENSE.md)
-* [EasyHook - MIT](https://github.com/EasyHook/EasyHook/blob/master/LICENSE)
+The hooking module is mostly based on the [EasyHook](https://github.com/EasyHook/EasyHook/blob/master/LICENSE) native module and the [Microsoft Detours](https://github.com/Microsoft/Detours/blob/master/LICENSE.md) library and this library wouldn't be possible without them. They are both MIT-licensed.
+
