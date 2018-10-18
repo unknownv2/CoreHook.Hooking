@@ -174,7 +174,7 @@ LONG detour_set_acl(_In_ HOOK_ACL *pAcl,
 {
     ASSERT(IsValidPointer(pAcl, sizeof(HOOK_ACL)));
 
-    if (dwThreadCount > MAX_ACE_COUNT) {
+    if (dwThreadCount > MAX_ACL_COUNT) {
         return ERROR_INVALID_PARAMETER;
     }
 

@@ -16,15 +16,14 @@ void detour_sleep(_In_ DWORD milliSeconds);
 //
 
 #define MAX_HOOK_COUNT              1024
-#define MAX_ACE_COUNT               128
+#define MAX_ACL_COUNT               128
 #define MAX_THREAD_COUNT            128
-#define MAX_PASSTHRU_SIZE           1024 * 64
 
 typedef struct _HOOK_ACL_
 {
     ULONG                   Count;
     BOOL                    IsExclusive;
-    ULONG                   Entries[MAX_ACE_COUNT];
+    ULONG                   Entries[MAX_ACL_COUNT];
 } HOOK_ACL;
 
 typedef struct _RUNTIME_INFO_
