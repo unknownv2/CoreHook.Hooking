@@ -20,8 +20,18 @@ You can find the Visual Studio solution inside [the msvc folder](/msvc). You can
 An example for building the X64 `corehook64.dll` in the Release configuration:
 
 ```
+msbuild msvc/corehook/detours.vcxproj /p:Configuration=Release /p:Platform=x64
+msbuild msvc/corehook/corehook.vcxproj /p:Configuration=Release /p:Platform=x64
+```
+
+To build the entire solution (which also builds the library tests), you can run:
+
+```
+nuget restore msvc/corehook.sln
 msbuild msvc/corehook.sln /p:Configuration=Release /p:Platform=x64
 ```
+
+
 ### NMAKE 
 
 You can find the build environments for your Visual Studio installation normally at `C:\Program Files (x86)\Microsoft Visual Studio\2017\[ProductType]\VC\Auxiliary\Build`, where `[ProductType]` is your version of Visual Studio: **(Community, Professional, or Enterprise)**.

@@ -9,7 +9,7 @@ TEST_F(DetoursTest, SimpleDetoursUserFunctionTest) {
 // Detour CreateFileW with a non-existent file name
 TEST_F(DetoursTest, SimpleDetoursExportedFunctionTest) {
     const auto fileName = L"File.txt";
-    LPCWSTR fileNamePtr = NULL;
+    LPCWSTR fileNamePtr = nullptr;
 
     EXPECT_EQ(NO_ERROR, _dt.DetourExportedFunction(fileName, &fileNamePtr));
 
@@ -46,7 +46,7 @@ TEST_F(DetoursTest, FindFunctionNullTest) {
 
 TEST_F(DetoursTest, InstallInvalidHookParameterTest) {
     LONG callback = 0;
-    HOOK_TRACE_INFO hookHandle = { 0 };
+    HOOK_TRACE_INFO hookHandle = { nullptr };
     void(*testFunction)(int) = [](int i) { (VOID)i; };
 
     EXPECT_NE(NO_ERROR, DetourInstallHook(nullptr, nullptr, nullptr, nullptr));
@@ -81,7 +81,7 @@ TEST_F(DetoursTest, ShouldFailWhenInstallingMaxHookCount) {
     }
 }
 TEST_F(DetoursTest, GetHookBypassAddress_Should_Return_Invalid_Handle_With_Bad_Hook_Handle) {
-    PVOID *ppHookBypassAddress = NULL;
+    PVOID *ppHookBypassAddress = nullptr;
     EXPECT_EQ(ERROR_INVALID_HANDLE, DetourGetHookBypassAddress(nullptr, &ppHookBypassAddress));
 }
 TEST_F(DetoursTest, GetHookBypassAddress_Should_Return_Invalid_Handle_With_Bad_Output_Address) {

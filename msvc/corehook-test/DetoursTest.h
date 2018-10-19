@@ -16,11 +16,14 @@ public:
 class DetoursTest : public testing::Test {
 
 protected:
-    virtual void SetUp() {
+    void SetUp() override
+    {
         DetourBarrierProcessAttach();
         DetourCriticalInitialize();
     }
-    virtual void TearDown() {
+
+    void TearDown() override
+    {
         DetourBarrierProcessDetach();
         DetourCriticalFinalize();
     }
