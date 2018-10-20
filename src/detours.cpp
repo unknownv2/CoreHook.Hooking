@@ -1686,13 +1686,13 @@ ULONG detour_get_trampoline_size()
     g_cachedTrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_X64_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_X64_CODE)));
 #elif defined(DETOURS_X86)  
-    ___TrampolineSize = static_cast<ULONG>(
+    g_cachedTrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_X86_DATA) - detour_get_trampoline_ptr()));
 #elif defined(DETOURS_ARM)
-    ___TrampolineSize = static_cast<ULONG>(
+    g_cachedTrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_ARM_CODE)));
 #elif defined(DETOURS_ARM64)
-    ___TrampolineSize = static_cast<ULONG>(
+    g_cachedTrampolineSize = static_cast<ULONG>(
         (reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_DATA) - reinterpret_cast<PBYTE>(Trampoline_ASM_ARM64_CODE)));
 #endif
     return g_cachedTrampolineSize;

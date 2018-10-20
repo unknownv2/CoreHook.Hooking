@@ -33,16 +33,16 @@ typedef struct _RUNTIME_INFO_
     // The hook this information entry belongs to. This allows a per thread and hook storage!
     DWORD           HLSIdent;
     // The return address of the current thread's hook handler.
-    void*           RetAddress;
+    PVOID           RetAddress;
     // The address of the return address of the current thread's hook handler.
-    void**          AddrOfRetAddr;
+    PVOID*          AddrOfRetAddr;
 } RUNTIME_INFO;
 
 typedef struct _THREAD_RUNTIME_INFO_
 {
     RUNTIME_INFO*        Entries;
     RUNTIME_INFO*        Current;
-    void*                Callback;
+    PVOID                Callback;
     BOOL                 IsProtected;
 } THREAD_RUNTIME_INFO, *PTHREAD_RUNTIME_INFO;
 
