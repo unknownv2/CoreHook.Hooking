@@ -1,6 +1,5 @@
 #pragma once
-#include "detours.h"
-#include <memory>
+#include "corehook.h"
 
 class Detours {
 
