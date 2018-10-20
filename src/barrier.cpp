@@ -76,7 +76,7 @@ void *detour_allocate_memory(_In_ BOOL   bZeroMemory,
     return result;
 }
 
-void detour_free_memory(void * pMemory)
+void detour_free_memory(void *pMemory)
 {
     DETOUR_ASSERT(pMemory != NULL);
 
@@ -567,7 +567,7 @@ LONG WINAPI DetourBarrierCallStackTrace(_Outptr_ PVOID *ppMethodArray,
         return ERROR_INVALID_FUNCTION;
     }
 
-    *pCapturedFramesCount = CaptureStackBackTrace(1, 32, ppMethodArray, NULL);
+    *pCapturedFramesCount = CaptureStackBackTrace(1, dwFramesToCapture, ppMethodArray, NULL);
 
     if (Backup != NULL) {
         DetourBarrierEndStackTrace(Backup);
