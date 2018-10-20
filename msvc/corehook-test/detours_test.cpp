@@ -80,14 +80,14 @@ TEST_F(DetoursTest, ShouldFailWhenInstallingMaxHookCount) {
         }
     }
 }
-TEST_F(DetoursTest, GetHookBypassAddress_Should_Return_Invalid_Handle_With_Bad_Hook_Handle) {
+TEST_F(DetoursTest, GetHookBypassAddressShouldReturnInvalidHandleWithBadHookHandle) {
     PVOID *ppHookBypassAddress = nullptr;
     EXPECT_EQ(ERROR_INVALID_HANDLE, DetourGetHookBypassAddress(nullptr, &ppHookBypassAddress));
 }
-TEST_F(DetoursTest, GetHookBypassAddress_Should_Return_Invalid_Handle_With_Bad_Output_Address) {
+TEST_F(DetoursTest, GetHookBypassAddressShouldReturnInvalidHandleWithBadOutputAddress) {
     HOOK_TRACE_INFO pHandle;
     EXPECT_EQ(ERROR_INVALID_PARAMETER, DetourGetHookBypassAddress(&pHandle, nullptr));
 }
-TEST_F(DetoursTest, GetHookBypassAddress_Should_Return_Invalid_Handle_With_Bad_Hook_Handle_and_Output_Address) {
+TEST_F(DetoursTest, GetHookBypassAddressShouldReturnInvalidHandleWithBadHookHandleandOutputAddress) {
     EXPECT_EQ(ERROR_INVALID_HANDLE, DetourGetHookBypassAddress(nullptr, nullptr));
 }
