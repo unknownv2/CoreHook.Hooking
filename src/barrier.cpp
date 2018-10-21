@@ -142,8 +142,11 @@ VOID detour_assert(PCSTR pszMsg, LPCWSTR pszFile, ULONG nLine)
     DETOUR_TRACE(("DETOUR_ASSERT(%s) failed in %ws, line %d.\n", pszMsg, pszFile, nLine));
 #ifdef _DEBUG
     DETOUR_BREAK();
+#else
+    (void)pszMsg;
+    (void)nLine;
 #endif
-    FatalAppExit(0, pszFile);
+    FatalAppExitW(0, pszFile);
 }
 
 LONG WINAPI DetourSetGlobalInclusiveACL(_In_ DWORD *dwThreadIdList,
