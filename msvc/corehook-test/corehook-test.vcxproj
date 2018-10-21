@@ -95,7 +95,7 @@
     <IncludePath>../../src;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemGroup>
-    <ClInclude Include="hook.h" />
+    <ClInclude Include="corehook.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="DetoursTest.h" />
   </ItemGroup>
