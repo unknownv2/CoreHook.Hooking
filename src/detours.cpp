@@ -2012,9 +2012,9 @@ LONG WINAPI DetourIsThreadIntercepted(_In_  TRACED_HOOK_HANDLE pHook,
                                       _In_  DWORD dwThreadId,
                                       _Out_ BOOL *pResult)
 {
-    PDETOUR_TRAMPOLINE Handle;
+    PDETOUR_TRAMPOLINE pTrampoline;
 
-    if (!detour_is_valid_handle(pHook, &Handle)) {
+    if (!detour_is_valid_handle(pHook, &pTrampoline)) {
         return ERROR_INVALID_PARAMETER;
     }
 
@@ -2022,7 +2022,7 @@ LONG WINAPI DetourIsThreadIntercepted(_In_  TRACED_HOOK_HANDLE pHook,
         return ERROR_INVALID_PARAMETER;
     }
 
-    *pResult = detour_is_thread_intercepted(&Handle->LocalACL, dwThreadId);
+    *pResult = detour_is_thread_intercepted(&pTrampoline->LocalACL, dwThreadId);
 
     return NO_ERROR;
 }
@@ -2049,30 +2049,30 @@ LONG WINAPI DetourSetInclusiveACL(_In_ DWORD *pThreadIdList,
 LONG WINAPI DetourGetHookBypassAddress(_In_ TRACED_HOOK_HANDLE pHook,
                                        _Outptr_ PVOID **pppOutAddress)
 {
-    PDETOUR_TRAMPOLINE Handle;
+    PDETOUR_TRAMPOLINE pTrampoline;
 
-    if (!detour_is_valid_handle(pHook, &Handle)) {
+    if (!detour_is_valid_handle(pHook, &pTrampoline)) {
         return ERROR_INVALID_HANDLE;
     }
     if (!IsValidPointer(pppOutAddress, sizeof(PVOID*))) {
         return ERROR_INVALID_PARAMETER;
     }
 
-    *pppOutAddress = reinterpret_cast<PVOID*>(Handle->OldProc);
+    *pppOutAddress = reinterpret_cast<PVOID*>(pTrampoline->OldProc);
 
     return NO_ERROR;
 }
 
 LONG WINAPI DetourSetExclusiveACL(_In_ DWORD *pThreadIdList,
                                   _In_ DWORD dwThreadCount,
-                                  _In_ TRACED_HOOK_HANDLE pHandle)
+                                  _In_ TRACED_HOOK_HANDLE pHookHandle)
 {
-    PDETOUR_TRAMPOLINE Handle;
+    PDETOUR_TRAMPOLINE pTrampoline;
 
-    if (!detour_is_valid_handle(pHandle, &Handle)) {
+    if (!detour_is_valid_handle(pHookHandle, &pTrampoline)) {
         return ERROR_INVALID_HANDLE;
     }
-    return detour_set_acl(&Handle->LocalACL, TRUE, pThreadIdList, dwThreadCount);
+    return detour_set_acl(&pTrampoline->LocalACL, TRUE, pThreadIdList, dwThreadCount);
 }
 
 LONG WINAPI DetourTransactionCommitEx(_Out_opt_ PVOID **pppFailedPointer)
