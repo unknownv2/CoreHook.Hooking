@@ -15,15 +15,18 @@ void detour_sleep(_In_ DWORD milliSeconds);
 /////////////////////////////////////////// Trampoline thread barrier definitions
 //
 
+// Maximum number of detours that can be created
 #define MAX_HOOK_COUNT              1024
-#define MAX_ACL_COUNT               128
+// Maximum number of entries in the hook ACL
+#define MAX_ACE_COUNT               128
+// Maximum number of threads supported by a hook ACL
 #define MAX_THREAD_COUNT            128
 
 typedef struct _HOOK_ACL_
 {
     ULONG                   Count;
     BOOL                    IsExclusive;
-    ULONG                   Entries[MAX_ACL_COUNT];
+    ULONG                   Entries[MAX_ACE_COUNT];
 } HOOK_ACL;
 
 typedef struct _RUNTIME_INFO_
