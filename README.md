@@ -39,7 +39,7 @@ You can also build the library using CMake. You can run the `build/win-vs-2017.c
 
 You can build by running these commands from the root of the repository:
 ```
-cd scripts
+cd build
 win-vs-2017.cmd
 ```
 
