@@ -27,6 +27,7 @@ set(SOURCE_FILES
 
 set(COREHOOK_SOURCES
     dll/corehook/corehook.cpp
+    dll/corehook/corehook.def
     )
 
 include_directories(
