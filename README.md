@@ -13,7 +13,17 @@ For [CoreHook](https://github.com/unknownv2/CoreHook), the [Microsoft Detours](h
 
 ## Building
 
-Building the DLL requires Visual Studio and there are three options: You can build the DLL by using the `Visual Studio IDE` or `msbuild` within the `Developer Command Prompt`, `cmake`, or `nmake` (it has been tested with `Visual Studio 2017` only). 
+Building the DLL requires Visual Studio and that can be accomplished by using `cmake` or the tools that come with `Visual Studio`. This can be the `Visual Studio IDE` or `msbuild` within the `Developer Command Prompt`.
+
+### CMake 
+
+You can also build the library using CMake. You can run the `build/win-vs-2017.cmd` file to build for the `x86` and `x64` architectures. This also gives you the option to generate and build with an older version of `Visual Studio` such as `VS 2015` or `VS 2013`.
+
+You can build by running these commands from the root of the repository:
+```
+cd build
+win-vs-2017.cmd
+```
 
 ### Visual Studio
 
@@ -33,46 +43,6 @@ nuget restore msvc/corehook.sln
 msbuild msvc/corehook.sln /p:Configuration=Release /p:Platform=x64
 ```
 
-### CMake 
-
-You can also build the library using CMake. You can run the `build/win-vs-2017.cmd` file to build for the `x86` and `x64` architectures. This also gives you the option to generate and build with an older version of `Visual Studio` such as `VS 2015` or `VS 2013`.
-
-You can build by running these commands from the root of the repository:
-```
-cd build
-win-vs-2017.cmd
-```
-
-### NMAKE 
-
-You can find the build environments for your Visual Studio installation normally at `C:\Program Files (x86)\Microsoft Visual Studio\2017\[ProductType]\VC\Auxiliary\Build`, where `[ProductType]` is your version of Visual Studio: **(Community, Professional, or Enterprise)**.
-
-### X86
-* Start the `vcvars32.bat`. Then `cd` to the `CoreHook.Hooking` directory, and run:
- ```
- nmake DETOURS_TARGET_PROCESSOR=X86
- ```
-### X64 
-* For X64, start the `vcvars64.bat`. Then `cd` to the `CoreHook.Hooking` directory, and run:
-
- ```
- nmake DETOURS_TARGET_PROCESSOR=X64
- ```
-
-### ARM
-
-* For ARM, start the `vcvarsx86_arm.bat`. Then `cd` to the `CoreHook.Hooking` directory, and run:
-
- ```
- nmake DETOURS_TARGET_PROCESSOR=ARM
- ```
-
- ### ARM64 (Unsupported, for future reference)
-* For ARM64, start the `vcvarsamd64_arm64.bat`. Then `cd` to the `CoreHook.Hooking` directory, and run:
- ```
- nmake DETOURS_TARGET_PROCESSOR=ARM64
- ```
-
 ### Binary Releases 
  You can also download the pre-built Windows binaries [here](https://github.com/unknownv2/CoreHook.Hooking/releases).
  
@@ -82,10 +52,10 @@ You can find the build environments for your Visual Studio installation normally
 
 ## Usage
 
-* For X86, the output directory is `bin.X86` and the output file is `corehook32.dll`.
-* For X64, the output directory is `bin.X64` and the output file is `corehook64.dll`.
-* For ARM, the output directory is `bin.ARM` and the output file is `corehook32.dll`.
-* For ARM64, the output directory is `bin.ARM64` and the output file is `corehook64.dll`.
+* For X86, the output directory is `bin/x86` and the output file is `corehook32.dll`.
+* For X64, the output directory is `bin/x64` and the output file is `corehook64.dll`.
+* For ARM, the output directory is `bin/ARM` and the output file is `corehook32.dll`.
+* For ARM64, the output directory is `bin/ARM64` and the output file is `corehook64.dll`.
 
 Copy the desired file for your target architecture to the output directory of the program that uses [CoreHook](https://github.com/unknownv2/CoreHook/).
 
