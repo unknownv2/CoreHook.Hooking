@@ -24,7 +24,7 @@ Building the DLL requires Visual Studio and that can be accomplished by using `c
 
 ## CMake 
 
-You can build the library using CMake by running `build.cmd`, which builds the library for the `x86` and `x64` architectures. This also gives you the option to generate and build the library with an older version of `Visual Studio` such as `VS 2015` or `VS 2013`.
+You can build the library using CMake by running [`build.cmd`](build.cmd), which builds the library for the `x86` and `x64` architectures. This also gives you the option to generate and build the library with an older version of `Visual Studio` such as `VS 2015` or `VS 2013`.
 
 ## Visual Studio
 
