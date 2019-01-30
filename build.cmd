@@ -1,4 +1,3 @@
-cd ../
 mkdir build32-vs2017
 mkdir build64-vs2017
 cd build32-vs2017
@@ -11,4 +10,3 @@ cmake --build build32-vs2017 --config Debug
 cmake --build build32-vs2017 --config Release
 cmake --build build64-vs2017 --config Debug
 cmake --build build64-vs2017 --config Release
-cd build
